@@ -1,0 +1,81 @@
+/* Custom font from Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
+
+/* Tailwind's base styles */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Apply Outfit font globally */
+* {
+    font-family: 'Outfit', sans-serif;
+}
+
+/* Set Primary Color and other color utilities */
+:root {
+    --primary-color: #1f4f3d;
+    /* Your primary color */
+    --secondary-color: #f5f5f5;
+    /* Secondary color (light theme) */
+    --black-color: #000000;
+    --white-color: #ffffff;
+    --success-color: #4caf50;
+    /* Success color */
+    --danger-color: #f44336;
+    /* Danger color */
+    --warning-color: #ff9800;
+    /* Warning color */
+    --info-color: #2196f3;
+    /* Info color */
+    --font-size-sm: 12px;
+    /* Smallest font size */
+}
+
+/* Apply Colors to the body */
+body {
+    background-color: var(--white-color);
+    color: var(--black-color);
+}
+
+/* Tailwind custom font-size (smallest font size set to 12px) */
+html {
+    font-size: 12px;
+}
+
+/* Global Color Scheme */
+.text-primary {
+    color: var(--primary-color);
+}
+
+.text-secondary {
+    color: var(--secondary-color);
+}
+
+.bg-primary {
+    background-color: var(--primary-color);
+}
+
+.bg-secondary {
+    background-color: var(--secondary-color);
+}
+
+/* Make sure the layout supports dark theme but defaults to light */
+@media (prefers-color-scheme: dark) {
+
+    /* Dark Theme settings (overriding the light theme defaults) */
+    body {
+        background-color: #121212;
+        color: #e0e0e0;
+    }
+
+    .text-primary {
+        color: var(--secondary-color);
+        /* Light text for dark theme */
+    }
+
+    .bg-primary {
+        background-color: var(--primary-color);
+    }
+
+    /* Additional dark mode customization can go here */
+}
