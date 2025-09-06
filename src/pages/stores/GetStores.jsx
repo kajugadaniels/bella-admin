@@ -1,9 +1,8 @@
-import React from 'react'
+import React from "react";
+import StoreList from "@/components/shared/stores/StoreList";
 
 const GetStores = () => {
-    return (
-        <div>GetStores</div>
-    )
-}
+    return <StoreList />;
+};
 
-export default GetStores
+export default GetStores;
