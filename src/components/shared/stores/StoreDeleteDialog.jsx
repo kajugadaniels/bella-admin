@@ -28,7 +28,6 @@ const InfoPill = ({ label, value }) => (
 const StoreDeleteDialog = ({ store, open, onOpenChange, onDeleted }) => {
     const [submitting, setSubmitting] = useState(false);
 
-    // Intent checks
     const [reason, setReason] = useState("duplicate");
     const [otherReason, setOtherReason] = useState("");
     const [ack, setAck] = useState(false);
@@ -75,16 +74,18 @@ const StoreDeleteDialog = ({ store, open, onOpenChange, onDeleted }) => {
             }}
         >
             <AlertDialogContent
+                // 👇 Force perfect centering on all screens
                 className="
-          relative sm:max-w-[600px]
+          fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2
+          w-[92vw] max-w-[600px]
           bg-white/90 dark:bg-neutral-900/85
           backdrop-blur-xl
           border border-neutral-200/70 dark:border-neutral-800
           shadow-2xl rounded-2xl p-0
+          focus:outline-none
         "
             >
                 <div className="p-6">
-                    {/* Header */}
                     <AlertDialogHeader className="space-y-3">
                         <div
                             className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl"
@@ -105,7 +106,6 @@ const StoreDeleteDialog = ({ store, open, onOpenChange, onDeleted }) => {
                         </AlertDialogDescription>
                     </AlertDialogHeader>
 
-                    {/* Store snapshot */}
                     <div className="mt-6 rounded-xl border border-neutral-200 bg-white/80 p-4 shadow-sm dark:border-neutral-800 dark:bg-neutral-900/60">
                         <div className="flex items-start gap-3">
                             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-neutral-100 dark:bg-neutral-800">
@@ -127,14 +127,9 @@ const StoreDeleteDialog = ({ store, open, onOpenChange, onDeleted }) => {
 
                     <Separator className="my-6" />
 
-                    {/* Why section */}
                     <div className="space-y-3">
                         <Label className="text-sm font-medium">Why are you deleting this store?</Label>
-                        <RadioGroup
-                            value={reason}
-                            onValueChange={setReason}
-                            className="grid gap-2"
-                        >
+                        <RadioGroup value={reason} onValueChange={setReason} className="grid gap-2">
                             {[
                                 { id: "duplicate", label: "Duplicate record" },
                                 { id: "mistake", label: "Created by mistake" },
@@ -144,12 +139,7 @@ const StoreDeleteDialog = ({ store, open, onOpenChange, onDeleted }) => {
                                 <label
                                     key={opt.id}
                                     htmlFor={`reason-${opt.id}`}
-                                    className="
-                    group flex cursor-pointer items-center justify-between gap-3
-                    rounded-lg border border-neutral-200 bg-white/85 px-3 py-2.5
-                    text-sm transition hover:border-[var(--primary-color)]/40 hover:bg-white
-                    dark:border-neutral-800 dark:bg-neutral-900/60 dark:hover:bg-neutral-900
-                  "
+                                    className="group flex cursor-pointer items-center justify-between gap-3 rounded-lg border border-neutral-200 bg-white/85 px-3 py-2.5 text-sm transition hover:border-[var(--primary-color)]/40 hover:bg-white dark:border-neutral-800 dark:bg-neutral-900/60 dark:hover:bg-neutral-900"
                                 >
                                     <div className="flex items-center gap-2">
                                         <RadioGroupItem id={`reason-${opt.id}`} value={opt.id} />
@@ -174,7 +164,6 @@ const StoreDeleteDialog = ({ store, open, onOpenChange, onDeleted }) => {
                         )}
                     </div>
 
-                    {/* Acknowledgement */}
                     <div
                         className="mt-6 space-y-3 rounded-xl border p-4"
                         style={{
@@ -235,15 +224,14 @@ const StoreDeleteDialog = ({ store, open, onOpenChange, onDeleted }) => {
                         </div>
                     </div>
 
-                    {/* Footer */}
                     <AlertDialogFooter className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-                        <AlertDialogCancel disabled={submitting} className="sm:min-w-[120px]">
+                        <AlertDialogCancel disabled={submitting} className="sm:min-w-[120px] cursor-pointer">
                             Cancel
                         </AlertDialogCancel>
                         <AlertDialogAction
                             onClick={remove}
                             disabled={!canDelete || submitting}
-                            className="sm:min-w-[170px] bg-red-600 hover:bg-red-700 disabled:opacity-60"
+                            className="sm:min-w-[170px] bg-red-600 hover:bg-red-700 disabled:opacity-60 text-white cursor-pointer"
                             style={{ boxShadow: "0 10px 24px rgba(220, 38, 38, 0.22)" }}
                         >
                             {submitting ? "Deleting…" : `Delete "${name}"`}
