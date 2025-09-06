@@ -3,11 +3,14 @@ import { Route, Routes } from 'react-router-dom'
 import ProtectedRoute from './hooks/ProtectedRoute'
 import AppLayout from './layout/AppLayout'
 import { Dashboard, Login, NotFound } from './pages'
+import AccountLayout from './layout/AccountLayout'
 
 const AppRoutes = () => {
     return (
         <Routes>
-            <Route path='/' element={<Login />} />
+            <Route element={<AccountLayout />}>
+                <Route path='/' element={<Login />} />
+            </Route>
 
             <Route element={<ProtectedRoute />}>
                 <Route element={<AppLayout />}>
