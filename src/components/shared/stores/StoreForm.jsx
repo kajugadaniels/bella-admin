@@ -1,15 +1,24 @@
-import React from "react";
-import { useForm, useFieldArray } from "react-hook-form";
+import React, { useCallback, useMemo } from "react";
+import { useForm, useFieldArray, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import { useDropzone } from "react-dropzone";
+import { Provinces, Districts, Sectors, Cells, Villages } from "rwanda";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
-import { Trash2, Plus } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { Trash2, Plus, UploadCloud, ShieldCheck } from "lucide-react";
+
+const PERMS = ["read", "write", "edit", "delete"];
+const PermEnum = z.enum(PERMS);
 
 const baseSchema = z.object({
     name: z.string().min(2, "Name is required"),
@@ -32,13 +41,118 @@ const staffItem = z.object({
     username: z.string().optional().or(z.literal("")),
     phone_number: z.string().optional().or(z.literal("")),
     is_admin: z.boolean().default(false),
-    permissions: z.array(z.enum(["read", "write", "edit", "delete"])).optional().default([]),
+    permissions: z.array(PermEnum).optional().default([]),
     is_active: z.boolean().optional().default(true),
 });
 
 const createSchema = baseSchema.extend({
     staff: z.array(staffItem).optional().default([]),
 });
+
+const GlassSection = ({ title, children, extra }) => (
+    <div className="rounded-2xl border border-black/5 bg-white/60 p-4 backdrop-blur-md dark:border-white/10 dark:bg-neutral-900/40">
+        <div className="mb-3 flex items-center justify-between">
+            <div className="text-sm font-semibold">{title}</div>
+            {extra}
+        </div>
+        <div className="grid gap-3">{children}</div>
+    </div>
+);
+
+const PermissionPicker = ({ value = [], onChange, disabled }) => {
+    return (
+        <div className={`grid grid-cols-2 gap-2 ${disabled ? "opacity-60 pointer-events-none" : ""}`}>
+            {PERMS.map((p) => {
+                const checked = value.includes(p);
+                return (
+                    <label key={p} className="flex items-center gap-2 rounded-lg border border-black/5 bg-white/80 px-2 py-1 text-sm backdrop-blur dark:border-white/10 dark:bg-neutral-900/50">
+                        <Checkbox
+                            checked={checked}
+                            onCheckedChange={(v) => {
+                                if (disabled) return;
+                                const next = new Set(value);
+                                v ? next.add(p) : next.delete(p);
+                                onChange?.(Array.from(next));
+                            }}
+                        />
+                        <span className="capitalize">{p}</span>
+                    </label>
+                );
+            })}
+        </div>
+    );
+};
+
+const StaffInviteRow = ({ idx, register, control, remove, watch }) => {
+    const isAdmin = watch(`staff.${idx}.is_admin`);
+    const emailVal = watch(`staff.${idx}.email`) || "";
+    const initials = (emailVal || "U").slice(0, 2).toUpperCase();
+
+    return (
+        <div className="grid grid-cols-1 gap-3 rounded-xl border border-black/5 bg-white/60 p-3 backdrop-blur dark:border-white/10 dark:bg-neutral-900/40 md:grid-cols-12">
+            <div className="md:col-span-12 flex items-center gap-2 text-xs text-neutral-500">
+                <div className="h-7 w-7 shrink-0 rounded-full grid place-items-center text-[12px] font-semibold text-white bg-gradient-to-br from-[var(--primary-color)] to-emerald-600">
+                    {initials}
+                </div>
+                <span>Invite #{idx + 1}</span>
+                {isAdmin && (
+                    <Badge className="ml-2 flex items-center gap-1">
+                        <ShieldCheck className="h-3.5 w-3.5" /> Admin
+                    </Badge>
+                )}
+                <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="ml-auto text-red-600"
+                    onClick={() => remove(idx)}
+                >
+                    <Trash2 className="mr-1 h-4 w-4" /> Remove
+                </Button>
+            </div>
+
+            <div className="md:col-span-4">
+                <Label>Email</Label>
+                <Input placeholder="user@example.com" {...register(`staff.${idx}.email`)} />
+            </div>
+            <div className="md:col-span-3">
+                <Label>Username</Label>
+                <Input placeholder="username" {...register(`staff.${idx}.username`)} />
+            </div>
+            <div className="md:col-span-3">
+                <Label>Phone</Label>
+                <Input placeholder="07…" {...register(`staff.${idx}.phone_number`)} />
+            </div>
+            <div className="md:col-span-2 flex items-end">
+                <div className="flex items-center gap-2">
+                    <Controller
+                        name={`staff.${idx}.is_admin`}
+                        control={control}
+                        render={({ field }) => (
+                            <Switch checked={!!field.value} onCheckedChange={field.onChange} />
+                        )}
+                    />
+                    <span className="text-sm">Admin</span>
+                </div>
+            </div>
+
+            {/* Permissions (only when NOT admin) */}
+            {!isAdmin && (
+                <div className="md:col-span-12">
+                    <Label className="text-xs text-neutral-500">Permissions</Label>
+                    <Controller
+                        name={`staff.${idx}.permissions`}
+                        control={control}
+                        render={({ field }) => (
+                            <PermissionPicker value={field.value || []} onChange={field.onChange} disabled={false} />
+                        )}
+                    />
+                    <p className="mt-1 text-xs text-neutral-500">Choose what this staff member can do.</p>
+                </div>
+            )}
+        </div>
+    );
+};
 
 const StoreForm = ({
     defaultValues,
@@ -60,7 +174,7 @@ const StoreForm = ({
             cell: "",
             village: "",
             map_url: "",
-            image: null,
+            image: null, // will hold File[] from dropzone
             remove_image: false,
             staff: [],
             ...(defaultValues || {}),
@@ -69,13 +183,45 @@ const StoreForm = ({
         mode: "onChange",
     });
 
-    const { control, handleSubmit, register, watch, setValue } = form;
+    const { control, handleSubmit, register, watch, setValue, formState } = form;
     const { fields, append, remove } = useFieldArray({ control, name: "staff" });
+
+    // Rwanda cascaded selects
+    const pv = watch("province");
+    const dt = watch("district");
+    const sc = watch("sector");
+    const cl = watch("cell");
+
+    const provinces = useMemo(() => (Provinces() || []).map((p) => p), []);
+    const districts = useMemo(() => (pv ? Districts(pv) || [] : []), [pv]);
+    const sectors = useMemo(() => (pv && dt ? Sectors(pv, dt) || [] : []), [pv, dt]);
+    const cells = useMemo(() => (pv && dt && sc ? Cells(pv, dt, sc) || [] : []), [pv, dt, sc]);
+    const villages = useMemo(
+        () => (pv && dt && sc && cl ? Villages(pv, dt, sc, cl) || [] : []),
+        [pv, dt, sc, cl]
+    );
+
+    // Dropzone
+    const onDrop = useCallback(
+        (acceptedFiles) => {
+            setValue("image", acceptedFiles, { shouldDirty: true });
+        },
+        [setValue]
+    );
+    const { getRootProps, getInputProps, isDragActive, acceptedFiles } = useDropzone({
+        onDrop,
+        accept: { "image/*": [] },
+        maxFiles: 1,
+    });
+
+    const file = Array.isArray(watch("image")) ? watch("image")[0] : null;
+    const preview = file ? URL.createObjectURL(file) : null;
 
     return (
         <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4">
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <div className="space-y-3">
+            {/* Store Info */}
+            <GlassSection title="Store information">
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                     <div className="grid gap-1.5">
                         <Label htmlFor="name">Store name</Label>
                         <Input id="name" placeholder="e.g., Simba UTC" {...register("name")} />
@@ -96,124 +242,240 @@ const StoreForm = ({
                         <Input id="address" placeholder="Street / Avenue" {...register("address")} />
                     </div>
 
-                    <div className="grid gap-1.5">
+                    <div className="md:col-span-2 grid gap-1.5">
                         <Label htmlFor="map_url">Google maps URL</Label>
                         <Input id="map_url" placeholder="https://maps.google.com/…" {...register("map_url")} />
                     </div>
                 </div>
+            </GlassSection>
 
-                <div className="space-y-3">
+            {/* Location */}
+            <GlassSection title="Location">
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                     <div className="grid gap-1.5">
-                        <Label htmlFor="province">Province</Label>
-                        <Input id="province" placeholder="Kigali" {...register("province")} />
+                        <Label>Province</Label>
+                        <Controller
+                            name="province"
+                            control={control}
+                            render={({ field }) => (
+                                <Select
+                                    value={field.value || ""}
+                                    onValueChange={(v) => {
+                                        field.onChange(v);
+                                        setValue("district", "");
+                                        setValue("sector", "");
+                                        setValue("cell", "");
+                                        setValue("village", "");
+                                    }}
+                                >
+                                    <SelectTrigger><SelectValue placeholder="Select province" /></SelectTrigger>
+                                    <SelectContent className="glass-menu">
+                                        {provinces.map((p) => (
+                                            <SelectItem key={p} value={p}>{p}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            )}
+                        />
                     </div>
+
                     <div className="grid gap-1.5">
-                        <Label htmlFor="district">District</Label>
-                        <Input id="district" placeholder="Nyarugenge" {...register("district")} />
+                        <Label>District</Label>
+                        <Controller
+                            name="district"
+                            control={control}
+                            render={({ field }) => (
+                                <Select
+                                    value={field.value || ""}
+                                    onValueChange={(v) => {
+                                        field.onChange(v);
+                                        setValue("sector", "");
+                                        setValue("cell", "");
+                                        setValue("village", "");
+                                    }}
+                                    disabled={!pv}
+                                >
+                                    <SelectTrigger><SelectValue placeholder="Select district" /></SelectTrigger>
+                                    <SelectContent className="glass-menu">
+                                        {districts.map((d) => (
+                                            <SelectItem key={d} value={d}>{d}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            )}
+                        />
                     </div>
+
                     <div className="grid gap-1.5">
-                        <Label htmlFor="sector">Sector</Label>
-                        <Input id="sector" placeholder="Nyamirambo" {...register("sector")} />
+                        <Label>Sector</Label>
+                        <Controller
+                            name="sector"
+                            control={control}
+                            render={({ field }) => (
+                                <Select
+                                    value={field.value || ""}
+                                    onValueChange={(v) => {
+                                        field.onChange(v);
+                                        setValue("cell", "");
+                                        setValue("village", "");
+                                    }}
+                                    disabled={!pv || !dt}
+                                >
+                                    <SelectTrigger><SelectValue placeholder="Select sector" /></SelectTrigger>
+                                    <SelectContent className="glass-menu">
+                                        {sectors.map((s) => (
+                                            <SelectItem key={s} value={s}>{s}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            )}
+                        />
                     </div>
+
                     <div className="grid gap-1.5">
-                        <Label htmlFor="cell">Cell</Label>
-                        <Input id="cell" placeholder="Muganza" {...register("cell")} />
+                        <Label>Cell</Label>
+                        <Controller
+                            name="cell"
+                            control={control}
+                            render={({ field }) => (
+                                <Select
+                                    value={field.value || ""}
+                                    onValueChange={(v) => {
+                                        field.onChange(v);
+                                        setValue("village", "");
+                                    }}
+                                    disabled={!pv || !dt || !sc}
+                                >
+                                    <SelectTrigger><SelectValue placeholder="Select cell" /></SelectTrigger>
+                                    <SelectContent className="glass-menu">
+                                        {cells.map((c) => (
+                                            <SelectItem key={c} value={c}>{c}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            )}
+                        />
                     </div>
-                    <div className="grid gap-1.5">
-                        <Label htmlFor="village">Village</Label>
-                        <Input id="village" placeholder="Agasasa" {...register("village")} />
+
+                    <div className="md:col-span-2 grid gap-1.5">
+                        <Label>Village</Label>
+                        <Controller
+                            name="village"
+                            control={control}
+                            render={({ field }) => (
+                                <Select
+                                    value={field.value || ""}
+                                    onValueChange={field.onChange}
+                                    disabled={!pv || !dt || !sc || !cl}
+                                >
+                                    <SelectTrigger><SelectValue placeholder="Select village" /></SelectTrigger>
+                                    <SelectContent className="glass-menu">
+                                        {villages.map((v) => (
+                                            <SelectItem key={v} value={v}>{v}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            )}
+                        />
                     </div>
                 </div>
-            </div>
+            </GlassSection>
 
-            <Separator />
-
-            {/* Image controls */}
-            <div className="grid grid-cols-1 items-end gap-3 md:grid-cols-2">
-                <div className="grid gap-1.5">
-                    <Label htmlFor="image">Image</Label>
-                    <Input id="image" type="file" accept="image/*" {...register("image")} />
-                    {!isCreate && (
-                        <div className="flex items-center gap-2 pt-1">
-                            <Switch id="remove_image" {...register("remove_image")} />
-                            <Label htmlFor="remove_image" className="text-xs text-neutral-600">
-                                Remove current image
-                            </Label>
+            {/* Image */}
+            <GlassSection
+                title="Store image"
+                extra={
+                    preview ? (
+                        <Badge variant="secondary" className="glass-badge">Preview</Badge>
+                    ) : null
+                }
+            >
+                <div
+                    {...getRootProps()}
+                    className={`group relative grid place-items-center rounded-2xl border border-dashed p-6 transition-colors ${isDragActive
+                            ? "border-emerald-500 bg-emerald-50"
+                            : "border-black/10 bg-white/70 dark:border-white/10 dark:bg-neutral-900/40"
+                        }`}
+                >
+                    <input {...getInputProps()} />
+                    {!preview ? (
+                        <div className="flex flex-col items-center text-center">
+                            <UploadCloud className="mb-2 h-6 w-6 opacity-70" />
+                            <div className="text-sm font-medium">Drag & drop an image</div>
+                            <div className="text-xs text-neutral-500">or click to browse</div>
+                        </div>
+                    ) : (
+                        <div className="w-full">
+                            <img
+                                src={preview}
+                                alt="Preview"
+                                className="mx-auto h-40 w-full max-w-sm rounded-xl object-cover ring-1 ring-black/5 dark:ring-white/10"
+                            />
+                            <div className="mt-2 text-center text-xs text-neutral-500">
+                                {file?.name} — {(file?.size / 1024 / 1024).toFixed(2)} MB
+                            </div>
                         </div>
                     )}
                 </div>
-            </div>
+                {/* Fallback manual input for edge cases */}
+                <input type="file" accept="image/*" className="hidden" />
+            </GlassSection>
 
             {/* Staff (create-only) */}
             {isCreate && (
                 <>
-                    <Separator />
-                    <Card>
-                        <CardHeader className="py-4">
-                            <CardTitle className="text-base">Invite staff (optional)</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-3">
-                            {fields.length === 0 && (
-                                <div className="text-sm text-neutral-500">No invites added. You can add them later.</div>
-                            )}
-
-                            {fields.map((f, idx) => (
-                                <div key={f.id} className="grid grid-cols-1 gap-3 rounded-lg border p-3 md:grid-cols-12">
-                                    <div className="md:col-span-3">
-                                        <Label>Email</Label>
-                                        <Input placeholder="user@example.com" {...register(`staff.${idx}.email`)} />
-                                    </div>
-                                    <div className="md:col-span-3">
-                                        <Label>Username</Label>
-                                        <Input placeholder="username" {...register(`staff.${idx}.username`)} />
-                                    </div>
-                                    <div className="md:col-span-3">
-                                        <Label>Phone</Label>
-                                        <Input placeholder="07…" {...register(`staff.${idx}.phone_number`)} />
-                                    </div>
-                                    <div className="md:col-span-2 flex flex-col justify-end">
-                                        <div className="flex items-center gap-2">
-                                            <Switch {...register(`staff.${idx}.is_admin`)} />
-                                            <span className="text-sm">Admin</span>
-                                        </div>
-                                        <p className="text-xs text-neutral-500">Admins get all permissions.</p>
-                                    </div>
-                                    <div className="md:col-span-1 flex items-end justify-end">
-                                        <Button
-                                            type="button"
-                                            variant="ghost"
-                                            size="icon"
-                                            className="text-red-600"
-                                            onClick={() => remove(idx)}
-                                        >
-                                            <Trash2 className="h-4 w-4" />
-                                        </Button>
-                                    </div>
-                                    <div className="md:col-span-12 text-xs text-neutral-500">
-                                        If not admin, you can set permissions later.
-                                    </div>
-                                </div>
-                            ))}
-
+                    <GlassSection
+                        title="Invite staff (optional)"
+                        extra={
                             <Button
                                 type="button"
                                 variant="outline"
                                 onClick={() =>
-                                    append({ email: "", username: "", phone_number: "", is_admin: false, permissions: ["read"], is_active: true })
+                                    append({
+                                        email: "",
+                                        username: "",
+                                        phone_number: "",
+                                        is_admin: false,
+                                        permissions: ["read"],
+                                        is_active: true,
+                                    })
                                 }
                             >
                                 <Plus className="mr-2 h-4 w-4" />
                                 Add invite
                             </Button>
-                        </CardContent>
-                    </Card>
+                        }
+                    >
+                        {fields.length === 0 && (
+                            <div className="rounded-xl border border-dashed border-black/10 bg-white/60 p-4 text-center text-sm text-neutral-500 dark:border-white/10 dark:bg-neutral-900/40">
+                                No invites added yet.
+                            </div>
+                        )}
+
+                        {fields.map((f, idx) => (
+                            <StaffInviteRow
+                                key={f.id}
+                                idx={idx}
+                                register={register}
+                                control={control}
+                                remove={remove}
+                                watch={watch}
+                            />
+                        ))}
+                    </GlassSection>
                 </>
             )}
 
-            <div className="flex items-center justify-end gap-2 pt-2">
-                <Button type="submit" disabled={submitting}>
-                    {submitting ? "Saving…" : "Save"}
-                </Button>
+            {/* Sticky bottom actions (inside the form, at the very bottom of the sheet) */}
+            <div className="sticky bottom-0 z-10 mt-2 rounded-xl border border-black/5 bg-white/85 p-3 backdrop-blur-sm dark:border-white/10 dark:bg-neutral-900/70">
+                <div className="flex items-center justify-end gap-2">
+                    <Button type="button" variant="ghost" onClick={() => window.history.back()}>
+                        Cancel
+                    </Button>
+                    <Button type="submit" disabled={submitting || !formState.isValid}>
+                        {submitting ? "Saving…" : "Save store"}
+                    </Button>
+                </div>
             </div>
         </form>
     );
