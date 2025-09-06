@@ -170,6 +170,7 @@ const StoreList = () => {
                         rows={rows}
                         loading={loading}
                         ordering={ordering}
+                        onView={(id) => setDetailId(id)}
                         onEdit={openEdit}
                         onDelete={openDelete}
                     />
