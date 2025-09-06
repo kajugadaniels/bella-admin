@@ -16,13 +16,7 @@ const AppLayout = () => {
                     <Sidebar />
 
                     {/* Main content area */}
-                    <main
-                        role="main"
-                        className="
-              pb-10
-              md:pl-4
-              md:min-h-[calc(100vh-5rem)]
-            "
+                    <main role="main" className="pb-10 md:pl-4 md:min-h-[calc(100vh-5rem)]"
                     >
                         {/* Optional top spacing below header on small screens */}
                         <div className="pt-4 md:pt-3">
