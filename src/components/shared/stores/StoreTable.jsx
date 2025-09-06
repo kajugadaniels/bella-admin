@@ -1,5 +1,5 @@
 import React from "react";
-import { MoreHorizontal, Pencil, Trash2, MapPin } from "lucide-react";
+import { Eye, MoreHorizontal, Pencil, Trash2, MapPin } from "lucide-react";
 import { format } from "date-fns";
 
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
@@ -21,7 +21,7 @@ function initials(name = "") {
     return (a + b).toUpperCase();
 }
 
-const StoreTable = ({ rows = [], loading = false, onEdit, onDelete }) => {
+const StoreTable = ({ rows = [], loading = false, onEdit, onDelete, onView }) => {
     const empty = !loading && (!rows || rows.length === 0);
 
     return (
@@ -53,7 +53,7 @@ const StoreTable = ({ rows = [], loading = false, onEdit, onDelete }) => {
                         </TableRow>
                     )}
                     {!loading &&
-                        rows?.map((r, idx) => {
+                        rows?.map((r) => {
                             const inits = initials(r.name);
                             return (
                                 <TableRow
@@ -69,7 +69,6 @@ const StoreTable = ({ rows = [], loading = false, onEdit, onDelete }) => {
                                                     className="h-9 w-9 shrink-0 rounded-lg object-cover ring-1 ring-black/5 dark:ring-white/10"
                                                 />
                                             ) : (
-                                                // NOTE: using h-7 instead of "-7" (typo) for height
                                                 <div
                                                     className="h-7 w-7 shrink-0 rounded-full grid place-items-center text-[12px] font-semibold text-white bg-gradient-to-br from-[var(--primary-color)] to-emerald-600 ring-1 ring-black/5 dark:ring-white/10"
                                                     aria-hidden
@@ -110,10 +109,10 @@ const StoreTable = ({ rows = [], loading = false, onEdit, onDelete }) => {
 
                                     <TableCell className="text-right">
                                         <div className="text-sm">
-                                            {r.created_at ? format(new Date(r.created_at), "yyyy-MM-dd") : "—"}
+                                            {r.created_at ? new Date(r.created_at).toISOString().slice(0, 10) : "—"}
                                         </div>
                                         <div className="text-xs text-neutral-500">
-                                            {r.created_at ? format(new Date(r.created_at), "HH:mm") : ""}
+                                            {r.created_at ? new Date(r.created_at).toISOString().slice(11, 16) : ""}
                                         </div>
                                     </TableCell>
 
@@ -125,6 +124,10 @@ const StoreTable = ({ rows = [], loading = false, onEdit, onDelete }) => {
                                                 </Button>
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent align="end" className="glass-menu">
+                                                <DropdownMenuItem className="cursor-pointer" onClick={() => onView?.(r.id)}>
+                                                    <Eye className="mr-2 h-4 w-4" />
+                                                    View details
+                                                </DropdownMenuItem>
                                                 {r.map_url && (
                                                     <a href={r.map_url} target="_blank" rel="noreferrer">
                                                         <DropdownMenuItem className="cursor-pointer">
