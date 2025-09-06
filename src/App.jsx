@@ -1,9 +1,27 @@
-import React from 'react'
+import React from 'react';
+import { BrowserRouter as Router } from 'react-router-dom';
+import AppRoutes from './AppRoutes';
+import { Toaster } from '@/components/ui/sonner';
 
 const App = () => {
-  return (
-    <h1 className="text-primary font-bold text-sm">Welcome to Admin portal</h1>
-  )
-}
+    return (
+        <>
+            <Router>
+                <AppRoutes />
 
-export default App
+                <Toaster
+                    position="bottom-right"
+                    richColors
+                    closeButton
+                    expand={false}
+                    duration={3000}
+                    toastOptions={{
+                        className: 'text-[14px]',
+                    }}
+                />
+            </Router>
+        </>
+    );
+};
+
+export default App;
