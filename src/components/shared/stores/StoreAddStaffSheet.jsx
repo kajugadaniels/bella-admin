@@ -30,19 +30,21 @@ const existingUserSchema = z.object({
     is_active: z.boolean().default(true),
 });
 
-const inviteSchema = z.object({
-    email: z.string().email(),
-    username: z.string().min(3),
-    phone_number: z.string().optional().or(z.literal("")),
-    password: z.string().min(8),
-    confirm_password: z.string().min(8),
-    is_admin: z.boolean().default(false),
-    permissions: z.array(z.enum(PERMS)).optional().default([]),
-    is_active: z.boolean().default(true),
-}).refine((vals) => vals.password === vals.confirm_password, {
-    message: "Passwords do not match",
-    path: ["confirm_password"],
-});
+const inviteSchema = z
+    .object({
+        email: z.string().email(),
+        username: z.string().min(3),
+        phone_number: z.string().optional().or(z.literal("")),
+        password: z.string().min(8),
+        confirm_password: z.string().min(8),
+        is_admin: z.boolean().default(false),
+        permissions: z.array(z.enum(PERMS)).optional().default([]),
+        is_active: z.boolean().default(true),
+    })
+    .refine((vals) => vals.password === vals.confirm_password, {
+        message: "Passwords do not match",
+        path: ["confirm_password"],
+    });
 
 function PermissionPicker({ value = [], onChange, disabled }) {
     return (
@@ -122,21 +124,13 @@ export default function StoreAddStaffSheet({ store, open, onOpenChange, onDone }
     const onSubmit = async () => {
         try {
             setSubmitting(true);
-            const payload =
-                tab === "existing"
-                    ? existingForm.getValues()
-                    : inviteForm.getValues();
-
-            // if admin, ignore permissions
-            const body = payload.is_admin
-                ? { ...payload, permissions: [] }
-                : payload;
+            const payload = tab === "existing" ? existingForm.getValues() : inviteForm.getValues();
+            const body = payload.is_admin ? { ...payload, permissions: [] } : payload;
 
             const { message } = await superadmin.addStoreStaff(storeId, body);
             toast.success(message || "Staff added successfully.");
             onDone?.();
             onOpenChange?.(false);
-            // reset
             existingForm.reset();
             inviteForm.reset();
         } catch (err) {
@@ -150,13 +144,15 @@ export default function StoreAddStaffSheet({ store, open, onOpenChange, onDone }
         <Sheet open={open} onOpenChange={onOpenChange}>
             <SheetContent
                 side="right"
-                className="w-[min(720px,100vw)] sm:max-w-[720px] p-0 border-l bg-white/90 backdrop-blur-xl dark:bg-neutral-950/85"
+                className="w-[min(720px,100vw)] sm:max-w-[720px] p-0 border-l bg-white/90 backdrop-blur-xl dark:bg-neutral-950/85 flex h-full flex-col"
             >
                 <div
                     className="h-1.5 w-full"
                     style={{ background: "linear-gradient(90deg, var(--primary-color), #059669)" }}
                 />
-                <div className="p-5 sm:p-6">
+
+                {/* Scrollable content */}
+                <div className="flex-1 overflow-y-auto p-5 sm:p-6">
                     <SheetHeader className="mb-3">
                         <SheetTitle className="flex items-center gap-2">
                             <UserPlus className="h-5 w-5 text-emerald-600" />
@@ -167,10 +163,16 @@ export default function StoreAddStaffSheet({ store, open, onOpenChange, onDone }
 
                     <Tabs value={tab} onValueChange={setTab} className="w-full">
                         <TabsList className="grid w-full grid-cols-2 rounded-2xl border border-black/5 bg-white/70 p-1 backdrop-blur dark:border-white/10 dark:bg-neutral-900/50">
-                            <TabsTrigger value="existing" className="data-[state=active]:bg-white dark:data-[state=active]:bg-neutral-900">
+                            <TabsTrigger
+                                value="existing"
+                                className="data-[state=active]:bg-white dark:data-[state=active]:bg-neutral-900"
+                            >
                                 Existing user
                             </TabsTrigger>
-                            <TabsTrigger value="invite" className="data-[state=active]:bg-white dark:data-[state=active]:bg-neutral-900">
+                            <TabsTrigger
+                                value="invite"
+                                className="data-[state=active]:bg-white dark:data-[state=active]:bg-neutral-900"
+                            >
                                 Invite new
                             </TabsTrigger>
                         </TabsList>
@@ -191,14 +193,18 @@ export default function StoreAddStaffSheet({ store, open, onOpenChange, onDone }
                                     <div className="grid gap-1.5">
                                         <Label>User ID</Label>
                                         <Input placeholder="b11a86… (UUID)" {...existingForm.register("user_id")} />
-                                        <p className="text-xs text-neutral-500">Paste the user’s ID from the Users list.</p>
+                                        <p className="text-xs text-neutral-500">
+                                            Paste the user’s ID from the Users list.
+                                        </p>
                                     </div>
                                     <div className="flex items-end gap-3">
                                         <div className="flex items-center gap-2">
                                             <Controller
                                                 control={existingForm.control}
                                                 name="is_admin"
-                                                render={({ field }) => <Switch checked={!!field.value} onCheckedChange={field.onChange} />}
+                                                render={({ field }) => (
+                                                    <Switch checked={!!field.value} onCheckedChange={field.onChange} />
+                                                )}
                                             />
                                             <span className="text-sm">Admin</span>
                                         </div>
@@ -206,7 +212,9 @@ export default function StoreAddStaffSheet({ store, open, onOpenChange, onDone }
                                             <Controller
                                                 control={existingForm.control}
                                                 name="is_active"
-                                                render={({ field }) => <Switch checked={!!field.value} onCheckedChange={field.onChange} />}
+                                                render={({ field }) => (
+                                                    <Switch checked={!!field.value} onCheckedChange={field.onChange} />
+                                                )}
                                             />
                                             <span className="text-sm">Active</span>
                                         </div>
@@ -258,7 +266,9 @@ export default function StoreAddStaffSheet({ store, open, onOpenChange, onDone }
                                             <Controller
                                                 control={inviteForm.control}
                                                 name="is_admin"
-                                                render={({ field }) => <Switch checked={!!field.value} onCheckedChange={field.onChange} />}
+                                                render={({ field }) => (
+                                                    <Switch checked={!!field.value} onCheckedChange={field.onChange} />
+                                                )}
                                             />
                                             <span className="text-sm">Admin</span>
                                         </div>
@@ -266,7 +276,9 @@ export default function StoreAddStaffSheet({ store, open, onOpenChange, onDone }
                                             <Controller
                                                 control={inviteForm.control}
                                                 name="is_active"
-                                                render={({ field }) => <Switch checked={!!field.value} onCheckedChange={field.onChange} />}
+                                                render={({ field }) => (
+                                                    <Switch checked={!!field.value} onCheckedChange={field.onChange} />
+                                                )}
                                             />
                                             <span className="text-sm">Active</span>
                                         </div>
@@ -274,11 +286,19 @@ export default function StoreAddStaffSheet({ store, open, onOpenChange, onDone }
 
                                     <div className="grid gap-1.5">
                                         <Label>Password</Label>
-                                        <Input type="password" placeholder="At least 8 characters" {...inviteForm.register("password")} />
+                                        <Input
+                                            type="password"
+                                            placeholder="At least 8 characters"
+                                            {...inviteForm.register("password")}
+                                        />
                                     </div>
                                     <div className="grid gap-1.5">
                                         <Label>Confirm password</Label>
-                                        <Input type="password" placeholder="Repeat password" {...inviteForm.register("confirm_password")} />
+                                        <Input
+                                            type="password"
+                                            placeholder="Repeat password"
+                                            {...inviteForm.register("confirm_password")}
+                                        />
                                     </div>
                                 </div>
 
@@ -297,27 +317,27 @@ export default function StoreAddStaffSheet({ store, open, onOpenChange, onDone }
                             </Section>
                         </TabsContent>
                     </Tabs>
+                </div>
 
-                    {/* Actions */}
-                    <div className="sticky bottom-0 mt-4 rounded-xl border border-black/5 bg-white/90 p-3 backdrop-blur-sm dark:border-white/10 dark:bg-neutral-900/70">
-                        <div className="flex items-center justify-end gap-2">
-                            <Button
-                                type="button"
-                                variant="secondary"
-                                onClick={() => onOpenChange?.(false)}
-                                className="cursor-pointer"
-                            >
-                                Cancel
-                            </Button>
-                            <Button
-                                type="button"
-                                disabled={!canSubmit}
-                                onClick={onSubmit}
-                                className="cursor-pointer text-white"
-                            >
-                                {submitting ? "Adding…" : "Add staff"}
-                            </Button>
-                        </div>
+                {/* Bottom actions (always at the very bottom) */}
+                <div className="border-t border-black/5 bg-white/90 p-3 backdrop-blur-sm dark:border-white/10 dark:bg-neutral-900/70">
+                    <div className="flex items-center justify-end gap-2">
+                        <Button
+                            type="button"
+                            variant="secondary"
+                            onClick={() => onOpenChange?.(false)}
+                            className="cursor-pointer"
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            type="button"
+                            disabled={!canSubmit}
+                            onClick={onSubmit}
+                            className="cursor-pointer text-white"
+                        >
+                            {submitting ? "Adding…" : "Add staff"}
+                        </Button>
                     </div>
                 </div>
             </SheetContent>
