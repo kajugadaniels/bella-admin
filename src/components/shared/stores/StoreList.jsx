@@ -96,11 +96,11 @@ const StoreList = () => {
     const headerRight = useMemo(
         () => (
             <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" onClick={refresh} className="glass-button">
+                <Button variant="outline" size="sm" onClick={refresh} className="glass-button rounded-4xl px-4 py-5">
                     <RefreshCw className="mr-2 h-4 w-4" />
                     Refresh
                 </Button>
-                <Button size="sm" onClick={() => setCreateOpen(true)} className="glass-cta">
+                <Button size="sm" onClick={() => setCreateOpen(true)} className="glass-cta rounded-4xl px-4 py-5">
                     <Plus className="mr-2 h-4 w-4" />
                     New store
                 </Button>

@@ -225,13 +225,13 @@ const StoreDeleteDialog = ({ store, open, onOpenChange, onDeleted }) => {
                     </div>
 
                     <AlertDialogFooter className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-                        <AlertDialogCancel disabled={submitting} className="sm:min-w-[120px] cursor-pointer">
+                        <AlertDialogCancel disabled={submitting} className="cursor-pointer px-6 py-4 rounded-4xl">
                             Cancel
                         </AlertDialogCancel>
                         <AlertDialogAction
                             onClick={remove}
                             disabled={!canDelete || submitting}
-                            className="sm:min-w-[170px] bg-red-600 hover:bg-red-700 disabled:opacity-60 text-white cursor-pointer"
+                            className="px-6 py-4 rounded-4xl glass-cta-danger disabled:opacity-60 text-white cursor-pointer"
                             style={{ boxShadow: "0 10px 24px rgba(220, 38, 38, 0.22)" }}
                         >
                             {submitting ? "Deleting…" : `Delete "${name}"`}

@@ -157,7 +157,7 @@ const Login = () => {
                 details.length ? (
                     <div className="space-y-1">
                         <p className="font-medium">{err?.message || "Login failed."}</p>
-                        <ul className="list-disc pl-5 text-[12px] leading-relaxed">
+                        <ul className="list-disc pl-5 text-sm leading-relaxed">
                             {details.slice(0, 3).map((d, i) => (
                                 <li key={i}>{d}</li>
                             ))}
@@ -202,34 +202,34 @@ const Login = () => {
             <form onSubmit={handleSubmit} className="space-y-5">
                 {/* Identifier */}
                 <div className="space-y-2">
-                    <Label htmlFor="emailOrPhone" className="text-[13px] text-neutral-700">
+                    <Label htmlFor="emailOrPhone" className="text-sm text-neutral-700">
                         Enter Email Address or Phone Number
                     </Label>
                     <div className="relative">
-                        <Mail size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
+                        <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
                         <Input
                             id="emailOrPhone"
                             name="emailOrPhone"
                             value={form.emailOrPhone}
                             onChange={onChange}
                             placeholder="inezabella@gmail.com"
-                            className="pl-10 h-[50px] rounded-lg border-neutral-300 text-sm placeholder:text-neutral-400 
+                            className="px-10 py-6 rounded-lg border-neutral-300 text-sm placeholder:text-neutral-400 
                focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:outline-none
                hover:border-neutral-400"
                         />
                     </div>
                     {fieldErr.identifier ? (
-                        <p className="text-[12px] text-red-500">{fieldErr.identifier}</p>
+                        <p className="text-sm text-red-500">{fieldErr.identifier}</p>
                     ) : null}
                 </div>
 
                 {/* Password */}
                 <div className="space-y-2">
-                    <Label htmlFor="password" className="text-[13px] text-neutral-700">
+                    <Label htmlFor="password" className="text-sm text-neutral-700">
                         Enter Password
                     </Label>
                     <div className="relative">
-                        <Lock size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
+                        <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
                         <Input
                             id="password"
                             name="password"
@@ -237,7 +237,7 @@ const Login = () => {
                             value={form.password}
                             onChange={onChange}
                             placeholder="••••••••"
-                            className="pl-10 pr-10 h-[50px] rounded-lg border-neutral-300 text-sm placeholder:text-neutral-400
+                            className="px-10 py-6 rounded-lg border-neutral-300 text-sm placeholder:text-neutral-400
                focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:outline-none
                hover:border-neutral-400"
                         />
@@ -247,11 +247,11 @@ const Login = () => {
                             onClick={() => setShowPw((s) => !s)}
                             className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 hover:opacity-80 focus:outline-none"
                         >
-                            {showPw ? <EyeOff size={18} /> : <Eye size={18} />}
+                            {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
                         </button>
                     </div>
                     {fieldErr.password ? (
-                        <p className="text-[12px] text-red-500">{fieldErr.password}</p>
+                        <p className="text-sm text-red-500">{fieldErr.password}</p>
                     ) : null}
                 </div>
 
@@ -264,11 +264,11 @@ const Login = () => {
                             onCheckedChange={(checked) => setForm((s) => ({ ...s, remember: !!checked }))}
                             className="border-neutral-300 data-[state=checked]:bg-primary data-[state=checked]:text-white"
                         />
-                        <Label htmlFor="remember" className="text-[13px] text-neutral-700 cursor-pointer">
+                        <Label htmlFor="remember" className="text-sm text-neutral-700 cursor-pointer">
                             Remember Me
                         </Label>
                     </div>
-                    <Link to="/forget-password" className="text-[13px] text-primary hover:opacity-80">
+                    <Link to="/forget-password" className="text-sm text-primary hover:opacity-80">
                         Forget Password?
                     </Link>
                 </div>
@@ -278,7 +278,7 @@ const Login = () => {
                     <Button
                         type="submit"
                         disabled={loading}
-                        className="w-full h-[50px] rounded-lg bg-[var(--primary-color)] text-white hover:opacity-95 active:opacity-90 outline-none focus-visible:outline-none cursor-pointer"
+                        className="w-full px-6 py-6 rounded-4xl glass-cta text-white hover:opacity-95 active:opacity-90 outline-none focus-visible:outline-none cursor-pointer"
                     >
                         {loading ? (
                             <span className="inline-flex items-center gap-2">
@@ -303,7 +303,7 @@ const Login = () => {
                     <Button
                         type="button"
                         variant="outline"
-                        className="w-full h-[50px] rounded-lg border-neutral-300 text-neutral-800 
+                        className="w-full px-6 py-6 rounded-4xl glass-button border-neutral-300 text-neutral-800 
              hover:bg-neutral-50 outline-none focus-visible:outline-none"
                         onClick={() => toast.info("Google sign-in coming soon.")}
                     >

@@ -60,21 +60,21 @@ const StoreCard = ({ r, onView, onEdit, onDelete, onAddStaff }) => {
                     <div className="mt-3 flex flex-wrap items-center gap-2">
                         {r.map_url && (
                             <a href={r.map_url} target="_blank" rel="noreferrer" className="contents">
-                                <Button variant="outline" size="sm" className="glass-button">
+                                <Button variant="outline" size="sm" className="glass-button px-6 py-4 rounded-4xl">
                                     <MapPin className="mr-2 h-4 w-4" />
                                     Map
                                 </Button>
                             </a>
                         )}
-                        <Button variant="outline" size="sm" onClick={() => onView?.(r.id)} className="glass-button">
+                        <Button variant="outline" size="sm" onClick={() => onView?.(r.id)} className="glass-button px-6 py-4 rounded-4xl">
                             <Eye className="mr-2 h-4 w-4" />
                             View
                         </Button>
-                        <Button variant="outline" size="sm" onClick={() => onEdit?.(r.id)} className="glass-button">
+                        <Button variant="outline" size="sm" onClick={() => onEdit?.(r.id)} className="glass-button px-6 py-4 rounded-4xl">
                             <Pencil className="mr-2 h-4 w-4" />
                             Edit
                         </Button>
-                        <Button size="sm" onClick={() => onAddStaff?.(r)} className="glass-cta">
+                        <Button size="sm" onClick={() => onAddStaff?.(r)} className="glass-cta px-6 py-4 rounded-4xl">
                             <UserPlus className="mr-2 h-4 w-4" />
                             Add staff
                         </Button>
@@ -82,7 +82,7 @@ const StoreCard = ({ r, onView, onEdit, onDelete, onAddStaff }) => {
                             variant="ghost"
                             size="sm"
                             onClick={() => onDelete?.(r)}
-                            className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/20"
+                            className="glass-cta-danger px-6 py-4 rounded-4xl hover:bg-red-50 dark:hover:bg-red-950/20"
                         >
                             <Trash2 className="mr-2 h-4 w-4" />
                             Delete

@@ -141,6 +141,17 @@ button:focus,input:focus,select:focus,textarea:focus { outline: none !important;
   filter: brightness(1.05);
   box-shadow: 0 8px 22px rgba(5, 150, 105, 0.35);
 }
+.glass-cta-danger {
+  background: linear-gradient(135deg, var(--danger-color), #960518);
+  color: #fff;
+  border: 0 !important;
+  box-shadow: 0 6px 18px rgba(150, 5, 12, 0.25);
+  cursor: pointer;
+}
+.glass-cta-danger:hover {
+  filter: brightness(1.05);
+  box-shadow: 0 14px 32px rgba(150, 5, 5, 0.35);
+}
 
 /* Dropdown menu glass */
 .glass-menu {

@@ -183,7 +183,7 @@ export default function StoreAddStaffSheet({ store, open, onOpenChange, onDone }
                                 title="User details"
                                 extra={
                                     existingForm.watch("is_admin") && (
-                                        <Badge className="flex items-center gap-1">
+                                        <Badge className="flex items-center gap-1 text-white">
                                             <ShieldCheck className="h-3.5 w-3.5" /> Admin
                                         </Badge>
                                     )
@@ -242,7 +242,7 @@ export default function StoreAddStaffSheet({ store, open, onOpenChange, onDone }
                                 title="Invite details"
                                 extra={
                                     inviteForm.watch("is_admin") && (
-                                        <Badge className="flex items-center gap-1">
+                                        <Badge className="flex items-center gap-1 text-white">
                                             <ShieldCheck className="h-3.5 w-3.5" /> Admin
                                         </Badge>
                                     )
@@ -326,7 +326,7 @@ export default function StoreAddStaffSheet({ store, open, onOpenChange, onDone }
                             type="button"
                             variant="secondary"
                             onClick={() => onOpenChange?.(false)}
-                            className="cursor-pointer"
+                            className="cursor-pointer px-6 py-4 rounded-4xl"
                         >
                             Cancel
                         </Button>
@@ -334,7 +334,7 @@ export default function StoreAddStaffSheet({ store, open, onOpenChange, onDone }
                             type="button"
                             disabled={!canSubmit}
                             onClick={onSubmit}
-                            className="cursor-pointer text-white"
+                            className="cursor-pointer text-white px-6 py-4 rounded-4xl"
                         >
                             {submitting ? "Adding…" : "Add staff"}
                         </Button>

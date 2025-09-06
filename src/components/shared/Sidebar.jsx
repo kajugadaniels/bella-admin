@@ -33,21 +33,20 @@ const LS_KEY = "bella_sidebar_collapsed";
 
 /** A tiny composable nav item */
 const NavItem = ({ to, icon: Icon, label, collapsed, end = false }) => {
-    const base = "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors";
+    const base =
+        "flex items-center gap-3 rounded-4xl px-3 py-3.5 text-sm transition-colors ring-0";
+    const activeGradient =
+        "bg-gradient-to-r from-[var(--primary-color)] to-emerald-600 text-white shadow-sm";
+    const idle =
+        "text-neutral-700 hover:bg-neutral-100 hover:text-neutral-900 dark:text-neutral-300 dark:hover:bg-neutral-800 dark:hover:text-white";
+
     return (
         <NavLink
             to={to}
             end={end}
-            className={({ isActive }) =>
-                cn(
-                    base,
-                    isActive
-                        ? "bg-primary/10 text-primary hover:bg-primary/15"
-                        : "text-neutral-700 hover:bg-neutral-100 hover:text-neutral-900 dark:text-neutral-300 dark:hover:bg-neutral-800 dark:hover:text-white"
-                )
-            }
+            className={({ isActive }) => cn(base, isActive ? activeGradient : idle)}
         >
-            <Icon className="h-[18px] w-[18px] shrink-0" />
+            <Icon className="h-[14px] w-[14px] shrink-0" />
             <AnimatePresence initial={false}>
                 {!collapsed && (
                     <motion.span
@@ -204,14 +203,14 @@ const Sidebar = () => {
                                     to="/settings"
                                     className={({ isActive }) =>
                                         cn(
-                                            "flex items-center gap-3 rounded-lg px-3 py-2 text-sm",
+                                            "flex items-center gap-3 rounded-4xl px-3 py-3.5 text-sm transition-colors ring-0",
                                             isActive
-                                                ? "bg-primary/10 text-primary"
+                                                ? "bg-gradient-to-r from-[var(--primary-color)] to-emerald-600 text-white shadow-sm"
                                                 : "text-neutral-700 hover:bg-neutral-100 hover:text-neutral-900 dark:text-neutral-300 dark:hover:bg-neutral-800 dark:hover:text-white"
                                         )
                                     }
                                 >
-                                    <Settings className="h-[18px] w-[18px] shrink-0" />
+                                    <Settings className="h-[14px] w-[14px] shrink-0" />
                                     <AnimatePresence initial={false}>
                                         {!collapsed && (
                                             <motion.span
@@ -229,11 +228,11 @@ const Sidebar = () => {
                                 <button
                                     onClick={logout}
                                     className={cn(
-                                        "w-full text-left flex items-center gap-3 rounded-lg px-3 py-2 text-sm",
+                                        "w-full text-left flex items-center gap-3 rounded-4xl px-3 py-3.5 text-sm cursor-pointer",
                                         "text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
                                     )}
                                 >
-                                    <LogOut className="h-[18px] w-[18px] shrink-0" />
+                                    <LogOut className="h-[14px] w-[14px] shrink-0" />
                                     <AnimatePresence initial={false}>
                                         {!collapsed && (
                                             <motion.span
@@ -242,7 +241,7 @@ const Sidebar = () => {
                                                 exit={{ opacity: 0, x: -6 }}
                                                 transition={{ duration: 0.18 }}
                                             >
-                                                Sign out
+                                                Sign Out
                                             </motion.span>
                                         )}
                                     </AnimatePresence>
@@ -259,7 +258,7 @@ const Sidebar = () => {
                     side="left"
                     className={cn(
                         "w-[85%] p-0",
-                        "bg-white/85 backdrop-blur supports-[backdrop-filter]:bg-white/70",
+                        "bg-white backdrop-blur supports-[backdrop-filter]:bg-white",
                         "dark:bg-neutral-900/70 dark:supports-[backdrop-filter]:bg-neutral-900/50"
                     )}
                 >
@@ -278,14 +277,14 @@ const Sidebar = () => {
                                         onClick={() => setOpen(false)}
                                         className={({ isActive }) =>
                                             cn(
-                                                "flex items-center gap-3 rounded-lg px-3 py-2 text-[15px]",
+                                                "flex items-center gap-3 rounded-4xl px-4 py-3.5 text-sm transition-colors",
                                                 isActive
-                                                    ? "bg-primary/10 text-primary"
+                                                    ? "bg-gradient-to-r from-[var(--primary-color)] to-emerald-600 text-white shadow-sm"
                                                     : "text-neutral-800 hover:bg-neutral-100 dark:text-neutral-200 dark:hover:bg-neutral-800"
                                             )
                                         }
                                     >
-                                        <n.icon className="h-[18px] w-[18px]" />
+                                        <n.icon className="h-[14px] w-[14px]" />
                                         <span>{n.label}</span>
                                     </NavLink>
                                 ))}
@@ -299,9 +298,9 @@ const Sidebar = () => {
                                     onClick={() => setOpen(false)}
                                     className={({ isActive }) =>
                                         cn(
-                                            "rounded-lg px-3 py-2 text-sm text-center",
+                                            "rounded-4xl  px-3 py-3.5 text-sm text-center transition-colors",
                                             isActive
-                                                ? "bg-primary/10 text-primary"
+                                                ? "bg-gradient-to-r from-[var(--primary-color)] to-emerald-600 text-white shadow-sm"
                                                 : "bg-white/60 text-neutral-700 hover:bg-neutral-100 border border-neutral-200",
                                             "dark:bg-neutral-900/50 dark:text-neutral-200 dark:hover:bg-neutral-800 dark:border-neutral-800"
                                         )
@@ -315,7 +314,7 @@ const Sidebar = () => {
                                         logout();
                                     }}
                                     className={cn(
-                                        "rounded-lg px-3 py-2 text-sm text-center",
+                                        "rounded-4xl  px-3 py-3.5 text-sm text-center cursor-pointer",
                                         "bg-white/60 text-red-600 hover:bg-red-50 border border-red-200",
                                         "dark:bg-neutral-900/50 dark:hover:bg-red-900/20 dark:border-red-900/40"
                                     )}

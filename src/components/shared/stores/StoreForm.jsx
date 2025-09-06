@@ -517,9 +517,9 @@ const StoreForm = ({ defaultValues, onSubmit, submitting = false, mode = "create
                                     is_active: true,
                                 })
                             }
-                            className="cursor-pointer"
+                            className="cursor-pointer px-6 py-4 rounded-4xl"
                         >
-                            <Plus className="mr-2 h-4 w-4" />
+                            <Plus className="h-4 w-4" />
                             Add invite
                         </Button>
                     }
@@ -538,10 +538,10 @@ const StoreForm = ({ defaultValues, onSubmit, submitting = false, mode = "create
             {/* Sticky bottom actions */}
             <div className="sticky bottom-0 z-10 mt-2 rounded-xl border border-black/5 bg-white/85 p-3 backdrop-blur-sm dark:border-white/10 dark:bg-neutral-900/70">
                 <div className="flex items-center justify-end gap-2">
-                    <Button type="button" variant="secondary" onClick={() => history.back()} className="cursor-pointer">
+                    <Button variant="secondary" onClick={() => history.back()} className="cursor-pointer px-6 py-4 rounded-4xl">
                         Cancel
                     </Button>
-                    <Button type="submit" disabled={submitting || !formState.isValid} className="text-white cursor-pointer">
+                    <Button type="submit" disabled={submitting || !formState.isValid} className="text-white cursor-pointer px-6 py-4 rounded-4xl glass-cta">
                         {submitting ? "Saving…" : "Save store"}
                     </Button>
                 </div>

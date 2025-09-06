@@ -70,7 +70,7 @@ const GlassCard = ({ className = "", children }) => (
 const StatChip = ({ icon: Icon, label, value, hint }) => (
     <div className="flex items-center gap-3 rounded-2xl border border-neutral-200/80 bg-white/70 p-3 backdrop-blur-md dark:border-neutral-800 dark:bg-neutral-900/60">
         <div
-            className="grid h-10 w-10 place-items-center rounded-xl text-white ring-1 ring-black/5 dark:ring-white/10"
+            className="grid px-3 py-3 place-items-center rounded-4xl text-white ring-1 ring-black/5 dark:ring-white/10"
             style={{ background: "linear-gradient(135deg, var(--primary-color), #059669)" }}
         >
             <Icon className="h-5 w-5" />
@@ -374,17 +374,15 @@ const StoreDetailSheet = ({ id, open, onOpenChange }) => {
                                     </div>
 
                                     <div className="flex flex-wrap items-center gap-2">
-                                        <Button variant="outline" size="sm" onClick={copyId} className="cursor-pointer">
+                                            <Button variant="outline" onClick={copyId} className="cursor-pointer px-6 py-4 rounded-4xl">
                                             <ClipboardCopy className="mr-2 h-4 w-4" />
                                             Copy ID
                                         </Button>
 
                                         {/* Add staff action */}
                                         <Button
-                                            size="sm"
                                             onClick={() => setAddOpen(true)}
-                                            className="cursor-pointer text-white"
-                                            style={{ background: "var(--primary-color)" }}
+                                            className="cursor-pointer text-white px-6 py-4 rounded-4xl glass-cta"
                                         >
                                             <UserPlus className="mr-2 h-4 w-4" />
                                             Add staff
@@ -392,7 +390,7 @@ const StoreDetailSheet = ({ id, open, onOpenChange }) => {
 
                                         {contact.email && (
                                             <a href={`mailto:${contact.email}`} className="contents">
-                                                <Button variant="outline" size="sm" className="cursor-pointer">
+                                                    <Button variant="outline" className="cursor-pointer px-6 py-4 rounded-4xl">
                                                     <Mail className="mr-2 h-4 w-4" />
                                                     Email
                                                 </Button>
@@ -400,7 +398,7 @@ const StoreDetailSheet = ({ id, open, onOpenChange }) => {
                                         )}
                                         {contact.phone_number && (
                                             <a href={`tel:${contact.phone_number}`} className="contents">
-                                                <Button variant="outline" size="sm" className="cursor-pointer">
+                                                    <Button variant="outline" className="cursor-pointer px-6 py-4 rounded-4xl">
                                                     <Phone className="mr-2 h-4 w-4" />
                                                     Call
                                                 </Button>
@@ -414,9 +412,7 @@ const StoreDetailSheet = ({ id, open, onOpenChange }) => {
                                                 className="contents"
                                             >
                                                 <Button
-                                                    size="sm"
-                                                    className="cursor-pointer text-white"
-                                                    style={{ background: "var(--primary-color)" }}
+                                                    className="cursor-pointer text-white px-6 py-4 rounded-4xl glass-cta"
                                                 >
                                                     <MapPin className="mr-2 h-4 w-4" />
                                                     Open map

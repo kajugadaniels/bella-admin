@@ -117,7 +117,7 @@ const Header = () => {
                         aria-label="Bella Admin"
                     >
                         <div className="h-6 w-6 rounded-lg bg-primary/90" />
-                        <span className="text-lg font-semibold tracking-tight text-neutral-900 dark:text-neutral-50">
+                        <span className="text-lg font-semibold tracking-tight text-black">
                             Bella Admin
                         </span>
                     </div>
