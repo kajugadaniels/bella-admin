@@ -1,222 +1,281 @@
-import React from "react";
-import { useForm, useFieldArray } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
-import { Button } from "@/components/ui/button";
+import React, { useMemo, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Plus, Trash2, Shield, Settings2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Trash2, Plus } from "lucide-react";
+import { cn } from "@/lib/utils";
 
-const baseSchema = z.object({
-    name: z.string().min(2, "Name is required"),
-    email: z.string().email("Invalid email").optional().or(z.literal("")),
-    phone_number: z.string().optional().or(z.literal("")),
-    address: z.string().optional().or(z.literal("")),
-    province: z.string().optional().or(z.literal("")),
-    district: z.string().optional().or(z.literal("")),
-    sector: z.string().optional().or(z.literal("")),
-    cell: z.string().optional().or(z.literal("")),
-    village: z.string().optional().or(z.literal("")),
-    map_url: z.string().url("Invalid URL").optional().or(z.literal("")),
-    image: z.any().optional(),
-    // update-only
-    remove_image: z.boolean().optional(),
-});
+const STAFF_PERMS = ["read", "write", "edit", "delete"];
 
-const staffItem = z.object({
-    email: z.string().email(),
-    username: z.string().optional().or(z.literal("")),
-    phone_number: z.string().optional().or(z.literal("")),
-    is_admin: z.boolean().default(false),
-    permissions: z.array(z.enum(["read", "write", "edit", "delete"])).optional().default([]),
-    is_active: z.boolean().optional().default(true),
-});
-
-const createSchema = baseSchema.extend({
-    staff: z.array(staffItem).optional().default([]),
-});
-
-const StoreForm = ({
-    defaultValues,
-    onSubmit,
+export default function StoreForm({
+    mode = "create",                // "create" | "update"
+    initial = null,                 // initial store data (update mode)
+    onSubmit,                       // (payload: FormData|object) => Promise<void>
     submitting = false,
-    mode = "create", // "create" | "update"
-}) => {
-    const isCreate = mode === "create";
+}) {
+    const [form, setForm] = useState(() => ({
+        name: initial?.name || "",
+        email: initial?.contact?.email || initial?.email || "",
+        phone_number: initial?.contact?.phone_number || initial?.phone_number || "",
+        address: initial?.contact?.address || initial?.address || "",
+        province: initial?.location?.province || initial?.province || "",
+        district: initial?.location?.district || initial?.district || "",
+        sector: initial?.location?.sector || initial?.sector || "",
+        cell: initial?.location?.cell || initial?.cell || "",
+        village: initial?.location?.village || initial?.village || "",
+        map_url: initial?.location?.map_url || initial?.map_url || "",
+        image: null,
+        remove_image: false,
+    }));
 
-    const form = useForm({
-        defaultValues: {
-            name: "",
-            email: "",
-            phone_number: "",
-            address: "",
-            province: "",
-            district: "",
-            sector: "",
-            cell: "",
-            village: "",
-            map_url: "",
-            image: null,
-            remove_image: false,
-            staff: [],
-            ...(defaultValues || {}),
-        },
-        resolver: zodResolver(isCreate ? createSchema : baseSchema),
-        mode: "onChange",
-    });
+    const [withStaff, setWithStaff] = useState(false);
+    const [staff, setStaff] = useState([
+        { email: "", username: "", phone_number: "", is_admin: false, permissions: ["read"], is_active: true },
+    ]);
 
-    const { control, handleSubmit, register, watch, setValue } = form;
-    const { fields, append, remove } = useFieldArray({ control, name: "staff" });
+    const setField = (k, v) => setForm((s) => ({ ...s, [k]: v }));
+
+    const canSubmit = useMemo(() => {
+        return !!form.name && !submitting;
+    }, [form.name, submitting]);
+
+    const handleStaffChange = (idx, k, v) => {
+        setStaff((rows) => {
+            const copy = [...rows];
+            if (k === "is_admin" && v) {
+                copy[idx] = { ...copy[idx], is_admin: true, permissions: [...STAFF_PERMS] };
+            } else if (k === "is_admin" && !v) {
+                copy[idx] = { ...copy[idx], is_admin: false, permissions: copy[idx].permissions?.length ? copy[idx].permissions : ["read"] };
+            } else if (k === "permissions") {
+                copy[idx] = { ...copy[idx], permissions: v };
+            } else {
+                copy[idx] = { ...copy[idx], [k]: v };
+            }
+            return copy;
+        });
+    };
+
+    const submit = async (e) => {
+        e.preventDefault();
+
+        if (mode === "create") {
+            const payload = new FormData();
+            Object.entries(form).forEach(([k, v]) => {
+                if (k === "image") {
+                    if (v) payload.append("image", v);
+                } else {
+                    if (v !== "" && v !== null && v !== undefined) payload.append(k, v);
+                }
+            });
+            if (withStaff) {
+                payload.append("staff", JSON.stringify(staff.filter((s) => s.email)));
+            }
+            await onSubmit(payload);
+            return;
+        }
+
+        // update -> PATCH (accepts JSON or multipart). We support both.
+        const isMultipart = !!form.image || form.remove_image;
+        if (isMultipart) {
+            const payload = new FormData();
+            Object.entries(form).forEach(([k, v]) => {
+                if (k === "image") {
+                    if (v) payload.append("image", v);
+                } else if (k === "remove_image") {
+                    payload.append("remove_image", v ? "true" : "false");
+                } else if (v !== "" && v !== null && v !== undefined) {
+                    payload.append(k, v);
+                }
+            });
+            await onSubmit(payload, true);
+        } else {
+            const json = { ...form };
+            delete json.image;
+            await onSubmit(json, false);
+        }
+    };
 
     return (
-        <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4">
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <div className="space-y-3">
-                    <div className="grid gap-1.5">
-                        <Label htmlFor="name">Store name</Label>
-                        <Input id="name" placeholder="e.g., Simba UTC" {...register("name")} />
-                    </div>
-
-                    <div className="grid gap-1.5">
-                        <Label htmlFor="email">Email</Label>
-                        <Input id="email" type="email" placeholder="store@example.com" {...register("email")} />
-                    </div>
-
-                    <div className="grid gap-1.5">
-                        <Label htmlFor="phone_number">Phone</Label>
-                        <Input id="phone_number" placeholder="0788…" {...register("phone_number")} />
-                    </div>
-
-                    <div className="grid gap-1.5">
-                        <Label htmlFor="address">Address</Label>
-                        <Input id="address" placeholder="Street / Avenue" {...register("address")} />
-                    </div>
-
-                    <div className="grid gap-1.5">
-                        <Label htmlFor="map_url">Google maps URL</Label>
-                        <Input id="map_url" placeholder="https://maps.google.com/…" {...register("map_url")} />
-                    </div>
+        <form onSubmit={submit} className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                    <Label htmlFor="name">Name *</Label>
+                    <Input id="name" value={form.name} onChange={(e) => setField("name", e.target.value)} placeholder="Kimironko Supermarket" />
                 </div>
-
-                <div className="space-y-3">
-                    <div className="grid gap-1.5">
-                        <Label htmlFor="province">Province</Label>
-                        <Input id="province" placeholder="Kigali" {...register("province")} />
-                    </div>
-                    <div className="grid gap-1.5">
-                        <Label htmlFor="district">District</Label>
-                        <Input id="district" placeholder="Nyarugenge" {...register("district")} />
-                    </div>
-                    <div className="grid gap-1.5">
-                        <Label htmlFor="sector">Sector</Label>
-                        <Input id="sector" placeholder="Nyamirambo" {...register("sector")} />
-                    </div>
-                    <div className="grid gap-1.5">
-                        <Label htmlFor="cell">Cell</Label>
-                        <Input id="cell" placeholder="Muganza" {...register("cell")} />
-                    </div>
-                    <div className="grid gap-1.5">
-                        <Label htmlFor="village">Village</Label>
-                        <Input id="village" placeholder="Agasasa" {...register("village")} />
-                    </div>
+                <div>
+                    <Label htmlFor="email">Email</Label>
+                    <Input id="email" type="email" value={form.email} onChange={(e) => setField("email", e.target.value)} placeholder="info@store.rw" />
+                </div>
+                <div>
+                    <Label htmlFor="phone">Phone</Label>
+                    <Input id="phone" value={form.phone_number} onChange={(e) => setField("phone_number", e.target.value)} placeholder="+25078…" />
+                </div>
+                <div>
+                    <Label htmlFor="address">Address</Label>
+                    <Input id="address" value={form.address} onChange={(e) => setField("address", e.target.value)} placeholder="KG 11 Ave, Kigali" />
                 </div>
             </div>
 
-            <Separator />
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                <div>
+                    <Label htmlFor="province">Province</Label>
+                    <Input id="province" value={form.province} onChange={(e) => setField("province", e.target.value)} placeholder="Kigali City" />
+                </div>
+                <div>
+                    <Label htmlFor="district">District</Label>
+                    <Input id="district" value={form.district} onChange={(e) => setField("district", e.target.value)} placeholder="Gasabo" />
+                </div>
+                <div>
+                    <Label htmlFor="sector">Sector</Label>
+                    <Input id="sector" value={form.sector} onChange={(e) => setField("sector", e.target.value)} placeholder="Kimironko" />
+                </div>
+                <div>
+                    <Label htmlFor="cell">Cell</Label>
+                    <Input id="cell" value={form.cell} onChange={(e) => setField("cell", e.target.value)} placeholder="..." />
+                </div>
+                <div>
+                    <Label htmlFor="village">Village</Label>
+                    <Input id="village" value={form.village} onChange={(e) => setField("village", e.target.value)} placeholder="..." />
+                </div>
+                <div className="sm:col-span-2 lg:col-span-1">
+                    <Label htmlFor="map">Map URL</Label>
+                    <Input id="map" value={form.map_url} onChange={(e) => setField("map_url", e.target.value)} placeholder="https://maps.google.com/?q=…" />
+                </div>
+            </div>
 
-            {/* Image controls */}
-            <div className="grid grid-cols-1 items-end gap-3 md:grid-cols-2">
-                <div className="grid gap-1.5">
-                    <Label htmlFor="image">Image</Label>
-                    <Input id="image" type="file" accept="image/*" {...register("image")} />
-                    {!isCreate && (
-                        <div className="flex items-center gap-2 pt-1">
-                            <Switch id="remove_image" {...register("remove_image")} />
-                            <Label htmlFor="remove_image" className="text-xs text-neutral-600">
-                                Remove current image
-                            </Label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                    <Label htmlFor="image">Image (square)</Label>
+                    <Input
+                        id="image"
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => setField("image", e.target.files?.[0] || null)}
+                    />
+                    {mode === "update" && (
+                        <div className="mt-2 flex items-center gap-2">
+                            <Checkbox id="remove_image" checked={form.remove_image} onCheckedChange={(v) => setField("remove_image", !!v)} />
+                            <Label htmlFor="remove_image" className="text-sm text-red-600">Remove current image</Label>
                         </div>
                     )}
                 </div>
             </div>
 
-            {/* Staff (create-only) */}
-            {isCreate && (
+            {mode === "create" && (
                 <>
-                    <Separator />
-                    <Card>
-                        <CardHeader className="py-4">
-                            <CardTitle className="text-base">Invite staff (optional)</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-3">
-                            {fields.length === 0 && (
-                                <div className="text-sm text-neutral-500">No invites added. You can add them later.</div>
-                            )}
+                    <Separator className="my-1" />
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <Checkbox id="with_staff" checked={withStaff} onCheckedChange={(v) => setWithStaff(!!v)} />
+                            <Label htmlFor="with_staff" className="cursor-pointer">Add staff now (optional)</Label>
+                        </div>
+                        {withStaff && (
+                            <Badge variant="secondary" className="flex gap-1 items-center">
+                                <Shield className="h-3.5 w-3.5" /> Admins get all permissions
+                            </Badge>
+                        )}
+                    </div>
 
-                            {fields.map((f, idx) => (
-                                <div key={f.id} className="grid grid-cols-1 gap-3 rounded-lg border p-3 md:grid-cols-12">
-                                    <div className="md:col-span-3">
-                                        <Label>Email</Label>
-                                        <Input placeholder="user@example.com" {...register(`staff.${idx}.email`)} />
-                                    </div>
-                                    <div className="md:col-span-3">
-                                        <Label>Username</Label>
-                                        <Input placeholder="username" {...register(`staff.${idx}.username`)} />
-                                    </div>
-                                    <div className="md:col-span-3">
-                                        <Label>Phone</Label>
-                                        <Input placeholder="07…" {...register(`staff.${idx}.phone_number`)} />
-                                    </div>
-                                    <div className="md:col-span-2 flex flex-col justify-end">
-                                        <div className="flex items-center gap-2">
-                                            <Switch {...register(`staff.${idx}.is_admin`)} />
-                                            <span className="text-sm">Admin</span>
-                                        </div>
-                                        <p className="text-xs text-neutral-500">Admins get all permissions.</p>
-                                    </div>
-                                    <div className="md:col-span-1 flex items-end justify-end">
-                                        <Button
-                                            type="button"
-                                            variant="ghost"
-                                            size="icon"
-                                            className="text-red-600"
-                                            onClick={() => remove(idx)}
-                                        >
-                                            <Trash2 className="h-4 w-4" />
-                                        </Button>
-                                    </div>
-                                    <div className="md:col-span-12 text-xs text-neutral-500">
-                                        If not admin, you can set permissions later.
-                                    </div>
-                                </div>
-                            ))}
-
-                            <Button
-                                type="button"
-                                variant="outline"
-                                onClick={() =>
-                                    append({ email: "", username: "", phone_number: "", is_admin: false, permissions: ["read"], is_active: true })
-                                }
+                    <AnimatePresence initial={false}>
+                        {withStaff && (
+                            <motion.div
+                                initial={{ height: 0, opacity: 0 }}
+                                animate={{ height: "auto", opacity: 1 }}
+                                exit={{ height: 0, opacity: 0 }}
+                                transition={{ duration: 0.25 }}
+                                className="space-y-3 overflow-hidden"
                             >
-                                <Plus className="mr-2 h-4 w-4" />
-                                Add invite
-                            </Button>
-                        </CardContent>
-                    </Card>
+                                {staff.map((row, i) => (
+                                    <div key={i} className="rounded-xl border p-3">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                                            <div className="lg:col-span-2">
+                                                <Label>Email *</Label>
+                                                <Input value={row.email} onChange={(e) => handleStaffChange(i, "email", e.target.value)} placeholder="staff@store.rw" />
+                                            </div>
+                                            <div>
+                                                <Label>Username</Label>
+                                                <Input value={row.username} onChange={(e) => handleStaffChange(i, "username", e.target.value)} placeholder="john.doe" />
+                                            </div>
+                                            <div>
+                                                <Label>Phone</Label>
+                                                <Input value={row.phone_number} onChange={(e) => handleStaffChange(i, "phone_number", e.target.value)} placeholder="0788…" />
+                                            </div>
+                                        </div>
+
+                                        <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                            <div className="flex items-center gap-2">
+                                                <Checkbox
+                                                    id={`is_admin_${i}`}
+                                                    checked={row.is_admin}
+                                                    onCheckedChange={(v) => handleStaffChange(i, "is_admin", !!v)}
+                                                />
+                                                <Label htmlFor={`is_admin_${i}`}>Admin</Label>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <Checkbox
+                                                    id={`is_active_${i}`}
+                                                    checked={row.is_active}
+                                                    onCheckedChange={(v) => handleStaffChange(i, "is_active", !!v)}
+                                                />
+                                                <Label htmlFor={`is_active_${i}`}>Active</Label>
+                                            </div>
+                                        </div>
+
+                                        <div className="mt-3">
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <Settings2 className="h-4 w-4" />
+                                                <span className="text-sm font-medium">Permissions</span>
+                                            </div>
+                                            <div className="flex flex-wrap gap-3">
+                                                {STAFF_PERMS.map((p) => {
+                                                    const checked = row.permissions?.includes(p);
+                                                    return (
+                                                        <label key={p} className={cn("inline-flex items-center gap-2 text-sm cursor-pointer")}>
+                                                            <Checkbox
+                                                                checked={checked}
+                                                                disabled={row.is_admin}
+                                                                onCheckedChange={(v) => {
+                                                                    if (row.is_admin) return;
+                                                                    const next = new Set(row.permissions || []);
+                                                                    if (v) next.add(p); else next.delete(p);
+                                                                    handleStaffChange(i, "permissions", Array.from(next));
+                                                                }}
+                                                            />
+                                                            {p}
+                                                        </label>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+
+                                        <div className="mt-3 flex justify-end">
+                                            {staff.length > 1 && (
+                                                <Button type="button" variant="destructive" size="sm" onClick={() => setStaff((r) => r.filter((_, idx) => idx !== i))}>
+                                                    <Trash2 className="mr-1.5 h-4 w-4" /> Remove
+                                                </Button>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))}
+                                <Button type="button" variant="secondary" onClick={() => setStaff((r) => [...r, { email: "", username: "", phone_number: "", is_admin: false, permissions: ["read"], is_active: true }])}>
+                                    <Plus className="mr-1.5 h-4 w-4" /> Add another staff
+                                </Button>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
                 </>
             )}
 
-            <div className="flex items-center justify-end gap-2 pt-2">
-                <Button type="submit" disabled={submitting}>
-                    {submitting ? "Saving…" : "Save"}
+            <div className="pt-1 flex items-center justify-end gap-2">
+                <Button type="submit" disabled={!canSubmit} className="min-w-[120px]">
+                    {submitting ? (mode === "create" ? "Creating…" : "Saving…") : (mode === "create" ? "Create Store" : "Save Changes")}
                 </Button>
             </div>
         </form>
     );
-};
-
-export default StoreForm;
+}
