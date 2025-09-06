@@ -9,6 +9,9 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      // --- TEMP FIX for resolvers built against Zod v4 entrypoints
+      "zod/v4/core": "zod",
+      "zod/v4": "zod",
     },
   },
 })

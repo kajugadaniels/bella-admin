@@ -9,12 +9,12 @@ import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { useDebounce } from "@/hooks/useDebounce"; // optional; fallback included below
 import StoreFilters from "./StoreFilters";
 import StoreTable from "./StoreTable";
 import StoreCreateSheet from "./StoreCreateSheet";
 import StoreUpdateSheet from "./StoreUpdateSheet";
 import StoreDeleteDialog from "./StoreDeleteDialog";
+import useDebounce from "@/hooks/useDebounce";
 
 // Fallback simple debounce hook if you don't have a shared one
 // Comment out if you already have "@/hooks/useDebounce".
