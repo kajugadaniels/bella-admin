@@ -162,12 +162,6 @@ const Login = () => {
         <div className="w-full">
             <div className="mb-7">
                 <h1 className="text-[32px] leading-none font-bold text-neutral-900">Sign In</h1>
-                <p className="mt-3 text-sm text-neutral-600">
-                    Don’t have an account?{" "}
-                    <Link to="/register" className="text-primary font-medium hover:opacity-80">
-                        Create Now
-                    </Link>
-                </p>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-5">
@@ -184,7 +178,7 @@ const Login = () => {
                             value={form.emailOrPhone}
                             onChange={onChange}
                             placeholder="inezabella@gmail.com"
-                            className="pl-10 h-[50px] rounded-lg border-neutral-300 text-sm placeholder:text-neutral-400 
+                            className="pl-10 py-6 rounded-lg border-neutral-300 text-sm placeholder:text-neutral-400 
                focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:outline-none
                hover:border-neutral-400"
                         />
@@ -208,7 +202,7 @@ const Login = () => {
                             value={form.password}
                             onChange={onChange}
                             placeholder="••••••••"
-                            className="pl-10 pr-10 h-[50px] rounded-lg border-neutral-300 text-sm placeholder:text-neutral-400
+                            className="pl-10 pr-10 py-6 rounded-lg border-neutral-300 text-sm placeholder:text-neutral-400
                focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:outline-none
                hover:border-neutral-400"
                         />
@@ -249,7 +243,7 @@ const Login = () => {
                     <Button
                         type="submit"
                         disabled={loading}
-                        className="w-full h-[50px] rounded-lg bg-[var(--primary-color)] text-white 
+                        className="w-full py-6 rounded-lg bg-[var(--primary-color)] text-white 
              hover:opacity-95 active:opacity-90 outline-none focus-visible:outline-none"
                     >
                         {loading ? (
@@ -275,7 +269,7 @@ const Login = () => {
                     <Button
                         type="button"
                         variant="outline"
-                        className="w-full h-[50px] rounded-lg border-neutral-300 text-neutral-800 
+                        className="w-full py-6 rounded-lg border-neutral-300 text-neutral-800 
              hover:bg-neutral-50 outline-none focus-visible:outline-none"
                         onClick={() => toast.info("Google sign-in coming soon.")}
                     >

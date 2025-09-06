@@ -1,6 +1,5 @@
 import React, { useMemo } from "react";
 import { Outlet, useLocation } from "react-router-dom";
-import { Toaster } from "sonner";
 import { motion } from "framer-motion";
 
 // assets
@@ -11,16 +10,6 @@ const RIGHT_SIDE_META = {
         image: Img5,
         title: "Bella",
         tagline: "The easiest way to manage your groceries.",
-    },
-    "/register": {
-        image: Img4,
-        title: "Create your Bella account",
-        tagline: "Join and start saving on near-expiry deals.",
-    },
-    "/verify": {
-        image: Img3,
-        title: "Verify your account",
-        tagline: "For your security, confirm your email or phone.",
     },
     "/forget-password": {
         image: Img2,
@@ -67,7 +56,7 @@ const AccountLayout = () => {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.35, ease: "easeOut" }}
                         className="w-full max-w-[560px] mx-auto flex items-center justify-center"
-                        style={{ minHeight: "calc(100vh - 160px)" }} /* equal top/bottom feel */
+                        style={{ minHeight: "calc(100vh - 160px)" }}
                     >
                         <Outlet />
                     </motion.div>
@@ -132,9 +121,6 @@ const AccountLayout = () => {
                     </div>
                 </motion.div>
             </div>
-
-            {/* Sonner toasts */}
-            <Toaster position="top-right" richColors closeButton />
         </div>
     );
 };
