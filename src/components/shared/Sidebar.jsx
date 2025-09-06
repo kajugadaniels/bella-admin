@@ -1,334 +1,208 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { NavLink, useLocation, useNavigate } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
+import React, { useEffect, useMemo, useState } from "react";
+import { NavLink, useLocation } from "react-router-dom";
+import { motion } from "framer-motion";
 import {
-    Boxes,
-    Building2,
-    ChevronLeft,
-    ChevronRight,
-    Home,
-    LogOut,
+    LayoutDashboard,
+    Store,
     Package,
+    Boxes,
+    CircleHelp,
     Settings,
-    Truck,
+    ChevronLeft,
 } from "lucide-react";
-
-import { auth } from "@/api";
-import { clearSession } from "@/session";
-
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 
-/* ------------------------------------------------------------------ */
-/* Utilities                                                          */
-/* ------------------------------------------------------------------ */
-function cn(...parts) {
-    return parts.filter(Boolean).join(" ");
+const NAV = [
+    { label: "Dashboard", to: "/dashboard", icon: LayoutDashboard },
+    // Safe placeholders that route to dashboard tabs (avoid 404s for now)
+    { type: "section", label: "Inventory" },
+    { label: "Stores", to: "/dashboard?tab=stores", icon: Store },
+    { label: "Products", to: "/dashboard?tab=products", icon: Package },
+    { label: "Stock In", to: "/dashboard?tab=stockin", icon: Boxes },
+    { type: "section", label: "Support" },
+    { label: "Help Center", to: "/dashboard?tab=help", icon: CircleHelp },
+    { label: "Settings", to: "/dashboard?tab=settings", icon: Settings },
+];
+
+function classNames(...xs) {
+    return xs.filter(Boolean).join(" ");
 }
 
-const LS_KEY = "bella_sidebar_collapsed";
+const DesktopSidebar = ({ collapsed, onToggle }) => {
+    const location = useLocation();
 
-/** A tiny composable nav item */
-const NavItem = ({ to, icon: Icon, label, collapsed, end = false }) => {
-    const base = "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors";
     return (
-        <NavLink
-            to={to}
-            end={end}
-            className={({ isActive }) =>
-                cn(
-                    base,
-                    isActive
-                        ? "bg-primary/10 text-primary hover:bg-primary/15"
-                        : "text-neutral-700 hover:bg-neutral-100 hover:text-neutral-900 dark:text-neutral-300 dark:hover:bg-neutral-800 dark:hover:text-white"
-                )
-            }
+        <aside
+            className={classNames(
+                "hidden md:flex h-full border-r bg-white/70 backdrop-blur supports-[backdrop-filter]:bg-white/60",
+                collapsed ? "w-[76px]" : "w-[264px]"
+            )}
         >
-            <Icon className="h-[18px] w-[18px] shrink-0" />
-            <AnimatePresence initial={false}>
-                {!collapsed && (
-                    <motion.span
-                        initial={{ opacity: 0, x: -4 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: -6 }}
-                        transition={{ duration: 0.18 }}
-                        className="whitespace-nowrap"
+            <div className="flex w-full flex-col">
+                {/* Brand small (only visible when collapsed) */}
+                <div className="h-14 flex items-center px-3">
+                    <div className="flex items-center gap-2">
+                        <div className="h-7 w-7 flex items-center justify-center rounded-md bg-primary text-white text-[12px] font-semibold select-none">
+                            BA
+                        </div>
+                        {!collapsed && <span className="text-sm font-semibold text-neutral-900">Bella Admin</span>}
+                    </div>
+                    <Button
+                        onClick={onToggle}
+                        variant="ghost"
+                        size="icon"
+                        className="ml-auto"
+                        aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+                        title={collapsed ? "Expand" : "Collapse"}
                     >
-                        {label}
-                    </motion.span>
-                )}
-            </AnimatePresence>
-        </NavLink>
+                        <ChevronLeft
+                            className={classNames(
+                                "h-4 w-4 transition-transform duration-300",
+                                collapsed ? "rotate-180" : "rotate-0"
+                            )}
+                        />
+                    </Button>
+                </div>
+                <Separator />
+                <ScrollArea className="flex-1">
+                    <nav className="py-3">
+                        {NAV.map((item, idx) =>
+                            item.type === "section" ? (
+                                <div key={`sec-${idx}`} className={classNames("px-3 pt-5 pb-2", collapsed && "px-2")}>
+                                    {!collapsed && (
+                                        <div className="text-[11px] tracking-wider uppercase font-semibold text-neutral-500">
+                                            {item.label}
+                                        </div>
+                                    )}
+                                </div>
+                            ) : (
+                                <NavLink
+                                    key={item.to}
+                                    to={item.to}
+                                    className={({ isActive }) =>
+                                        classNames(
+                                            "group relative mx-2 my-0.5 flex items-center rounded-md transition-colors",
+                                            "hover:bg-neutral-100 focus-visible:outline-none",
+                                            isActive ? "bg-neutral-100 text-neutral-900" : "text-neutral-700"
+                                        )
+                                    }
+                                >
+                                    {({ isActive }) => (
+                                        <motion.div
+                                            whileHover={{ x: 2 }}
+                                            className={classNames("flex w-full items-center", collapsed ? "px-3 py-2" : "px-3 py-2.5")}
+                                        >
+                                            <item.icon
+                                                className={classNames(
+                                                    "h-[18px] w-[18px] flex-shrink-0",
+                                                    isActive ? "text-neutral-900" : "text-neutral-500"
+                                                )}
+                                            />
+                                            {!collapsed && (
+                                                <span className="ml-3 text-sm font-medium truncate">{item.label}</span>
+                                            )}
+                                            {isActive && (
+                                                <span className="absolute left-0 top-0 bottom-0 w-[3px] bg-primary rounded-r-md" />
+                                            )}
+                                        </motion.div>
+                                    )}
+                                </NavLink>
+                            )
+                        )}
+                    </nav>
+                </ScrollArea>
+                <Separator />
+                {/* Footer mini */}
+                <div className={classNames("p-3 text-[11px] text-neutral-500", collapsed && "text-center")}>
+                    {!collapsed ? "© " : ""}
+                    2025 Bella
+                </div>
+            </div>
+        </aside>
     );
 };
 
-/* ------------------------------------------------------------------ */
-/* Sidebar                                                            */
-/* ------------------------------------------------------------------ */
-const Sidebar = () => {
-    const navigate = useNavigate();
+const MobileSidebar = ({ onNavigate }) => {
     const location = useLocation();
+    useEffect(() => {
+        // Close sheet when route changes
+        if (onNavigate) onNavigate();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [location.pathname, location.search]);
 
-    const [open, setOpen] = useState(false); // mobile sheet
+    return (
+        <div className="h-full flex flex-col">
+            <div className="h-14 px-4 flex items-center">
+                <span className="text-sm font-semibold text-neutral-900">Navigation</span>
+            </div>
+            <Separator />
+            <ScrollArea className="flex-1">
+                <nav className="py-3">
+                    {NAV.map((item, idx) =>
+                        item.type === "section" ? (
+                            <div key={`msec-${idx}`} className="px-4 pt-5 pb-2">
+                                <div className="text-[11px] tracking-wider uppercase font-semibold text-neutral-500">
+                                    {item.label}
+                                </div>
+                            </div>
+                        ) : (
+                            <NavLink
+                                key={`m-${item.to}`}
+                                to={item.to}
+                                className={({ isActive }) =>
+                                    classNames(
+                                        "group relative mx-2 my-0.5 flex items-center rounded-md px-3 py-2.5 transition-colors",
+                                        "hover:bg-neutral-100",
+                                        isActive ? "bg-neutral-100 text-neutral-900" : "text-neutral-700"
+                                    )
+                                }
+                            >
+                                {({ isActive }) => (
+                                    <>
+                                        <item.icon
+                                            className={classNames(
+                                                "h-[18px] w-[18px] flex-shrink-0",
+                                                isActive ? "text-neutral-900" : "text-neutral-500"
+                                            )}
+                                        />
+                                        <span className="ml-3 text-sm font-medium truncate">{item.label}</span>
+                                        {isActive && (
+                                            <span className="absolute left-0 top-0 bottom-0 w-[3px] bg-primary rounded-r-md" />
+                                        )}
+                                    </>
+                                )}
+                            </NavLink>
+                        )
+                    )}
+                </nav>
+            </ScrollArea>
+        </div>
+    );
+};
+
+const Sidebar = ({ variant = "desktop", onNavigate }) => {
+    // Persisted collapsed state for desktop
     const [collapsed, setCollapsed] = useState(() => {
         try {
-            return localStorage.getItem(LS_KEY) === "1";
+            return localStorage.getItem("bella_sidebar_collapsed") === "1";
         } catch {
             return false;
         }
     });
-
-    const toggleCollapsed = useCallback(() => {
-        setCollapsed((c) => {
-            const n = !c;
-            try {
-                localStorage.setItem(LS_KEY, n ? "1" : "0");
-            } catch { }
-            return n;
-        });
-    }, []);
-
-    // Open from header (custom event)
-    useEffect(() => {
-        const handler = () => setOpen(true);
-        window.addEventListener("sidebar:open", handler);
-        return () => window.removeEventListener("sidebar:open", handler);
-    }, []);
-
-    // Keyboard: Ctrl/Cmd + B to toggle collapse (desktop)
-    useEffect(() => {
-        const onKey = (e) => {
-            if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "b") {
-                e.preventDefault();
-                toggleCollapsed();
-            }
-        };
-        window.addEventListener("keydown", onKey);
-        return () => window.removeEventListener("keydown", onKey);
-    }, [toggleCollapsed]);
-
-    const nav = useMemo(
-        () => [
-            { to: "/dashboard", icon: Home, label: "Dashboard", end: true },
-            { to: "/stores", icon: Building2, label: "Stores" },
-            { to: "/products", icon: Package, label: "Products" },
-            { to: "/stockin", icon: Boxes, label: "Stock In" },
-            { to: "/stockout", icon: Truck, label: "Stock Out" },
-        ],
-        []
-    );
-
-    const logout = useCallback(async () => {
+    const toggle = () => {
+        const next = !collapsed;
+        setCollapsed(next);
         try {
-            await auth.logoutAll();
-        } catch {
-            // ignore
-        } finally {
-            clearSession();
-            navigate("/?error=logged_out", { replace: true });
-        }
-    }, [navigate]);
+            localStorage.setItem("bella_sidebar_collapsed", next ? "1" : "0");
+        } catch { }
+    };
 
-    /* ------------------------------ Desktop ------------------------------ */
-    return (
-        <>
-            {/* Desktop rail (sticky + collapsible). Uses float to avoid changing AppLayout. */}
-            <aside
-                className={cn(
-                    "hidden md:block",
-                    "md:float-left md:sticky md:top-2",
-                    "md:h-[calc(100vh-1rem)] md:py-2 md:pl-2"
-                )}
-                aria-label="Primary"
-            >
-                <motion.div
-                    initial={false}
-                    animate={{ width: collapsed ? 76 : 264 }}
-                    transition={{ type: "spring", damping: 24, stiffness: 260 }}
-                    className={cn(
-                        "relative h-full rounded-2xl border border-neutral-200/80 bg-white/90 shadow-sm",
-                        "backdrop-blur supports-[backdrop-filter]:bg-white/70",
-                        "dark:border-neutral-800 dark:bg-neutral-900/70 dark:supports-[backdrop-filter]:bg-neutral-900/50"
-                    )}
-                    style={{ overflow: "hidden" }}
-                >
-                    <div className="flex h-full flex-col">
-                        <div className="px-3 pt-3">
-                            <TooltipProvider delayDuration={150}>
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <Button
-                                            onClick={toggleCollapsed}
-                                            variant="ghost"
-                                            size="icon"
-                                            className="ml-auto"
-                                            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-                                        >
-                                            {collapsed ? (
-                                                <ChevronRight className="h-4 w-4" />
-                                            ) : (
-                                                <ChevronLeft className="h-4 w-4" />
-                                            )}
-                                        </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent side="right">
-                                        {collapsed ? "Expand" : "Collapse"} (⌘/Ctrl + B)
-                                    </TooltipContent>
-                                </Tooltip>
-                            </TooltipProvider>
-                        </div>
-
-                        <Separator className="my-2" />
-
-                        <ScrollArea className="flex-1 px-2">
-                            <nav className="space-y-1 pb-4">
-                                {nav.map((n) => (
-                                    <NavItem
-                                        key={n.to}
-                                        to={n.to}
-                                        icon={n.icon}
-                                        label={n.label}
-                                        end={n.end}
-                                        collapsed={collapsed}
-                                    />
-                                ))}
-                            </nav>
-
-                            <Separator className="my-2" />
-
-                            <div className="space-y-1">
-                                <NavLink
-                                    to="/settings"
-                                    className={({ isActive }) =>
-                                        cn(
-                                            "flex items-center gap-3 rounded-lg px-3 py-2 text-sm",
-                                            isActive
-                                                ? "bg-primary/10 text-primary"
-                                                : "text-neutral-700 hover:bg-neutral-100 hover:text-neutral-900 dark:text-neutral-300 dark:hover:bg-neutral-800 dark:hover:text-white"
-                                        )
-                                    }
-                                >
-                                    <Settings className="h-[18px] w-[18px] shrink-0" />
-                                    <AnimatePresence initial={false}>
-                                        {!collapsed && (
-                                            <motion.span
-                                                initial={{ opacity: 0, x: -4 }}
-                                                animate={{ opacity: 1, x: 0 }}
-                                                exit={{ opacity: 0, x: -6 }}
-                                                transition={{ duration: 0.18 }}
-                                            >
-                                                Settings
-                                            </motion.span>
-                                        )}
-                                    </AnimatePresence>
-                                </NavLink>
-
-                                <button
-                                    onClick={logout}
-                                    className={cn(
-                                        "w-full text-left flex items-center gap-3 rounded-lg px-3 py-2 text-sm",
-                                        "text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
-                                    )}
-                                >
-                                    <LogOut className="h-[18px] w-[18px] shrink-0" />
-                                    <AnimatePresence initial={false}>
-                                        {!collapsed && (
-                                            <motion.span
-                                                initial={{ opacity: 0, x: -4 }}
-                                                animate={{ opacity: 1, x: 0 }}
-                                                exit={{ opacity: 0, x: -6 }}
-                                                transition={{ duration: 0.18 }}
-                                            >
-                                                Sign out
-                                            </motion.span>
-                                        )}
-                                    </AnimatePresence>
-                                </button>
-                            </div>
-                        </ScrollArea>
-                    </div>
-                </motion.div>
-            </aside>
-
-            {/* ------------------------------ Mobile ------------------------------ */}
-            <Sheet open={open} onOpenChange={setOpen}>
-                <SheetContent
-                    side="left"
-                    className={cn(
-                        "w-[85%] p-0",
-                        "bg-white/85 backdrop-blur supports-[backdrop-filter]:bg-white/70",
-                        "dark:bg-neutral-900/70 dark:supports-[backdrop-filter]:bg-neutral-900/50"
-                    )}
-                >
-                    <SheetHeader className="px-4 py-3">
-                        <SheetTitle className="text-left">Navigation</SheetTitle>
-                    </SheetHeader>
-                    <Separator />
-                    <div className="h-[calc(100vh-3.25rem)]">
-                        <ScrollArea className="h-full px-2 py-3">
-                            <nav className="space-y-1">
-                                {nav.map((n) => (
-                                    <NavLink
-                                        key={n.to}
-                                        to={n.to}
-                                        end={n.end}
-                                        onClick={() => setOpen(false)}
-                                        className={({ isActive }) =>
-                                            cn(
-                                                "flex items-center gap-3 rounded-lg px-3 py-2 text-[15px]",
-                                                isActive
-                                                    ? "bg-primary/10 text-primary"
-                                                    : "text-neutral-800 hover:bg-neutral-100 dark:text-neutral-200 dark:hover:bg-neutral-800"
-                                            )
-                                        }
-                                    >
-                                        <n.icon className="h-[18px] w-[18px]" />
-                                        <span>{n.label}</span>
-                                    </NavLink>
-                                ))}
-                            </nav>
-
-                            <Separator className="my-3" />
-
-                            <div className="grid grid-cols-2 gap-2 px-1">
-                                <NavLink
-                                    to="/settings"
-                                    onClick={() => setOpen(false)}
-                                    className={({ isActive }) =>
-                                        cn(
-                                            "rounded-lg px-3 py-2 text-sm text-center",
-                                            isActive
-                                                ? "bg-primary/10 text-primary"
-                                                : "bg-white/60 text-neutral-700 hover:bg-neutral-100 border border-neutral-200",
-                                            "dark:bg-neutral-900/50 dark:text-neutral-200 dark:hover:bg-neutral-800 dark:border-neutral-800"
-                                        )
-                                    }
-                                >
-                                    Settings
-                                </NavLink>
-                                <button
-                                    onClick={() => {
-                                        setOpen(false);
-                                        logout();
-                                    }}
-                                    className={cn(
-                                        "rounded-lg px-3 py-2 text-sm text-center",
-                                        "bg-white/60 text-red-600 hover:bg-red-50 border border-red-200",
-                                        "dark:bg-neutral-900/50 dark:hover:bg-red-900/20 dark:border-red-900/40"
-                                    )}
-                                >
-                                    Sign out
-                                </button>
-                            </div>
-                        </ScrollArea>
-                    </div>
-                </SheetContent>
-            </Sheet>
-        </>
-    );
+    if (variant === "mobile") {
+        return <MobileSidebar onNavigate={onNavigate} />;
+    }
+    return <DesktopSidebar collapsed={collapsed} onToggle={toggle} />;
 };
 
 export default Sidebar;
