@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React from "react";
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,6 +17,10 @@ const orders = [
 const StoreFilters = ({ value, onChange }) => {
     const v = value || {};
     const update = (patch) => onChange?.({ ...v, ...patch });
+
+    // map boolean/empty to a valid Select value
+    const hasAdminValue =
+        v.has_admin === true ? "true" : v.has_admin === false ? "false" : "all";
 
     return (
         <div className="grid grid-cols-1 items-end gap-3 md:grid-cols-2 lg:grid-cols-4">
@@ -47,17 +51,22 @@ const StoreFilters = ({ value, onChange }) => {
                     onChange={(e) => update({ sector: e.target.value })}
                 />
             </div>
+
             <div>
                 <Label>Has admin</Label>
                 <Select
-                    value={String(v.has_admin ?? "")}
-                    onValueChange={(val) => update({ has_admin: val === "" ? "" : val === "true" })}
+                    value={hasAdminValue}
+                    onValueChange={(val) =>
+                        update({
+                            has_admin: val === "all" ? "" : val === "true",
+                        })
+                    }
                 >
                     <SelectTrigger>
                         <SelectValue placeholder="All" />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="">All</SelectItem>
+                        <SelectItem value="all">All</SelectItem>
                         <SelectItem value="true">Yes</SelectItem>
                         <SelectItem value="false">No</SelectItem>
                     </SelectContent>
@@ -85,7 +94,10 @@ const StoreFilters = ({ value, onChange }) => {
 
             <div className="lg:col-span-2">
                 <Label>Ordering</Label>
-                <Select value={v.ordering || "-created_at"} onValueChange={(val) => update({ ordering: val })}>
+                <Select
+                    value={v.ordering || "-created_at"}
+                    onValueChange={(val) => update({ ordering: val })}
+                >
                     <SelectTrigger>
                         <SelectValue placeholder="Sort by…" />
                     </SelectTrigger>
