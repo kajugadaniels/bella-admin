@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useCallback } from "react";
 import {
     Activity,
     ClipboardCopy,
@@ -11,6 +11,8 @@ import {
     Users,
     Building2,
     CircleAlert,
+    UserPlus,
+    UserMinus,
 } from "lucide-react";
 import { toast } from "sonner";
 import { superadmin } from "@/api";
@@ -28,6 +30,19 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+
+import StoreAddStaffSheet from "./StoreAddStaffSheet";
 
 /* --------------------------------- utils -------------------------------- */
 function initials(name = "") {
@@ -54,8 +69,10 @@ const GlassCard = ({ className = "", children }) => (
 
 const StatChip = ({ icon: Icon, label, value, hint }) => (
     <div className="flex items-center gap-3 rounded-2xl border border-neutral-200/80 bg-white/70 p-3 backdrop-blur-md dark:border-neutral-800 dark:bg-neutral-900/60">
-        <div className="grid h-10 w-10 place-items-center rounded-xl text-white ring-1 ring-black/5 dark:ring-white/10"
-            style={{ background: "linear-gradient(135deg, var(--primary-color), #059669)" }}>
+        <div
+            className="grid h-10 w-10 place-items-center rounded-xl text-white ring-1 ring-black/5 dark:ring-white/10"
+            style={{ background: "linear-gradient(135deg, var(--primary-color), #059669)" }}
+        >
             <Icon className="h-5 w-5" />
         </div>
         <div className="min-w-0">
@@ -93,7 +110,12 @@ const InfoRow = ({ icon: Icon, label, value, href, copyable }) => {
                 {label}
             </div>
             {href ? (
-                <a href={href} target={href.startsWith("http") ? "_blank" : undefined} rel="noreferrer" className="flex-1 min-w-0">
+                <a
+                    href={href}
+                    target={href.startsWith("http") ? "_blank" : undefined}
+                    rel="noreferrer"
+                    className="flex-1 min-w-0"
+                >
                     <div className="group flex items-center gap-2">
                         {content}
                         <ExternalLink className="h-3.5 w-3.5 opacity-60 group-hover:opacity-100" />
@@ -103,7 +125,12 @@ const InfoRow = ({ icon: Icon, label, value, href, copyable }) => {
                 content
             )}
             {copyable && value ? (
-                <Button size="icon" variant="ghost" onClick={copy} className="h-8 w-8 text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-100">
+                <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={copy}
+                    className="h-8 w-8 text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-100"
+                >
                     <Copy className="h-4 w-4" />
                 </Button>
             ) : null}
@@ -143,36 +170,107 @@ const HeaderSkeleton = () => (
     </div>
 );
 
+/* -------------------------- Remove staff dialog -------------------------- */
+function StaffRemoveDialog({
+    open,
+    onOpenChange,
+    onConfirm,
+    member,
+    submitting,
+    allowLastAdmin,
+    onToggleAllowLastAdmin,
+}) {
+    const name = member?.user?.username || member?.user?.email || "this member";
+    const isAdmin = !!member?.is_admin;
+
+    return (
+        <AlertDialog open={open} onOpenChange={onOpenChange}>
+            <AlertDialogContent className="glass-dialog w-[min(520px,calc(100vw-1rem))] rounded-2xl border border-black/5 bg-white/85 p-0 backdrop-blur-xl dark:border-white/10 dark:bg-neutral-950/85">
+                <div className="rounded-t-2xl bg-gradient-to-r from-[var(--primary-color)] to-emerald-600 p-4 text-white">
+                    <AlertDialogTitle className="flex items-center gap-2 text-base font-semibold">
+                        <UserMinus className="h-4 w-4" />
+                        Remove staff member?
+                    </AlertDialogTitle>
+                    <AlertDialogDescription className="mt-1 text-white/90">
+                        This will detach <strong className="font-semibold">{name}</strong> from this store.
+                    </AlertDialogDescription>
+                </div>
+
+                <div className="space-y-3 p-4">
+                    <div className="rounded-xl border border-black/5 bg-white/70 p-3 text-sm text-neutral-700 dark:border-white/10 dark:bg-neutral-900/60 dark:text-neutral-300">
+                        The removal is immediate and cannot be undone. {isAdmin ? "They are an admin." : "They are a staff member."}
+                    </div>
+
+                    {isAdmin && (
+                        <label className="flex items-start gap-3 rounded-xl border border-amber-300/60 bg-amber-50/80 p-3 text-amber-800 dark:border-amber-400/30 dark:bg-amber-950/30 dark:text-amber-200">
+                            <Checkbox
+                                checked={!!allowLastAdmin}
+                                onCheckedChange={onToggleAllowLastAdmin}
+                                className="mt-0.5"
+                            />
+                            <span className="text-sm">
+                                Allow removing even if this is the <span className="font-semibold">last admin</span>.
+                                Use with caution.
+                            </span>
+                        </label>
+                    )}
+                </div>
+
+                <AlertDialogFooter className="flex items-center justify-end gap-2 border-t border-black/5 bg-white/80 p-3 dark:border-white/10 dark:bg-neutral-900/60">
+                    <AlertDialogCancel disabled={submitting} className="cursor-pointer">Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                        disabled={submitting}
+                        onClick={onConfirm}
+                        className="bg-red-600 text-white hover:bg-red-700 cursor-pointer"
+                    >
+                        {submitting ? "Removing…" : "Remove"}
+                    </AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+    );
+}
+
 /* -------------------------------- component ------------------------------- */
 const StoreDetailSheet = ({ id, open, onOpenChange }) => {
     const [loading, setLoading] = useState(false);
     const [payload, setPayload] = useState(null);
 
-    useEffect(() => {
-        let ignore = false;
-        async function run() {
+    const [addOpen, setAddOpen] = useState(false);
+
+    const [removeOpen, setRemoveOpen] = useState(false);
+    const [removeTarget, setRemoveTarget] = useState(null); // { id, user:{}, is_admin }
+    const [removeSubmitting, setRemoveSubmitting] = useState(false);
+    const [allowLastAdmin, setAllowLastAdmin] = useState(false);
+
+    const fetchDetails = useCallback(
+        async (announce = false) => {
             if (!open || !id) return;
             setLoading(true);
             try {
                 const { data, message } = await superadmin.getStore(id);
-                if (!ignore) {
-                    setPayload(data?.data || null);
-                    if (message) toast.success(message);
-                }
+                setPayload(data?.data || null);
+                if (announce && message) toast.success(message);
             } catch (err) {
-                if (!ignore) {
-                    toast.error(err?.message || "Failed to fetch store details.");
-                    setPayload(null);
-                }
+                toast.error(err?.message || "Failed to fetch store details.");
+                setPayload(null);
             } finally {
-                if (!ignore) setLoading(false);
+                setLoading(false);
             }
-        }
-        run();
+        },
+        [id, open]
+    );
+
+    useEffect(() => {
+        let ignore = false;
+        (async () => {
+            if (!open || !id) return;
+            if (!ignore) await fetchDetails(false);
+        })();
         return () => {
             ignore = true;
         };
-    }, [id, open]);
+    }, [id, open, fetchDetails]);
 
     const stats = payload?.stats || {};
     const location = payload?.location || {};
@@ -217,6 +315,28 @@ const StoreDetailSheet = ({ id, open, onOpenChange }) => {
         }
     };
 
+    const openRemove = (member, isAdmin) => {
+        setRemoveTarget({ ...member, is_admin: !!isAdmin });
+        setAllowLastAdmin(false);
+        setRemoveOpen(true);
+    };
+
+    const confirmRemove = async () => {
+        if (!removeTarget?.id) return;
+        try {
+            setRemoveSubmitting(true);
+            await superadmin.removeStoreStaff(id, removeTarget.id, { allow_last_admin: !!allowLastAdmin });
+            toast.success("Member removed.");
+            setRemoveOpen(false);
+            setRemoveTarget(null);
+            await fetchDetails(false);
+        } catch (err) {
+            toast.error(err?.message || "Failed to remove member.");
+        } finally {
+            setRemoveSubmitting(false);
+        }
+    };
+
     return (
         <Sheet open={open} onOpenChange={onOpenChange}>
             <SheetContent
@@ -253,11 +373,23 @@ const StoreDetailSheet = ({ id, open, onOpenChange }) => {
                                         </SheetDescription>
                                     </div>
 
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex flex-wrap items-center gap-2">
                                         <Button variant="outline" size="sm" onClick={copyId} className="cursor-pointer">
                                             <ClipboardCopy className="mr-2 h-4 w-4" />
                                             Copy ID
                                         </Button>
+
+                                        {/* Add staff action */}
+                                        <Button
+                                            size="sm"
+                                            onClick={() => setAddOpen(true)}
+                                            className="cursor-pointer text-white"
+                                            style={{ background: "var(--primary-color)" }}
+                                        >
+                                            <UserPlus className="mr-2 h-4 w-4" />
+                                            Add staff
+                                        </Button>
+
                                         {contact.email && (
                                             <a href={`mailto:${contact.email}`} className="contents">
                                                 <Button variant="outline" size="sm" className="cursor-pointer">
@@ -275,8 +407,17 @@ const StoreDetailSheet = ({ id, open, onOpenChange }) => {
                                             </a>
                                         )}
                                         {location?.map_url && (
-                                            <a href={location.map_url} target="_blank" rel="noreferrer" className="contents">
-                                                <Button size="sm" className="cursor-pointer text-white" style={{ background: "var(--primary-color)" }}>
+                                            <a
+                                                href={location.map_url}
+                                                target="_blank"
+                                                rel="noreferrer"
+                                                className="contents"
+                                            >
+                                                <Button
+                                                    size="sm"
+                                                    className="cursor-pointer text-white"
+                                                    style={{ background: "var(--primary-color)" }}
+                                                >
                                                     <MapPin className="mr-2 h-4 w-4" />
                                                     Open map
                                                 </Button>
@@ -356,17 +497,32 @@ const StoreDetailSheet = ({ id, open, onOpenChange }) => {
                         <div className="lg:col-span-2">
                             <Tabs defaultValue="admins" className="w-full">
                                 <TabsList className="grid w-full grid-cols-3 rounded-2xl border border-neutral-200/80 bg-white/70 p-1 backdrop-blur-md dark:border-neutral-800 dark:bg-neutral-900/60">
-                                    <TabsTrigger value="admins" className="data-[state=active]:bg-white data-[state=active]:shadow-sm dark:data-[state=active]:bg-neutral-900">
+                                    <TabsTrigger
+                                        value="admins"
+                                        className="data-[state=active]:bg-white data-[state=active]:shadow-sm dark:data-[state=active]:bg-neutral-900"
+                                    >
                                         Admins
-                                        <Badge variant="secondary" className="ml-2">{counts.admins}</Badge>
+                                        <Badge variant="secondary" className="ml-2">
+                                            {counts.admins}
+                                        </Badge>
                                     </TabsTrigger>
-                                    <TabsTrigger value="staff" className="data-[state=active]:bg-white data-[state=active]:shadow-sm dark:data-[state=active]:bg-neutral-900">
+                                    <TabsTrigger
+                                        value="staff"
+                                        className="data-[state=active]:bg-white data-[state=active]:shadow-sm dark:data-[state=active]:bg-neutral-900"
+                                    >
                                         Staff
-                                        <Badge variant="secondary" className="ml-2">{counts.staff}</Badge>
+                                        <Badge variant="secondary" className="ml-2">
+                                            {counts.staff}
+                                        </Badge>
                                     </TabsTrigger>
-                                    <TabsTrigger value="pending" className="data-[state=active]:bg-white data-[state=active]:shadow-sm dark:data-[state=active]:bg-neutral-900">
+                                    <TabsTrigger
+                                        value="pending"
+                                        className="data-[state=active]:bg-white data-[state=active]:shadow-sm dark:data-[state=active]:bg-neutral-900"
+                                    >
                                         Pending
-                                        <Badge variant="secondary" className="ml-2">{counts.pending}</Badge>
+                                        <Badge variant="secondary" className="ml-2">
+                                            {counts.pending}
+                                        </Badge>
                                     </TabsTrigger>
                                 </TabsList>
 
@@ -388,11 +544,26 @@ const StoreDetailSheet = ({ id, open, onOpenChange }) => {
                                                 </div>
                                             )}
                                             {!loading &&
-                                                payload?.admins?.map((s) => (
+                                                payload?.admins?.map((m) => (
                                                     <MiniUserRow
-                                                        key={s.id}
-                                                        user={s.user}
-                                                        right={<Badge variant="default" className="glass-badge">Admin</Badge>}
+                                                        key={m.id}
+                                                        user={m.user}
+                                                        right={
+                                                            <div className="flex items-center gap-2">
+                                                                <Badge variant="default" className="glass-badge">
+                                                                    Admin
+                                                                </Badge>
+                                                                <Button
+                                                                    size="sm"
+                                                                    variant="ghost"
+                                                                    onClick={() => openRemove(m, true)}
+                                                                    className="text-red-600 hover:text-red-700 cursor-pointer"
+                                                                >
+                                                                    <UserMinus className="mr-1 h-4 w-4" />
+                                                                    Remove
+                                                                </Button>
+                                                            </div>
+                                                        }
                                                     />
                                                 ))}
                                         </ScrollArea>
@@ -417,11 +588,26 @@ const StoreDetailSheet = ({ id, open, onOpenChange }) => {
                                                 </div>
                                             )}
                                             {!loading &&
-                                                payload?.staff?.map((s) => (
+                                                payload?.staff?.map((m) => (
                                                     <MiniUserRow
-                                                        key={s.id}
-                                                        user={s.user}
-                                                        right={<Badge variant="secondary" className="glass-badge">Staff</Badge>}
+                                                        key={m.id}
+                                                        user={m.user}
+                                                        right={
+                                                            <div className="flex items-center gap-2">
+                                                                <Badge variant="secondary" className="glass-badge">
+                                                                    Staff
+                                                                </Badge>
+                                                                <Button
+                                                                    size="sm"
+                                                                    variant="ghost"
+                                                                    onClick={() => openRemove(m, false)}
+                                                                    className="text-red-600 hover:text-red-700"
+                                                                >
+                                                                    <UserMinus className="mr-1 h-4 w-4" />
+                                                                    Remove
+                                                                </Button>
+                                                            </div>
+                                                        }
                                                     />
                                                 ))}
                                         </ScrollArea>
@@ -465,6 +651,30 @@ const StoreDetailSheet = ({ id, open, onOpenChange }) => {
                         </div>
                     </div>
                 </div>
+
+                {/* Add staff sheet */}
+                {payload && (
+                    <StoreAddStaffSheet
+                        store={payload}
+                        open={addOpen}
+                        onOpenChange={setAddOpen}
+                        onDone={async () => {
+                            setAddOpen(false);
+                            await fetchDetails(false);
+                        }}
+                    />
+                )}
+
+                {/* Remove staff dialog */}
+                <StaffRemoveDialog
+                    open={removeOpen}
+                    onOpenChange={setRemoveOpen}
+                    onConfirm={confirmRemove}
+                    member={removeTarget}
+                    submitting={removeSubmitting}
+                    allowLastAdmin={allowLastAdmin}
+                    onToggleAllowLastAdmin={(v) => setAllowLastAdmin(!!v)}
+                />
             </SheetContent>
         </Sheet>
     );
