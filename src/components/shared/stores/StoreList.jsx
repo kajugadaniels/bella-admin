@@ -16,8 +16,7 @@ import StoreUpdateSheet from "./StoreUpdateSheet";
 import StoreDeleteDialog from "./StoreDeleteDialog";
 import useDebounce from "@/hooks/useDebounce";
 
-// Fallback simple debounce hook if you don't have a shared one
-// Comment out if you already have "@/hooks/useDebounce".
+// Fallback debounce if "@/hooks/useDebounce" isn't present
 function useDebounceLocal(value, delay = 500) {
     const [v, setV] = useState(value);
     useEffect(() => {
@@ -31,7 +30,8 @@ const DEFAULT_ORDERING = "-created_at";
 
 const StoreList = () => {
     const [query, setQuery] = useState("");
-    const debouncedQuery = typeof useDebounce === "function" ? useDebounce(query, 500) : useDebounceLocal(query, 500);
+    const debouncedQuery =
+        typeof useDebounce === "function" ? useDebounce(query, 500) : useDebounceLocal(query, 500);
 
     const [filters, setFilters] = useState({
         has_admin: "",
@@ -59,16 +59,10 @@ const StoreList = () => {
         setLoading(true);
         try {
             const params = {};
-
-            // Search
             if (debouncedQuery.trim()) params.search = debouncedQuery.trim();
-
-            // Filters (skip blanks)
             Object.entries(filters).forEach(([k, v]) => {
                 if (v !== "" && v !== null && v !== undefined) params[k] = v;
             });
-
-            // Ordering + Pagination
             if (ordering) params.ordering = ordering;
             params.page = page;
 
@@ -83,7 +77,7 @@ const StoreList = () => {
     }, [debouncedQuery, filters, ordering, page]);
 
     useEffect(() => {
-        setPage(1); // reset page when filters/search/order change
+        setPage(1);
     }, [debouncedQuery, filters, ordering]);
 
     useEffect(() => {
@@ -100,11 +94,11 @@ const StoreList = () => {
     const headerRight = useMemo(
         () => (
             <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" onClick={refresh}>
+                <Button variant="outline" size="sm" onClick={refresh} className="glass-button">
                     <RefreshCw className="mr-2 h-4 w-4" />
                     Refresh
                 </Button>
-                <Button size="sm" onClick={() => setCreateOpen(true)}>
+                <Button size="sm" onClick={() => setCreateOpen(true)} className="glass-cta">
                     <Plus className="mr-2 h-4 w-4" />
                     New store
                 </Button>
@@ -121,9 +115,14 @@ const StoreList = () => {
                 transition={{ duration: 0.28 }}
                 className="mx-auto max-w-[1400px] px-4 sm:px-6"
             >
+                {/* Page header */}
                 <div className="mb-4 mt-4 flex flex-wrap items-center justify-between gap-3">
                     <div>
-                        <h1 className="text-xl font-semibold tracking-tight">Stores</h1>
+                        <h1 className="text-xl font-semibold tracking-tight">
+                            <span className="bg-gradient-to-r from-[var(--primary-color)] to-emerald-600 bg-clip-text text-transparent">
+                                Stores
+                            </span>
+                        </h1>
                         <p className="text-sm text-neutral-500">
                             Manage store records, admins, and invites.
                         </p>
@@ -131,19 +130,24 @@ const StoreList = () => {
                     {headerRight}
                 </div>
 
-                <div className="flex flex-col gap-3 rounded-2xl border bg-white p-3 shadow-sm dark:border-neutral-800 dark:bg-neutral-900">
+                {/* Card */}
+                <div className="glass-card flex flex-col gap-4 p-4">
+                    {/* Top controls */}
                     <div className="grid gap-3 md:grid-cols-3">
                         <div className="col-span-2">
-                            <Label htmlFor="q" className="sr-only">Search</Label>
+                            <Label htmlFor="q" className="sr-only">
+                                Search
+                            </Label>
                             <Input
                                 id="q"
                                 placeholder="Search by name, email, phone, address…"
                                 value={query}
                                 onChange={(e) => setQuery(e.target.value)}
+                                className="glass-input"
                             />
                         </div>
                         <div className="flex items-center">
-                            <Badge variant="secondary" className="ml-auto">
+                            <Badge variant="secondary" className="ml-auto glass-badge">
                                 {count} total
                             </Badge>
                         </div>
@@ -158,7 +162,7 @@ const StoreList = () => {
                         }}
                     />
 
-                    <Separator />
+                    <Separator className="soft-divider" />
 
                     <StoreTable
                         rows={rows}
@@ -169,7 +173,7 @@ const StoreList = () => {
                     />
 
                     {/* Pagination */}
-                    <div className="mt-2 flex items-center justify-between">
+                    <div className="mt-1 flex items-center justify-between">
                         <div className="text-xs text-neutral-500">
                             Page {page} of {totalPages}
                         </div>
@@ -179,6 +183,7 @@ const StoreList = () => {
                                 size="sm"
                                 disabled={page <= 1 || loading}
                                 onClick={() => setPage((p) => Math.max(1, p - 1))}
+                                className="glass-button"
                             >
                                 Previous
                             </Button>
@@ -187,6 +192,7 @@ const StoreList = () => {
                                 size="sm"
                                 disabled={page >= totalPages || loading}
                                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                                className="glass-button"
                             >
                                 Next
                             </Button>
