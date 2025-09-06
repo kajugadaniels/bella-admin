@@ -12,7 +12,21 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, Trash2, Store, Tag } from "lucide-react";
+import { Plus, Trash2, Store } from "lucide-react";
+
+/* --------------------------------- constants -------------------------------- */
+const CATEGORY_OPTIONS = [
+    "DRINKS",
+    "DAIRY",
+    "BAKERY",
+    "FRUITS",
+    "SNACKS",
+    "MEAT",
+    "FROZEN",
+    "CLEANING",
+    "PERSONAL_CARE",
+    "OTHER",
+];
 
 /* --------------------------------- schema --------------------------------- */
 const BatchSchema = z.object({
@@ -28,102 +42,13 @@ const ProductSchema = z.object({
     stockins: z.array(BatchSchema).min(1, "Add at least one batch"),
 });
 
-/* ------------------------------ constants ---------------------------------- */
-const CATEGORY_OPTIONS = [
-    "DRINKS",
-    "DAIRY",
-    "BAKERY",
-    "FRUITS",
-    "VEGETABLES",
-    "MEAT",
-    "FROZEN",
-    "SNACKS",
-    "CLEANING",
-    "PERSONAL_CARE",
-    "HOUSEHOLD",
-    "GRAINS",
-];
-
-/* ---------------------------- category select UI --------------------------- */
-function SearchableCategorySelect({
-    value,
-    onChange,
-    placeholder = "Search category…",
-    disabled = false,
-}) {
-    const [open, setOpen] = useState(false);
-    const [q, setQ] = useState("");
-
-    const filtered = useMemo(() => {
-        const s = (q || "").trim().toLowerCase();
-        if (!s) return CATEGORY_OPTIONS;
-        return CATEGORY_OPTIONS.filter((c) => c.toLowerCase().includes(s));
-    }, [q]);
-
-    const label = value || "";
-
-    return (
-        <div className={`relative ${disabled ? "opacity-60 pointer-events-none" : ""}`}>
-            {/* Trigger */}
-            <button
-                type="button"
-                onClick={() => setOpen((o) => !o)}
-                className="w-full rounded-xl border border-black/5 bg-white/80 px-3 py-2 text-left text-sm backdrop-blur hover:bg-white/90 dark:border-white/10 dark:bg-neutral-900/60 dark:hover:bg-neutral-900/70"
-            >
-                <div className="flex items-center gap-2">
-                    <Tag className="h-4 w-4 text-neutral-400" />
-                    <span className={`truncate ${label ? "text-neutral-900 dark:text-neutral-100" : "text-neutral-500"}`}>
-                        {label || "Select a category"}
-                    </span>
-                </div>
-            </button>
-
-            {/* Dropdown */}
-            {open && (
-                <div className="absolute z-20 mt-2 w-full rounded-xl border border-black/5 bg-white/95 p-2 shadow-lg backdrop-blur-sm dark:border-white/10 dark:bg-neutral-900/95">
-                    <div className="relative">
-                        <Input
-                            autoFocus
-                            placeholder={placeholder}
-                            value={q}
-                            onChange={(e) => setQ(e.target.value)}
-                            className="mb-2"
-                        />
-                    </div>
-                    <ScrollArea className="max-h-64 pr-2">
-                        {filtered.length === 0 ? (
-                            <div className="p-2 text-sm text-neutral-500">No categories found.</div>
-                        ) : (
-                            <div className="grid">
-                                {filtered.map((c) => (
-                                    <button
-                                        key={c}
-                                        type="button"
-                                        onClick={() => {
-                                            onChange?.(c);
-                                            setOpen(false);
-                                        }}
-                                        className={`flex items-center gap-2 rounded-lg px-2 py-2 text-left hover:bg-black/[0.04] dark:hover:bg-white/5 ${c === value ? "bg-black/[0.03] dark:bg-white/5" : ""
-                                            }`}
-                                    >
-                                        <span className="text-sm font-medium">{c}</span>
-                                    </button>
-                                ))}
-                            </div>
-                        )}
-                    </ScrollArea>
-                </div>
-            )}
-        </div>
-    );
-}
-
 /* ------------------------------ store search UI ------------------------------ */
 function AsyncStoreSelect({
     value,
     onChange,
     placeholder = "Search store…",
     disabled = false,
+    maxHeightClass = "max-h-80 sm:max-h-[28rem]", // ensures scrolling when long
 }) {
     const [q, setQ] = useState("");
     const [loading, setLoading] = useState(false);
@@ -156,7 +81,7 @@ function AsyncStoreSelect({
     return (
         <div className={`relative ${disabled ? "opacity-60 pointer-events-none" : ""}`}>
             {value ? (
-                <div className="flex items-center justify-between rounded-xl border border-black/5 bg-white/80 px-3 py-2 text-sm backdrop-blur dark:border-white/10 dark:bg-neutral-900/60">
+                <div className="flex items-center justify-between rounded-xl border border-black/5 bg-white/70 px-3 py-2 text-sm backdrop-blur dark:border-white/10 dark:bg-neutral-900/60">
                     <div className="min-w-0">
                         <div className="truncate font-medium">{current?.name || "Selected store"}</div>
                         <div className="truncate text-xs text-neutral-500">{value}</div>
@@ -176,12 +101,21 @@ function AsyncStoreSelect({
                             className="pl-8"
                         />
                     </div>
-                    {/* Glassy dropdown with capped height + scroll */}
-                    <div className="absolute z-20 mt-2 w-full rounded-xl border border-black/5 bg-white/95 p-2 shadow-lg backdrop-blur-sm dark:border-white/10 dark:bg-neutral-900/95">
-                        <ScrollArea className="max-h-72 pr-2">
+                    <div className="absolute z-10 mt-2 w-full rounded-xl border border-black/5 bg-white/95 p-2 shadow-lg backdrop-blur-sm dark:border-white/10 dark:bg-neutral-900/95">
+                        <ScrollArea className={`${maxHeightClass} overflow-auto`}>
+                            {/* Global option */}
+                            <button
+                                type="button"
+                                onClick={() => onChange?.("")}
+                                className="mb-1 flex w-full items-center justify-between rounded-lg px-2 py-2 text-left text-sm hover:bg-black/[0.03] dark:hover:bg-white/5"
+                            >
+                                <span className="truncate">No store (Global)</span>
+                                <Badge variant="secondary" className="glass-badge">Global</Badge>
+                            </button>
+
                             {loading ? (
                                 <div className="grid gap-2 p-2">
-                                    {[...Array(6)].map((_, i) => (
+                                    {[...Array(5)].map((_, i) => (
                                         <Skeleton key={i} className="h-9 w-full rounded-md" />
                                     ))}
                                 </div>
@@ -189,6 +123,7 @@ function AsyncStoreSelect({
                                 <div className="p-2 text-sm text-neutral-500">No stores found.</div>
                             ) : (
                                 <div className="grid">
+                                    {/* Show all; ScrollArea handles overflow */}
                                     {opts.map((o) => (
                                         <button
                                             type="button"
@@ -228,7 +163,7 @@ export default function ProductCreateSheet({ open, onOpenChange, onDone }) {
         resolver: zodResolver(ProductSchema),
         defaultValues: {
             name: "",
-            category: "",
+            category: CATEGORY_OPTIONS[0],
             unit_price: "",
             stockins: [{ store_id: "", quantity: "", expiry_date: "" }],
         },
@@ -264,6 +199,7 @@ export default function ProductCreateSheet({ open, onOpenChange, onDone }) {
     const onSubmit = handleSubmit(async (values) => {
         try {
             setSubmitting(true);
+            // Build payload (send numbers as strings to keep decimals friendly)
             const payload = {
                 name: values.name,
                 category: values.category,
@@ -279,6 +215,8 @@ export default function ProductCreateSheet({ open, onOpenChange, onDone }) {
             onDone?.();
             onOpenChange?.(false);
             reset();
+            // Reset defaults after closing to preserve UX next open
+            setValue("category", CATEGORY_OPTIONS[0]);
         } catch (err) {
             toast.error(err?.message || "Failed to create product.");
         } finally {
@@ -306,7 +244,9 @@ export default function ProductCreateSheet({ open, onOpenChange, onDone }) {
                     <div className="rounded-2xl border border-black/5 bg-white/70 p-4 backdrop-blur dark:border-white/10 dark:bg-neutral-900/50">
                         <div className="mb-3 flex items-center justify-between">
                             <div className="text-sm font-semibold">Product</div>
-                            <Badge variant="secondary" className="glass-badge">Tax: 18%</Badge>
+                            <Badge variant="secondary" className="glass-badge">
+                                Tax: 18%
+                            </Badge>
                         </div>
                         <div className="grid gap-3 sm:grid-cols-3">
                             <div className="grid gap-1.5 sm:col-span-2">
@@ -314,19 +254,21 @@ export default function ProductCreateSheet({ open, onOpenChange, onDone }) {
                                 <Input placeholder="e.g., Premium Orange Juice 1L" {...register("name")} />
                             </div>
 
-                            {/* Category: glassy, searchable select */}
+                            {/* Category now a select */}
                             <div className="grid gap-1.5">
-                                <Label>Category</Label>
-                                <Controller
-                                    control={control}
-                                    name="category"
-                                    render={({ field }) => (
-                                        <SearchableCategorySelect
-                                            value={field.value}
-                                            onChange={(v) => field.onChange(v)}
-                                        />
-                                    )}
-                                />
+                                <Label htmlFor="category">Category</Label>
+                                <select
+                                    id="category"
+                                    {...register("category")}
+                                    className="h-9 w-full rounded-xl border border-black/5 bg-white/90 px-3 text-sm outline-none transition-[box-shadow] focus:ring-2 focus:ring-emerald-500/30 dark:border-white/10 dark:bg-neutral-900"
+                                >
+                                    {CATEGORY_OPTIONS.map((c) => (
+                                        <option key={c} value={c}>
+                                            {c}
+                                        </option>
+                                    ))}
+                                </select>
+                                <p className="text-xs text-neutral-500">Choose a category that best fits the product.</p>
                             </div>
 
                             <div className="grid gap-1.5">
@@ -335,7 +277,7 @@ export default function ProductCreateSheet({ open, onOpenChange, onDone }) {
                             </div>
                             <div className="grid gap-1.5">
                                 <Label>Price w/ tax (preview)</Label>
-                                <div className="rounded-xl border border-black/5 bg-white/80 px-3 py-2 text-sm backdrop-blur dark:border-white/10 dark:bg-neutral-900/60">
+                                <div className="rounded-xl border border-black/5 bg-white/70 px-3 py-2 text-sm dark:border-white/10 dark:bg-neutral-900/60">
                                     {priceWithTax ? priceWithTax.toFixed(2) : "—"}
                                 </div>
                             </div>
@@ -359,7 +301,10 @@ export default function ProductCreateSheet({ open, onOpenChange, onDone }) {
 
                         <div className="grid gap-3">
                             {fields.map((f, idx) => (
-                                <div key={f.id} className="rounded-xl border border-black/5 bg-white/60 p-3 dark:border-white/10 dark:bg-neutral-900/40">
+                                <div
+                                    key={f.id}
+                                    className="rounded-xl border border-black/5 bg-white/60 p-3 dark:border-white/10 dark:bg-neutral-900/40"
+                                >
                                     <div className="mb-2 flex items-center justify-between">
                                         <div className="text-sm font-medium">Batch #{idx + 1}</div>
                                         <Button
@@ -381,14 +326,23 @@ export default function ProductCreateSheet({ open, onOpenChange, onDone }) {
                                                 control={control}
                                                 name={`stockins.${idx}.store_id`}
                                                 render={({ field }) => (
-                                                    <AsyncStoreSelect value={field.value || ""} onChange={field.onChange} />
+                                                    <AsyncStoreSelect
+                                                        value={field.value || ""}
+                                                        onChange={field.onChange}
+                                                        maxHeightClass="max-h-80 sm:max-h-[12rem] cursor-pointer" // scroll when long
+                                                    />
                                                 )}
                                             />
                                             <p className="text-xs text-neutral-500">Leave empty for a global batch (no store).</p>
                                         </div>
                                         <div className="grid gap-1.5">
                                             <Label>Quantity</Label>
-                                            <Input type="number" step="0.01" placeholder="0.00" {...register(`stockins.${idx}.quantity`)} />
+                                            <Input
+                                                type="number"
+                                                step="0.01"
+                                                placeholder="0.00"
+                                                {...register(`stockins.${idx}.quantity`)}
+                                            />
                                         </div>
                                         <div className="grid gap-1.5">
                                             <Label>Expiry date (optional)</Label>
