@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { toast } from "sonner";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Separator } from "@/components/ui/separator";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import StoreForm from "./StoreForm";
 import { superadmin } from "@/api";
 
@@ -9,16 +11,25 @@ function buildCreateFormData(values) {
     const fd = new FormData();
     // Simple fields
     [
-        "name", "email", "phone_number", "address",
-        "province", "district", "sector", "cell", "village",
+        "name",
+        "email",
+        "phone_number",
+        "address",
+        "province",
+        "district",
+        "sector",
+        "cell",
+        "village",
         "map_url",
     ].forEach((k) => {
         const v = values[k];
         if (v !== undefined && v !== null && String(v).length) fd.append(k, v);
     });
-    if (values.image?.[0]) {
-        fd.append("image", values.image[0]);
-    }
+
+    // Handle image from dropzone (File[]) or file input (FileList)
+    const img0 = Array.isArray(values.image) ? values.image[0] : values.image?.[0];
+    if (img0) fd.append("image", img0);
+
     // staff: staff[0][email], staff[0][username], etc.
     if (Array.isArray(values.staff)) {
         values.staff.forEach((s, idx) => {
@@ -27,7 +38,7 @@ function buildCreateFormData(values) {
             if (s.username) fd.append(`staff[${idx}][username]`, s.username);
             if (s.phone_number) fd.append(`staff[${idx}][phone_number]`, s.phone_number);
             fd.append(`staff[${idx}][is_admin]`, String(!!s.is_admin));
-            if (Array.isArray(s.permissions)) {
+            if (!s.is_admin && Array.isArray(s.permissions)) {
                 s.permissions.forEach((p, j) => fd.append(`staff[${idx}][permissions][${j}]`, p));
             }
             fd.append(`staff[${idx}][is_active]`, String(s.is_active ?? true));
@@ -42,7 +53,6 @@ const StoreCreateSheet = ({ open, onOpenChange, onDone }) => {
     const submit = async (values) => {
         setSubmitting(true);
         try {
-            // Use FormData to support optional image + nested staff
             const body = buildCreateFormData(values);
             const res = await superadmin.createStore(body, { asForm: true });
             toast.success(res?.message || "Store created.");
@@ -56,13 +66,28 @@ const StoreCreateSheet = ({ open, onOpenChange, onDone }) => {
 
     return (
         <Sheet open={open} onOpenChange={onOpenChange}>
-            <SheetContent side="right" className="w-full overflow-y-auto sm:max-w-xl">
-                <SheetHeader>
+            <SheetContent
+                side="right"
+                className="bg-white p-0 sm:max-w-xl flex flex-col"
+            >
+                <SheetHeader className="px-4 sm:px-5 py-4">
                     <SheetTitle>Create a new store</SheetTitle>
                 </SheetHeader>
 
-                <div className="py-4">
-                    <StoreForm mode="create" submitting={submitting} onSubmit={submit} />
+                <Separator className="soft-divider" />
+
+                {/* Scrollable content area */}
+                <ScrollArea className="flex-1">
+                    <div className="p-4 sm:p-5">
+                        <StoreForm mode="create" submitting={submitting} onSubmit={submit} />
+                    </div>
+                </ScrollArea>
+
+                {/* Sticky bottom actions (the StoreForm also renders Save inside, but this guarantees bottom placement) */}
+                <div className="sticky bottom-0 z-10 border-t soft-divider bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/70 px-4 sm:px-5 py-3">
+                    <div className="text-xs text-neutral-500">
+                        Tip: You can invite admins and staff now or add them later.
+                    </div>
                 </div>
             </SheetContent>
         </Sheet>
