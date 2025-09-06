@@ -1,34 +1,54 @@
 import React, { useState } from "react";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
-import { useToast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import StoreForm from "./StoreForm";
+import { superadmin } from "@/api";
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "";
-const endpoint = `${API_BASE}/api/superadmin/stores/`;
+/** Build FormData that DRF can parse for nested staff list */
+function buildCreateFormData(values) {
+    const fd = new FormData();
+    // Simple fields
+    [
+        "name", "email", "phone_number", "address",
+        "province", "district", "sector", "cell", "village",
+        "map_url",
+    ].forEach((k) => {
+        const v = values[k];
+        if (v !== undefined && v !== null && String(v).length) fd.append(k, v);
+    });
+    if (values.image?.[0]) {
+        fd.append("image", values.image[0]);
+    }
+    // staff: staff[0][email], staff[0][username], etc.
+    if (Array.isArray(values.staff)) {
+        values.staff.forEach((s, idx) => {
+            if (!s?.email) return;
+            fd.append(`staff[${idx}][email]`, s.email);
+            if (s.username) fd.append(`staff[${idx}][username]`, s.username);
+            if (s.phone_number) fd.append(`staff[${idx}][phone_number]`, s.phone_number);
+            fd.append(`staff[${idx}][is_admin]`, String(!!s.is_admin));
+            if (Array.isArray(s.permissions)) {
+                s.permissions.forEach((p, j) => fd.append(`staff[${idx}][permissions][${j}]`, p));
+            }
+            fd.append(`staff[${idx}][is_active]`, String(s.is_active ?? true));
+        });
+    }
+    return fd;
+}
 
-export default function StoreCreateSheet({ open, onOpenChange, onCreated }) {
-    const { toast } = useToast();
+const StoreCreateSheet = ({ open, onOpenChange, onDone }) => {
     const [submitting, setSubmitting] = useState(false);
 
-    const createStore = async (payload /* FormData */) => {
+    const submit = async (values) => {
         setSubmitting(true);
         try {
-            const res = await fetch(endpoint, {
-                method: "POST",
-                body: payload,
-                credentials: "include",
-                headers: (() => {
-                    const t = localStorage.getItem("access_token");
-                    return t ? { Authorization: `Bearer ${t}` } : {};
-                })(),
-            });
-            const data = await res.json().catch(() => ({}));
-            if (!res.ok) throw new Error(data?.message || "Failed to create store");
-            toast({ title: "Store created", description: data?.message || "Successfully created.", duration: 2500 });
-            onOpenChange(false);
-            onCreated?.();
+            // Use FormData to support optional image + nested staff
+            const body = buildCreateFormData(values);
+            const res = await superadmin.createStore(body, { asForm: true });
+            toast.success(res?.message || "Store created.");
+            onDone?.();
         } catch (err) {
-            toast({ title: "Create failed", description: String(err.message || err), variant: "destructive", duration: 4000 });
+            toast.error(err?.message || "Failed to create store.");
         } finally {
             setSubmitting(false);
         }
@@ -36,15 +56,17 @@ export default function StoreCreateSheet({ open, onOpenChange, onCreated }) {
 
     return (
         <Sheet open={open} onOpenChange={onOpenChange}>
-            <SheetContent side="right" className="w-full sm:max-w-xl overflow-y-auto">
+            <SheetContent side="right" className="w-full overflow-y-auto sm:max-w-xl">
                 <SheetHeader>
-                    <SheetTitle>New Store</SheetTitle>
-                    <SheetDescription>Create a store. You can optionally add staff now; invites are sent for new emails.</SheetDescription>
+                    <SheetTitle>Create a new store</SheetTitle>
                 </SheetHeader>
-                <div className="mt-4">
-                    <StoreForm mode="create" onSubmit={createStore} submitting={submitting} />
+
+                <div className="py-4">
+                    <StoreForm mode="create" submitting={submitting} onSubmit={submit} />
                 </div>
             </SheetContent>
         </Sheet>
     );
-}
+};
+
+export default StoreCreateSheet;

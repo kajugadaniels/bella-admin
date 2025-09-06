@@ -289,26 +289,26 @@ export const endpoints = {
 
     // Superadmin (mounted exactly as in Django URLs you provided)
     // Stores
-    saStoresList: "/stores/",
-    saStoreCreate: "/store/add/",
-    saStoreDetail: (storeId) => `/store/${storeId}/`,
-    saStoreUpdate: (storeId) => `/store/${storeId}/update/`,
-    saStoreDelete: (storeId) => `/store/${storeId}/delete/`,
-    saStoreStaffAdd: (storeId) => `/store/${storeId}/staff/add/`,
-    saStoreStaffDelete: (storeId, staffId) => `/store/${storeId}/staff/${staffId}/`,
+    saStoresList: "/superadmin/stores/",
+    saStoreCreate: "/superadmin/store/add/",
+    saStoreDetail: (storeId) => `/superadmin/store/${storeId}/`,
+    saStoreUpdate: (storeId) => `/superadmin/store/${storeId}/update/`,
+    saStoreDelete: (storeId) => `/superadmin/store/${storeId}/delete/`,
+    saStoreStaffAdd: (storeId) => `/superadmin/store/${storeId}/staff/add/`,
+    saStoreStaffDelete: (storeId, staffId) => `/superadmin/store/${storeId}/staff/${staffId}/`,
 
     // Products via StockIn (listing one row per inbound batch)
-    saProductsViaStockIn: "/products/",
+    saProductsViaStockIn: "/superadmin/products/",
 
     // Product detail + CRUD
-    saProductDetail: (productId) => `/product/${productId}/`,
-    saProductCreateWithStockIn: "/product/add/",
-    saProductUpdate: (productId) => `/product/${productId}/update/`,
+    saProductDetail: (productId) => `/superadmin/product/${productId}/`,
+    saProductCreateWithStockIn: "/superadmin/product/add/",
+    saProductUpdate: (productId) => `/superadmin/product/${productId}/update/`,
 
     // StockIn (batch) detail + void + delete
-    saStockInDetail: (stockinId) => `/stockin/${stockinId}/`,
-    saStockInVoid: (stockinId) => `/stockin/${stockinId}/void/`,
-    saStockInDelete: (stockinId) => `/stockin/${stockinId}/delete/`,
+    saStockInDetail: (stockinId) => `/superadmin/stockin/${stockinId}/`,
+    saStockInVoid: (stockinId) => `/superadmin/stockin/${stockinId}/void/`,
+    saStockInDelete: (stockinId) => `/superadmin/stockin/${stockinId}/delete/`,
 };
 
 /** ------------------------------------------------------------------------
