@@ -22,7 +22,7 @@ import { ShieldCheck, UserPlus } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /* ------------------------------- constants ------------------------------ */
-const PERMS = ["read", "write", "edit", "delete"] as const;
+const PERMS = ["read", "write", "edit", "delete"];
 const PermEnum = z.enum(PERMS);
 
 /* ------------------------------- schemas -------------------------------- */
