@@ -58,18 +58,21 @@ const StoreList = () => {
     const fetchStores = useCallback(async () => {
         setLoading(true);
         try {
-            const params = new URLSearchParams();
-            // Search (server supports ?search= across name/email/phone/address/location)
-            if (debouncedQuery.trim()) params.set("search", debouncedQuery.trim());
-            // Filters
-            Object.entries(filters).forEach(([k, v]) => {
-                if (v !== "" && v !== null && v !== undefined) params.set(k, v);
-            });
-            // Ordering + Pagination
-            if (ordering && ordering !== DEFAULT_ORDERING) params.set("ordering", ordering);
-            params.set("page", String(page));
+            const params = {};
 
-            const { data } = await superadmin.listStores(`?${params.toString()}`);
+            // Search
+            if (debouncedQuery.trim()) params.search = debouncedQuery.trim();
+
+            // Filters (skip blanks)
+            Object.entries(filters).forEach(([k, v]) => {
+                if (v !== "" && v !== null && v !== undefined) params[k] = v;
+            });
+
+            // Ordering + Pagination
+            if (ordering) params.ordering = ordering;
+            params.page = page;
+
+            const { data } = await superadmin.listStores(params);
             setRows(data?.results || []);
             setCount(Number(data?.count || 0));
         } catch (err) {
