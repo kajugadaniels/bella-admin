@@ -7,12 +7,9 @@ import * as RW from "rwanda"; // v2.1.5 is CJS; this import is the safest across
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Trash2, Plus, UploadCloud, ShieldCheck, ChevronsUpDown, Check } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -65,7 +62,9 @@ const safeProvinces = () => {
     try {
         const out = RW.Provinces?.();
         return uniqSort(Array.isArray(out) ? out : []);
-    } catch { return []; }
+    } catch {
+        return [];
+    }
 };
 
 const safeDistricts = (province) => {
@@ -73,7 +72,9 @@ const safeDistricts = (province) => {
     try {
         const out = RW.Districts?.(province);
         return uniqSort(Array.isArray(out) ? out : []);
-    } catch { return []; }
+    } catch {
+        return [];
+    }
 };
 
 const safeSectors = (province, district) => {
@@ -81,7 +82,9 @@ const safeSectors = (province, district) => {
     try {
         const out = RW.Sectors?.(province, district);
         return uniqSort(Array.isArray(out) ? out : []);
-    } catch { return []; }
+    } catch {
+        return [];
+    }
 };
 
 const safeCells = (province, district, sector) => {
@@ -89,7 +92,9 @@ const safeCells = (province, district, sector) => {
     try {
         const out = RW.Cells?.(province, district, sector);
         return uniqSort(Array.isArray(out) ? out : []);
-    } catch { return []; }
+    } catch {
+        return [];
+    }
 };
 
 const safeVillages = (province, district, sector, cell) => {
@@ -97,7 +102,9 @@ const safeVillages = (province, district, sector, cell) => {
     try {
         const out = RW.Villages?.(province, district, sector, cell);
         return uniqSort(Array.isArray(out) ? out : []);
-    } catch { return []; }
+    } catch {
+        return [];
+    }
 };
 
 /* ------------------------------ UI helpers ------------------------------ */
@@ -181,9 +188,7 @@ const StaffInviteRow = ({ idx, register, control, remove, watch }) => {
                     <Controller
                         name={`staff.${idx}.is_admin`}
                         control={control}
-                        render={({ field }) => (
-                            <Switch checked={!!field.value} onCheckedChange={field.onChange} />
-                        )}
+                        render={({ field }) => <Switch checked={!!field.value} onCheckedChange={field.onChange} />}
                     />
                     <span className="text-sm">Admin</span>
                 </div>
@@ -195,9 +200,7 @@ const StaffInviteRow = ({ idx, register, control, remove, watch }) => {
                     <Controller
                         name={`staff.${idx}.permissions`}
                         control={control}
-                        render={({ field }) => (
-                            <PermissionPicker value={field.value || []} onChange={field.onChange} disabled={false} />
-                        )}
+                        render={({ field }) => <PermissionPicker value={field.value || []} onChange={field.onChange} disabled={false} />}
                     />
                     <p className="mt-1 text-xs text-neutral-500">Choose what this staff member can do.</p>
                 </div>
@@ -207,14 +210,7 @@ const StaffInviteRow = ({ idx, register, control, remove, watch }) => {
 };
 
 /* ------------------------- Searchable Combobox -------------------------- */
-const SearchableCombobox = ({
-    value,
-    onChange,
-    placeholder = "Select…",
-    options = [],
-    disabled,
-    className,
-}) => {
+const SearchableCombobox = ({ value, onChange, placeholder = "Select…", options = [], disabled, className }) => {
     const [open, setOpen] = useState(false);
     const selected = value || "";
 
@@ -229,9 +225,7 @@ const SearchableCombobox = ({
                     className={cn("w-full justify-between", className)}
                     disabled={disabled}
                 >
-                    <span className={cn(!selected && "text-neutral-400")}>
-                        {selected || placeholder}
-                    </span>
+                    <span className={cn(!selected && "text-neutral-400")}>{selected || placeholder}</span>
                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                 </Button>
             </PopoverTrigger>
@@ -266,12 +260,7 @@ const SearchableCombobox = ({
 };
 
 /* -------------------------------- Component ----------------------------- */
-const StoreForm = ({
-    defaultValues,
-    onSubmit,
-    submitting = false,
-    mode = "create",
-}) => {
+const StoreForm = ({ defaultValues, onSubmit, submitting = false, mode = "create" }) => {
     const isCreate = mode === "create";
 
     const form = useForm({
@@ -312,10 +301,7 @@ const StoreForm = ({
     const villages = useMemo(() => safeVillages(pv, dt, sc, cl), [pv, dt, sc, cl]);
 
     // Dropzone
-    const onDrop = useCallback(
-        (acceptedFiles) => setValue("image", acceptedFiles, { shouldDirty: true }),
-        [setValue]
-    );
+    const onDrop = useCallback((acceptedFiles) => setValue("image", acceptedFiles, { shouldDirty: true }), [setValue]);
     const { getRootProps, getInputProps, isDragActive } = useDropzone({
         onDrop,
         accept: { "image/*": [] },
@@ -478,7 +464,10 @@ const StoreForm = ({
             </GlassSection>
 
             {/* Image */}
-            <GlassSection title="Store image" extra={preview ? <Badge variant="secondary" className="glass-badge">Preview</Badge> : null}>
+            <GlassSection
+                title="Store image"
+                extra={preview ? <Badge variant="secondary" className="glass-badge">Preview</Badge> : null}
+            >
                 <div
                     {...getRootProps()}
                     className={cn(
@@ -541,14 +530,7 @@ const StoreForm = ({
                         </div>
                     )}
                     {fields.map((f, idx) => (
-                        <StaffInviteRow
-                            key={f.id}
-                            idx={idx}
-                            register={register}
-                            control={control}
-                            remove={remove}
-                            watch={watch}
-                        />
+                        <StaffInviteRow key={f.id} idx={idx} register={register} control={control} remove={remove} watch={watch} />
                     ))}
                 </GlassSection>
             )}
