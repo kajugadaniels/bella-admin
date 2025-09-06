@@ -1,5 +1,5 @@
-import React from "react";
 import StoreList from "@/components/shared/stores/StoreList";
+import React from "react";
 
 const GetStores = () => {
     return <StoreList />;
