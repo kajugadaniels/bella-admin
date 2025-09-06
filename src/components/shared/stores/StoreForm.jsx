@@ -3,7 +3,7 @@ import { useForm, useFieldArray, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useDropzone } from "react-dropzone";
-import { Provinces, Districts, Sectors, Cells, Villages } from "rwanda";
+import * as RW from "rwanda"; // v2.1.5 is CJS; this import is the safest across bundlers
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,7 +15,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Trash2, Plus, UploadCloud, ShieldCheck, ChevronsUpDown, Check } from "lucide-react";
-
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
     Command,
@@ -59,59 +58,46 @@ const createSchema = baseSchema.extend({
     staff: z.array(staffItem).optional().default([]),
 });
 
-/* ----------------------- Safe Rwanda lookups (silent) -------------------- */
-const toKey = (s) => (typeof s === "string" ? s.trim().toLowerCase() : undefined);
+/* ---------------------- rwanda@2.1.5 safe wrappers ---------------------- */
+const uniqSort = (arr) => Array.from(new Set(arr.filter(Boolean))).sort((a, b) => a.localeCompare(b));
 
-const callArray = (fn) => {
+const safeProvinces = () => {
     try {
-        const out = fn();
-        return Array.isArray(out) ? out : null;
-    } catch {
-        return null; // swallow library exceptions completely
-    }
+        const out = RW.Provinces?.();
+        return uniqSort(Array.isArray(out) ? out : []);
+    } catch { return []; }
 };
 
-const safeProvinces = () => callArray(() => Provinces()) || [];
-
 const safeDistricts = (province) => {
-    const P = toKey(province);
-    if (!P) return [];
-    return callArray(() => Districts(P)) || [];
+    if (!province) return [];
+    try {
+        const out = RW.Districts?.(province);
+        return uniqSort(Array.isArray(out) ? out : []);
+    } catch { return []; }
 };
 
 const safeSectors = (province, district) => {
-    const P = toKey(province);
-    const D = toKey(district);
-    if (!D) return [];
-    // try (province, district) first
-    let res = callArray(() => Sectors(P, D));
-    if (res) return res;
-    // fallback: district-only (package supports optional province)
-    res = callArray(() => Sectors(undefined, D));
-    return res || [];
+    if (!province || !district) return [];
+    try {
+        const out = RW.Sectors?.(province, district);
+        return uniqSort(Array.isArray(out) ? out : []);
+    } catch { return []; }
 };
 
 const safeCells = (province, district, sector) => {
-    const P = toKey(province);
-    const D = toKey(district);
-    const S = toKey(sector);
-    if (!S) return [];
-    let res = callArray(() => Cells(P, D, S));
-    if (res) return res;
-    res = callArray(() => Cells(undefined, D, S));
-    return res || [];
+    if (!province || !district || !sector) return [];
+    try {
+        const out = RW.Cells?.(province, district, sector);
+        return uniqSort(Array.isArray(out) ? out : []);
+    } catch { return []; }
 };
 
 const safeVillages = (province, district, sector, cell) => {
-    const P = toKey(province);
-    const D = toKey(district);
-    const S = toKey(sector);
-    const C = toKey(cell);
-    if (!C) return [];
-    let res = callArray(() => Villages(P, D, S, C));
-    if (res) return res;
-    res = callArray(() => Villages(undefined, D, S, C));
-    return res || [];
+    if (!province || !district || !sector || !cell) return [];
+    try {
+        const out = RW.Villages?.(province, district, sector, cell);
+        return uniqSort(Array.isArray(out) ? out : []);
+    } catch { return []; }
 };
 
 /* ------------------------------ UI helpers ------------------------------ */
@@ -255,19 +241,22 @@ const SearchableCombobox = ({
                     <CommandEmpty>No results.</CommandEmpty>
                     <CommandList className="max-h-64 overflow-y-auto">
                         <CommandGroup>
-                            {options.map((opt) => (
-                                <CommandItem
-                                    key={opt}
-                                    value={opt}
-                                    onSelect={(val) => {
-                                        onChange(val);
-                                        setOpen(false);
-                                    }}
-                                >
-                                    <Check className={cn("mr-2 h-4 w-4", valEq(selected, opt) ? "opacity-100" : "opacity-0")} />
-                                    {opt}
-                                </CommandItem>
-                            ))}
+                            {options.map((opt) => {
+                                const isActive = String(selected).toLowerCase() === String(opt).toLowerCase();
+                                return (
+                                    <CommandItem
+                                        key={opt}
+                                        value={opt}
+                                        onSelect={(val) => {
+                                            onChange(val);
+                                            setOpen(false);
+                                        }}
+                                    >
+                                        <Check className={cn("mr-2 h-4 w-4", isActive ? "opacity-100" : "opacity-0")} />
+                                        {opt}
+                                    </CommandItem>
+                                );
+                            })}
                         </CommandGroup>
                     </CommandList>
                 </Command>
@@ -275,8 +264,6 @@ const SearchableCombobox = ({
         </Popover>
     );
 };
-
-const valEq = (a, b) => String(a || "").toLowerCase() === String(b || "").toLowerCase();
 
 /* -------------------------------- Component ----------------------------- */
 const StoreForm = ({
@@ -317,7 +304,7 @@ const StoreForm = ({
     const sc = watch("sector");
     const cl = watch("cell");
 
-    // Guarded lists
+    // Lists (computed with v2.1.5 API)
     const provinces = useMemo(() => safeProvinces(), []);
     const districts = useMemo(() => safeDistricts(pv), [pv]);
     const sectors = useMemo(() => safeSectors(pv, dt), [pv, dt]);
@@ -390,6 +377,7 @@ const StoreForm = ({
                                     value={field.value || ""}
                                     onChange={(v) => {
                                         field.onChange(v);
+                                        // reset all downstream fields
                                         setValue("district", "");
                                         setValue("sector", "");
                                         setValue("cell", "");
@@ -413,6 +401,7 @@ const StoreForm = ({
                                     value={field.value || ""}
                                     onChange={(v) => {
                                         field.onChange(v);
+                                        // reset downstream
                                         setValue("sector", "");
                                         setValue("cell", "");
                                         setValue("village", "");
