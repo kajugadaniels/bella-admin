@@ -30,6 +30,7 @@ import {
     ChevronsUpDown,
     Check,
     Search,
+    RotateCcw,
 } from "lucide-react";
 
 /* ----------------------------- helpers (RW) ----------------------------- */
@@ -147,10 +148,23 @@ const orders = [
     { value: "-district", label: "District Z→A" },
 ];
 
+/* -------------------------------- defaults -------------------------------- */
+const DEFAULTS = {
+    search: "",
+    province: "",
+    district: "",
+    sector: "",
+    has_admin: "",
+    created_after: "",
+    created_before: "",
+    ordering: "-created_at",
+};
+
 /* -------------------------------- component -------------------------------- */
 const StoreFilters = ({ value, onChange }) => {
     const v = value || {};
     const update = (patch) => onChange?.({ ...v, ...patch });
+    const resetFilters = () => onChange?.({ ...DEFAULTS });
 
     // has_admin select mapping
     const hasAdminValue =
@@ -181,7 +195,7 @@ const StoreFilters = ({ value, onChange }) => {
                 <div className="flex basis-[30%] grow flex-col gap-1">
                     <Label className="text-[12px]">Search</Label>
                     <div className="relative">
-                        <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4" />
+                        <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
                         <Input
                             placeholder="Search by name, email, phone, address…"
                             value={v.search || ""}
@@ -297,6 +311,19 @@ const StoreFilters = ({ value, onChange }) => {
                             ))}
                         </SelectContent>
                     </Select>
+                </div>
+
+                {/* Reset (desktop) */}
+                <div className="min-w-[120px] flex items-end">
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        onClick={resetFilters}
+                        className="cursor-pointer text-neutral-700 hover:text-neutral-900 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800"
+                    >
+                        <RotateCcw className="mr-2 h-4 w-4" />
+                        Reset
+                    </Button>
                 </div>
             </div>
 
@@ -433,24 +460,29 @@ const StoreFilters = ({ value, onChange }) => {
                         </div>
 
                         <SheetFooter className="mt-6">
-                            <div className="flex w-full items-center justify-end gap-2">
+                            <div className="flex w-full items-center justify-between gap-2">
                                 <Button
                                     type="button"
-                                    variant="secondary"
-                                    onClick={() => {
-                                        setOpen(false);
-                                    }}
-                                    className="cursor-pointer"
+                                    variant="ghost"
+                                    onClick={resetFilters}
+                                    className="cursor-pointer text-neutral-700 hover:text-neutral-900 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800"
                                 >
-                                    Close
+                                    <RotateCcw className="mr-2 h-4 w-4" />
+                                    Reset
                                 </Button>
-                                <Button
-                                    type="button"
-                                    onClick={() => setOpen(false)}
-                                    className="cursor-pointer"
-                                >
-                                    Apply
-                                </Button>
+                                <div className="flex items-center gap-2">
+                                    <Button
+                                        type="button"
+                                        variant="secondary"
+                                        onClick={() => setOpen(false)}
+                                        className="cursor-pointer"
+                                    >
+                                        Close
+                                    </Button>
+                                    <Button type="button" onClick={() => setOpen(false)} className="cursor-pointer">
+                                        Apply
+                                    </Button>
+                                </div>
                             </div>
                         </SheetFooter>
                     </SheetContent>
