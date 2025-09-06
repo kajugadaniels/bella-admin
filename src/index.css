@@ -1,10 +1,8 @@
 /* Custom font from Google Fonts */
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
 
-/* Tailwind's base styles */
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+@import "tw-animate-css";
 
 /* Apply Outfit font globally */
 * {
@@ -27,7 +25,7 @@
     /* Warning color */
     --info-color: #2196f3;
     /* Info color */
-    --font-size-sm: 12px;
+    --font-size-sm: 14px;
     /* Smallest font size */
 }
 
@@ -37,9 +35,9 @@ body {
     color: var(--black-color);
 }
 
-/* Tailwind custom font-size (smallest font size set to 12px) */
+/* Tailwind custom font-size (smallest font size set to 14px) */
 html {
-    font-size: 12px;
+    font-size: 14px;
 }
 
 /* Global Color Scheme */
@@ -78,4 +76,30 @@ html {
     }
 
     /* Additional dark mode customization can go here */
+}
+
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+
+.no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+button,
+.btn,
+input,
+select,
+textarea {
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+button:focus,
+input:focus,
+select:focus,
+textarea:focus {
+    outline: none !important;
+    box-shadow: none !important;
 }
