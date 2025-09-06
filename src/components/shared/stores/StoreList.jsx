@@ -113,7 +113,7 @@ const StoreList = () => {
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.28 }}
-                className="mx-auto max-w-[1400px] px-4 sm:px-6"
+                className="mx-auto px-4 sm:px-6"
             >
                 {/* Page header */}
                 <div className="mb-4 mt-4 flex flex-wrap items-center justify-between gap-3">

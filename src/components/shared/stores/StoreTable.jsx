@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React from "react";
 import { MoreHorizontal, Pencil, Trash2, MapPin } from "lucide-react";
 import { format } from "date-fns";
 
@@ -20,21 +20,16 @@ function initials(name = "") {
     const b = (parts[1]?.[0] || n[1] || "").toUpperCase();
     return (a + b).toUpperCase();
 }
-function hue(s) {
-    let h = 0;
-    for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
-    return h % 360;
-}
 
 const StoreTable = ({ rows = [], loading = false, onEdit, onDelete }) => {
     const empty = !loading && (!rows || rows.length === 0);
 
     return (
-        <div className="overflow-x-auto">
-            <Table>
-                <TableHeader>
-                    <TableRow>
-                        <TableHead className="min-w-[240px]">Store</TableHead>
+        <div className="overflow-x-auto rounded-xl ring-1 ring-black/5 dark:ring-white/10">
+            <Table className="table-glassy">
+                <TableHeader className="sticky top-0 z-10 bg-white/70 backdrop-blur supports-[backdrop-filter]:bg-white/50 dark:bg-neutral-900/50">
+                    <TableRow className="border-0">
+                        <TableHead className="min-w-[260px]">Store</TableHead>
                         <TableHead>Contact</TableHead>
                         <TableHead>Location</TableHead>
                         <TableHead className="text-right">Staff</TableHead>
@@ -44,47 +39,48 @@ const StoreTable = ({ rows = [], loading = false, onEdit, onDelete }) => {
                 </TableHeader>
                 <TableBody>
                     {loading && (
-                        <TableRow>
+                        <TableRow className="border-0">
                             <TableCell colSpan={6} className="py-10 text-center text-sm text-neutral-500">
                                 Loading stores…
                             </TableCell>
                         </TableRow>
                     )}
                     {empty && (
-                        <TableRow>
+                        <TableRow className="border-0">
                             <TableCell colSpan={6} className="py-10 text-center text-sm text-neutral-500">
                                 No stores found.
                             </TableCell>
                         </TableRow>
                     )}
                     {!loading &&
-                        rows?.map((r) => {
+                        rows?.map((r, idx) => {
                             const inits = initials(r.name);
-                            const gradient = `linear-gradient(135deg, hsl(${hue(r.name)} 75% 60%) 0%, hsl(${(hue(r.name) + 66) % 360} 75% 55%) 100%)`;
                             return (
-                                <TableRow key={r.id}>
+                                <TableRow
+                                    key={r.id}
+                                    className="row-soft last:border-0 hover:bg-black/[0.025] dark:hover:bg-white/5 transition-colors"
+                                >
                                     <TableCell>
                                         <div className="flex items-center gap-3">
                                             {r.image ? (
                                                 <img
                                                     src={r.image}
                                                     alt={r.name}
-                                                    className="h-9 w-9 rounded-lg object-cover ring-1 ring-black/5 dark:ring-white/10"
+                                                    className="h-9 w-9 shrink-0 rounded-lg object-cover ring-1 ring-black/5 dark:ring-white/10"
                                                 />
                                             ) : (
+                                                // NOTE: using h-7 instead of "-7" (typo) for height
                                                 <div
-                                                    className="h-9 w-9 select-none rounded-lg text-center text-xs font-semibold leading-9 text-white"
-                                                    style={{ backgroundImage: gradient }}
+                                                    className="h-7 w-7 shrink-0 rounded-full grid place-items-center text-[12px] font-semibold text-white bg-gradient-to-br from-[var(--primary-color)] to-emerald-600 ring-1 ring-black/5 dark:ring-white/10"
                                                     aria-hidden
+                                                    title={r.name}
                                                 >
                                                     {inits}
                                                 </div>
                                             )}
                                             <div className="min-w-0">
                                                 <div className="truncate text-sm font-medium">{r.name}</div>
-                                                <div className="truncate text-xs text-neutral-500">
-                                                    {r.id}
-                                                </div>
+                                                <div className="truncate text-xs text-neutral-500">{r.id}</div>
                                             </div>
                                         </div>
                                     </TableCell>
@@ -95,9 +91,7 @@ const StoreTable = ({ rows = [], loading = false, onEdit, onDelete }) => {
                                     </TableCell>
 
                                     <TableCell>
-                                        <div className="truncate text-sm">
-                                            {r.address || "—"}
-                                        </div>
+                                        <div className="truncate text-sm">{r.address || "—"}</div>
                                         <div className="truncate text-xs text-neutral-500">
                                             {[r.province, r.district, r.sector].filter(Boolean).join(" · ") || "—"}
                                         </div>
@@ -105,7 +99,7 @@ const StoreTable = ({ rows = [], loading = false, onEdit, onDelete }) => {
 
                                     <TableCell className="text-right">
                                         <div className="inline-flex items-center gap-2">
-                                            <Badge variant={r.has_admin ? "default" : "secondary"}>
+                                            <Badge variant={r.has_admin ? "default" : "secondary"} className="glass-badge">
                                                 {r.has_admin ? "Has admin" : "No admin"}
                                             </Badge>
                                             <span className="text-sm tabular-nums text-neutral-700 dark:text-neutral-300">
@@ -130,7 +124,7 @@ const StoreTable = ({ rows = [], loading = false, onEdit, onDelete }) => {
                                                     <MoreHorizontal className="h-4 w-4" />
                                                 </Button>
                                             </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end">
+                                            <DropdownMenuContent align="end" className="glass-menu">
                                                 {r.map_url && (
                                                     <a href={r.map_url} target="_blank" rel="noreferrer">
                                                         <DropdownMenuItem className="cursor-pointer">
