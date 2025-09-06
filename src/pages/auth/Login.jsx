@@ -11,7 +11,6 @@ import { auth, clearTokens } from "@/api";
 import { saveSession, clearSession } from "@/session";
 
 const AFTER_LOGIN_URL = "/dashboard";
-
 const FLASH_SUCCESS_KEY = "auth_flash_success";
 
 function getPrimaryClientName(user) {
@@ -32,10 +31,34 @@ function handOffViaWindowName({ tokens, user, targetUrl }) {
         const encoded = btoa(JSON.stringify(envelope));
         window.name = `BELLA_SSO::${encoded}`;
     } catch {
-        // If something goes wrong, we still redirect; the portal will bounce to /login
         window.name = "";
     }
     window.location.assign(targetUrl);
+}
+
+// Resolve a safe, absolute same-origin URL for redirects
+function resolveTargetUrl(nextParam, fallbackPath = AFTER_LOGIN_URL) {
+    try {
+        const origin = window.location.origin;
+
+        if (nextParam && typeof nextParam === "string") {
+            const candidate = nextParam.trim();
+            if (!candidate) return new URL(fallbackPath, origin);
+
+            // Absolute URL provided: allow only same-origin, otherwise fallback
+            if (/^https?:\/\//i.test(candidate)) {
+                const u = new URL(candidate);
+                return u.origin === origin ? u : new URL(fallbackPath, origin);
+            }
+
+            // Relative path: ensure leading slash
+            const path = candidate.startsWith("/") ? candidate : `/${candidate}`;
+            return new URL(path, origin);
+        }
+    } catch {
+        /* noop – fallback below */
+    }
+    return new URL(fallbackPath, window.location.origin);
 }
 
 const Login = () => {
@@ -102,19 +125,31 @@ const Login = () => {
                 password: form.password,
             });
 
-            const payloadUser = res?.data?.data || null;      // includes clients[]
+            const payloadUser = res?.data?.data || null;      // includes role
             const payloadTokens = res?.data?.tokens || null;  // { access, refresh }
 
-            // Persist session locally on auth origin
+            // Admin-only gate
+            const userRole = String(payloadUser?.role || "").toUpperCase();
+            if (userRole !== "ADMIN") {
+                // do NOT persist tokens/session for non-admin
+                toast.error("Access denied", {
+                    description: "This portal is for Admins only.",
+                });
+                return;
+            }
+
+            // Persist session (only for admin)
             saveSession({ tokens: payloadTokens, user: payloadUser });
 
-            // Nicer success: include client name if present
+            // Friendly success
             const clientName = getPrimaryClientName(payloadUser);
             const baseMsg = res?.data?.message || res?.message || "Login successful.";
             toast.success(clientName ? `${baseMsg} Welcome, ${clientName}.` : baseMsg);
 
+            // Safe, absolute redirect target
+            const target = resolveTargetUrl(urlNext, AFTER_LOGIN_URL);
+
             // URL-free SSO handoff to portal
-            const target = new URL(urlNext || AFTER_LOGIN_URL);
             handOffViaWindowName({ tokens: payloadTokens, user: payloadUser, targetUrl: target.toString() });
         } catch (err) {
             const details = Array.isArray(err?.details) ? err.details : [];
