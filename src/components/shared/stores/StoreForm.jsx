@@ -13,10 +13,17 @@ import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Trash2, Plus, UploadCloud, ShieldCheck } from "lucide-react";
 
+// ------------------ Schema ------------------
 const PERMS = ["read", "write", "edit", "delete"];
 const PermEnum = z.enum(PERMS);
 
@@ -32,7 +39,7 @@ const baseSchema = z.object({
     village: z.string().optional().or(z.literal("")),
     map_url: z.string().url("Invalid URL").optional().or(z.literal("")),
     image: z.any().optional(),
-    remove_image: z.boolean().optional(), // update-only
+    remove_image: z.boolean().optional(),
 });
 
 const staffItem = z.object({
@@ -48,78 +55,52 @@ const createSchema = baseSchema.extend({
     staff: z.array(staffItem).optional().default([]),
 });
 
-/** ----------------------------
- * Safe wrappers for `rwanda`
- * ---------------------------*/
+// ------------------ Safe Rwanda helpers ------------------
 const toKey = (s) => (typeof s === "string" ? s.trim().toLowerCase() : undefined);
+const isArr = (v) => Array.isArray(v);
 
-const safeProvinces = () => {
+const safeCall = (fn, ...args) => {
     try {
-        const list = Provinces();
-        return Array.isArray(list) ? list : [];
+        const out = fn?.(...args);
+        return isArr(out) ? out : [];
     } catch (e) {
-        console.error("[rwanda] Provinces()", e);
+        // Log once per type for dev; never crash the UI
+        if (process.env.NODE_ENV !== "production") {
+            console.error("[rwanda] call failed:", fn?.name, args, e);
+        }
         return [];
     }
 };
 
-const safeDistricts = (province) => {
-    const p = toKey(province);
-    if (!p) return [];
-    try {
-        const list = Districts(p);
-        return Array.isArray(list) ? list : [];
-    } catch (e) {
-        console.error("[rwanda] Districts()", { province }, e);
-        return [];
-    }
+const safeProvinces = () => safeCall(Provinces);
+const safeDistricts = (p) => {
+    const P = toKey(p);
+    if (!P) return [];
+    return safeCall(Districts, P);
+};
+const safeSectors = (p, d) => {
+    const P = toKey(p);
+    const D = toKey(d);
+    if (!P || !D) return [];
+    return safeCall(Sectors, P, D);
+};
+const safeCells = (p, d, s) => {
+    const P = toKey(p);
+    const D = toKey(d);
+    const S = toKey(s);
+    if (!P || !D || !S) return [];
+    return safeCall(Cells, P, D, S);
+};
+const safeVillages = (p, d, s, c) => {
+    const P = toKey(p);
+    const D = toKey(d);
+    const S = toKey(s);
+    const C = toKey(c);
+    if (!P || !D || !S || !C) return [];
+    return safeCall(Villages, P, D, S, C);
 };
 
-const safeSectors = (province, district) => {
-    const p = toKey(province);
-    const d = toKey(district);
-    if (!p || !d) return [];
-    try {
-        const list = Sectors(p, d);
-        return Array.isArray(list) ? list : [];
-    } catch (e) {
-        console.error("[rwanda] Sectors()", { province, district }, e);
-        return [];
-    }
-};
-
-const safeCells = (province, district, sector) => {
-    const p = toKey(province);
-    const d = toKey(district);
-    const s = toKey(sector);
-    if (!p || !d || !s) return [];
-    try {
-        const list = Cells(p, d, s);
-        return Array.isArray(list) ? list : [];
-    } catch (e) {
-        console.error("[rwanda] Cells()", { province, district, sector }, e);
-        return [];
-    }
-};
-
-const safeVillages = (province, district, sector, cell) => {
-    const p = toKey(province);
-    const d = toKey(district);
-    const s = toKey(sector);
-    const c = toKey(cell);
-    if (!p || !d || !s || !c) return [];
-    try {
-        const list = Villages(p, d, s, c);
-        return Array.isArray(list) ? list : [];
-    } catch (e) {
-        console.error("[rwanda] Villages()", { province, district, sector, cell }, e);
-        return [];
-    }
-};
-
-/** ----------------------------
- * UI subcomponents
- * ---------------------------*/
+// ------------------ Small UI bits ------------------
 const GlassSection = ({ title, children, extra }) => (
     <div className="rounded-2xl border border-black/5 bg-white/60 p-4 backdrop-blur-md dark:border-white/10 dark:bg-neutral-900/40">
         <div className="mb-3 flex items-center justify-between">
@@ -130,32 +111,30 @@ const GlassSection = ({ title, children, extra }) => (
     </div>
 );
 
-const PermissionPicker = ({ value = [], onChange, disabled }) => {
-    return (
-        <div className={`grid grid-cols-2 gap-2 ${disabled ? "opacity-60 pointer-events-none" : ""}`}>
-            {PERMS.map((p) => {
-                const checked = value.includes(p);
-                return (
-                    <label
-                        key={p}
-                        className="flex items-center gap-2 rounded-lg border border-black/5 bg-white/80 px-2 py-1 text-sm backdrop-blur dark:border-white/10 dark:bg-neutral-900/50"
-                    >
-                        <Checkbox
-                            checked={checked}
-                            onCheckedChange={(v) => {
-                                if (disabled) return;
-                                const next = new Set(value);
-                                v ? next.add(p) : next.delete(p);
-                                onChange?.(Array.from(next));
-                            }}
-                        />
-                        <span className="capitalize">{p}</span>
-                    </label>
-                );
-            })}
-        </div>
-    );
-};
+const PermissionPicker = ({ value = [], onChange, disabled }) => (
+    <div className={`grid grid-cols-2 gap-2 ${disabled ? "opacity-60 pointer-events-none" : ""}`}>
+        {PERMS.map((p) => {
+            const checked = value.includes(p);
+            return (
+                <label
+                    key={p}
+                    className="flex items-center gap-2 rounded-lg border border-black/5 bg-white/80 px-2 py-1 text-sm backdrop-blur dark:border-white/10 dark:bg-neutral-900/50"
+                >
+                    <Checkbox
+                        checked={checked}
+                        onCheckedChange={(v) => {
+                            if (disabled) return;
+                            const next = new Set(value);
+                            v ? next.add(p) : next.delete(p);
+                            onChange?.(Array.from(next));
+                        }}
+                    />
+                    <span className="capitalize">{p}</span>
+                </label>
+            );
+        })}
+    </div>
+);
 
 const StaffInviteRow = ({ idx, register, control, remove, watch }) => {
     const isAdmin = watch(`staff.${idx}.is_admin`);
@@ -227,6 +206,7 @@ const StaffInviteRow = ({ idx, register, control, remove, watch }) => {
     );
 };
 
+// ------------------ Component ------------------
 const StoreForm = ({
     defaultValues,
     onSubmit,
@@ -259,13 +239,13 @@ const StoreForm = ({
     const { control, handleSubmit, register, watch, setValue, formState } = form;
     const { fields, append, remove } = useFieldArray({ control, name: "staff" });
 
-    // Location watched values
+    // Watch location fields
     const pv = watch("province");
     const dt = watch("district");
     const sc = watch("sector");
     const cl = watch("cell");
 
-    // ✅ SAFE: every call wrapped & normalized
+    // ✅ Guarded lists for all levels
     const provinces = useMemo(() => safeProvinces(), []);
     const districts = useMemo(() => safeDistricts(pv), [pv]);
     const sectors = useMemo(() => safeSectors(pv, dt), [pv, dt]);
@@ -274,9 +254,7 @@ const StoreForm = ({
 
     // Dropzone
     const onDrop = useCallback(
-        (acceptedFiles) => {
-            setValue("image", acceptedFiles, { shouldDirty: true });
-        },
+        (acceptedFiles) => setValue("image", acceptedFiles, { shouldDirty: true }),
         [setValue]
     );
     const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -288,12 +266,14 @@ const StoreForm = ({
     const file = Array.isArray(watch("image")) ? watch("image")[0] : null;
     const preview = file ? URL.createObjectURL(file) : null;
 
-    // Clean up the preview URL to avoid memory leaks
     useEffect(() => {
         return () => {
             if (preview) URL.revokeObjectURL(preview);
         };
     }, [preview]);
+
+    // Common class for scrollable menus
+    const MENU_SCROLL = "max-h-64 overflow-y-auto";
 
     return (
         <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4">
@@ -330,6 +310,7 @@ const StoreForm = ({
             {/* Location */}
             <GlassSection title="Location">
                 <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                    {/* Province */}
                     <div className="grid gap-1.5">
                         <Label>Province</Label>
                         <Controller
@@ -346,8 +327,10 @@ const StoreForm = ({
                                         setValue("village", "");
                                     }}
                                 >
-                                    <SelectTrigger><SelectValue placeholder="Select province" /></SelectTrigger>
-                                    <SelectContent className="glass-menu">
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select province" />
+                                    </SelectTrigger>
+                                    <SelectContent className={`glass-menu ${MENU_SCROLL}`}>
                                         {provinces.map((p) => (
                                             <SelectItem key={p} value={p}>{p}</SelectItem>
                                         ))}
@@ -357,6 +340,7 @@ const StoreForm = ({
                         />
                     </div>
 
+                    {/* District */}
                     <div className="grid gap-1.5">
                         <Label>District</Label>
                         <Controller
@@ -373,8 +357,10 @@ const StoreForm = ({
                                     }}
                                     disabled={!pv}
                                 >
-                                    <SelectTrigger><SelectValue placeholder="Select district" /></SelectTrigger>
-                                    <SelectContent className="glass-menu">
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select district" />
+                                    </SelectTrigger>
+                                    <SelectContent className={`glass-menu ${MENU_SCROLL}`}>
                                         {districts.map((d) => (
                                             <SelectItem key={d} value={d}>{d}</SelectItem>
                                         ))}
@@ -384,6 +370,7 @@ const StoreForm = ({
                         />
                     </div>
 
+                    {/* Sector */}
                     <div className="grid gap-1.5">
                         <Label>Sector</Label>
                         <Controller
@@ -399,8 +386,10 @@ const StoreForm = ({
                                     }}
                                     disabled={!pv || !dt}
                                 >
-                                    <SelectTrigger><SelectValue placeholder="Select sector" /></SelectTrigger>
-                                    <SelectContent className="glass-menu">
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select sector" />
+                                    </SelectTrigger>
+                                    <SelectContent className={`glass-menu ${MENU_SCROLL}`}>
                                         {sectors.map((s) => (
                                             <SelectItem key={s} value={s}>{s}</SelectItem>
                                         ))}
@@ -410,6 +399,7 @@ const StoreForm = ({
                         />
                     </div>
 
+                    {/* Cell */}
                     <div className="grid gap-1.5">
                         <Label>Cell</Label>
                         <Controller
@@ -424,8 +414,10 @@ const StoreForm = ({
                                     }}
                                     disabled={!pv || !dt || !sc}
                                 >
-                                    <SelectTrigger><SelectValue placeholder="Select cell" /></SelectTrigger>
-                                    <SelectContent className="glass-menu">
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select cell" />
+                                    </SelectTrigger>
+                                    <SelectContent className={`glass-menu ${MENU_SCROLL}`}>
                                         {cells.map((c) => (
                                             <SelectItem key={c} value={c}>{c}</SelectItem>
                                         ))}
@@ -435,6 +427,7 @@ const StoreForm = ({
                         />
                     </div>
 
+                    {/* Village */}
                     <div className="md:col-span-2 grid gap-1.5">
                         <Label>Village</Label>
                         <Controller
@@ -446,8 +439,10 @@ const StoreForm = ({
                                     onValueChange={field.onChange}
                                     disabled={!pv || !dt || !sc || !cl}
                                 >
-                                    <SelectTrigger><SelectValue placeholder="Select village" /></SelectTrigger>
-                                    <SelectContent className="glass-menu">
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select village" />
+                                    </SelectTrigger>
+                                    <SelectContent className={`glass-menu ${MENU_SCROLL}`}>
                                         {villages.map((v) => (
                                             <SelectItem key={v} value={v}>{v}</SelectItem>
                                         ))}
@@ -460,10 +455,7 @@ const StoreForm = ({
             </GlassSection>
 
             {/* Image */}
-            <GlassSection
-                title="Store image"
-                extra={preview ? <Badge variant="secondary" className="glass-badge">Preview</Badge> : null}
-            >
+            <GlassSection title="Store image" extra={preview ? <Badge variant="secondary" className="glass-badge">Preview</Badge> : null}>
                 <div
                     {...getRootProps()}
                     className={`group relative grid place-items-center rounded-2xl border border-dashed p-6 transition-colors ${isDragActive
@@ -522,7 +514,6 @@ const StoreForm = ({
                             No invites added yet.
                         </div>
                     )}
-
                     {fields.map((f, idx) => (
                         <StaffInviteRow
                             key={f.id}
