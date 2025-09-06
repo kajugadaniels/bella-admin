@@ -5,101 +5,152 @@
 @import "tw-animate-css";
 
 /* Apply Outfit font globally */
-* {
-    font-family: 'Outfit', sans-serif;
-}
+* { font-family: 'Outfit', sans-serif; }
 
-/* Set Primary Color and other color utilities */
+/* Color tokens */
 :root {
-    --primary-color: #1f4f3d;
-    /* Your primary color */
-    --secondary-color: #f5f5f5;
-    /* Secondary color (light theme) */
-    --black-color: #000000;
-    --white-color: #ffffff;
-    --success-color: #4caf50;
-    /* Success color */
-    --danger-color: #f44336;
-    /* Danger color */
-    --warning-color: #ff9800;
-    /* Warning color */
-    --info-color: #2196f3;
-    /* Info color */
-    --font-size-sm: 14px;
-    /* Smallest font size */
+  --primary-color: #1f4f3d;
+  --secondary-color: #f5f5f5;
+  --black-color: #000000;
+  --white-color: #ffffff;
+  --success-color: #4caf50;
+  --danger-color: #f44336;
+  --warning-color: #ff9800;
+  --info-color: #2196f3;
+  --font-size-sm: 14px;
 }
 
-/* Apply Colors to the body */
-body {
-    background-color: var(--white-color);
-    color: var(--black-color);
-}
+/* Light base */
+body { background-color: var(--white-color); color: var(--black-color); }
+html { font-size: 14px; }
 
-/* Tailwind custom font-size (smallest font size set to 14px) */
-html {
-    font-size: 14px;
-}
+/* Helpers */
+.text-primary { color: var(--primary-color); }
+.text-secondary { color: var(--secondary-color); }
+.bg-primary { background-color: var(--primary-color); }
+.bg-secondary { background-color: var(--secondary-color); }
 
-/* Global Color Scheme */
-.text-primary {
-    color: var(--primary-color);
-}
-
-.text-secondary {
-    color: var(--secondary-color);
-}
-
-.bg-primary {
-    background-color: var(--primary-color);
-}
-
-.bg-secondary {
-    background-color: var(--secondary-color);
-}
-
-/* Make sure the layout supports dark theme but defaults to light */
+/* Dark scheme */
 @media (prefers-color-scheme: dark) {
-
-    /* Dark Theme settings (overriding the light theme defaults) */
-    body {
-        background-color: #121212;
-        color: #e0e0e0;
-    }
-
-    .text-primary {
-        color: var(--secondary-color);
-        /* Light text for dark theme */
-    }
-
-    .bg-primary {
-        background-color: var(--primary-color);
-    }
-
-    /* Additional dark mode customization can go here */
+  body { background-color: #121212; color: #e0e0e0; }
+  .text-primary { color: var(--secondary-color); }
+  .bg-primary { background-color: var(--primary-color); }
 }
 
-.no-scrollbar::-webkit-scrollbar {
-    display: none;
+/* No scrollbar utility */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; }
+
+/* Reset outlines */
+button,.btn,input,select,textarea { outline: none !important; box-shadow: none !important; }
+button:focus,input:focus,select:focus,textarea:focus { outline: none !important; box-shadow: none !important; }
+
+/* ===== Custom glass / soft utilities (new) ===== */
+
+/* Card glass effect */
+.glass-card {
+  background: rgba(255, 255, 255, 0.65);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(2, 6, 23, 0.06);
+  -webkit-backdrop-filter: saturate(150%) blur(12px);
+  backdrop-filter: saturate(150%) blur(12px);
+  cursor: pointer;
+}
+.dark .glass-card {
+  background: rgba(18, 18, 18, 0.55);
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
 }
 
-.no-scrollbar {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
+/* Inputs with subtle glass fill */
+.glass-input {
+  background: rgba(255, 255, 255, 0.7) !important;
+  border-color: transparent !important;
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+.dark .glass-input {
+  background: rgba(24, 24, 27, 0.5) !important;
 }
 
-button,
-.btn,
-input,
-select,
-textarea {
-    outline: none !important;
-    box-shadow: none !important;
+/* Soft divider line */
+.soft-divider {
+  background-color: rgba(3, 7, 18, 0.06) !important;
+}
+.dark .soft-divider {
+  background-color: rgba(255, 255, 255, 0.08) !important;
 }
 
-button:focus,
-input:focus,
-select:focus,
-textarea:focus {
-    outline: none !important;
-    box-shadow: none !important;
+/* Table: lighter row separators */
+.table-glassy tr {
+  border-bottom: 1px solid rgba(3, 7, 18, 0.05);
+}
+.dark .table-glassy tr {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+.table-glassy th {
+  font-weight: 600;
+}
+
+/* Slightly lighter bottom borders than default */
+.row-soft {
+  border-bottom-color: rgba(3, 7, 18, 0.05) !important;
+}
+.dark .row-soft {
+  border-bottom-color: rgba(255, 255, 255, 0.06) !important;
+}
+
+/* Glass badges/buttons/menus */
+.glass-badge {
+  background: rgba(15, 118, 110, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.15);
+}
+.dark .glass-badge {
+  background: rgba(16, 185, 129, 0.15);
+  border-color: rgba(16, 185, 129, 0.25);
+}
+
+.glass-button {
+  background: rgba(255, 255, 255, 0.7);
+  border-color: rgba(3, 7, 18, 0.06);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  cursor: pointer;
+}
+.glass-button:hover {
+  background: rgba(255, 255, 255, 0.9);
+}
+.dark .glass-button {
+  background: rgba(24, 24, 27, 0.5);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+.dark .glass-button:hover {
+  background: rgba(24, 24, 27, 0.65);
+}
+
+/* More prominent CTA */
+.glass-cta {
+  background: linear-gradient(135deg, var(--primary-color), #059669);
+  color: #fff;
+  border: 0 !important;
+  box-shadow: 0 6px 18px rgba(5, 150, 105, 0.25);
+  cursor: pointer;
+}
+.glass-cta:hover {
+  filter: brightness(1.05);
+  box-shadow: 0 8px 22px rgba(5, 150, 105, 0.35);
+}
+
+/* Dropdown menu glass */
+.glass-menu {
+  background: rgba(255, 255, 255, 0.7) !important;
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(3, 7, 18, 0.06) !important;
+  cursor: pointer;
+}
+.dark .glass-menu {
+  background: rgba(18, 18, 18, 0.6) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
 }
