@@ -1,250 +1,397 @@
-import React, { useMemo, useState } from "react";
-import { toast } from "sonner";
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { superadmin } from "@/api";
+import React, { useEffect, useMemo, useState } from "react";
+import * as RW from "rwanda";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Button } from "@/components/ui/button";
+import {
+    Select,
+    SelectTrigger,
+    SelectContent,
+    SelectItem,
+    SelectValue,
+} from "@/components/ui/select";
+import {
+    Sheet,
+    SheetContent,
+    SheetHeader,
+    SheetTitle,
+    SheetTrigger,
+    SheetFooter,
+    SheetClose,
+} from "@/components/ui/sheet";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+    Command,
+    CommandEmpty,
+    CommandGroup,
+    CommandInput,
+    CommandItem,
+    CommandList,
+} from "@/components/ui/command";
 import { Separator } from "@/components/ui/separator";
-import { ShieldAlert, Store as StoreIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
+import {
+    Funnel,
+    Search,
+    ChevronsUpDown,
+    Check,
+    RotateCcw,
+} from "lucide-react";
 
-const InfoPill = ({ label, value }) => (
-    <div className="inline-flex items-center gap-1 rounded-full border border-neutral-200 bg-white/80 px-2.5 py-1 text-xs font-medium text-neutral-700 dark:border-neutral-800 dark:bg-neutral-900/60 dark:text-neutral-200">
-        <span className="opacity-70">{label}:</span>
-        <span>{value ?? "—"}</span>
-    </div>
-);
+/* -------------------- Options (keep aligned with backend) ------------------- */
+const orders = [
+    { value: "-created_at", label: "Newest" },
+    { value: "created_at", label: "Oldest" },
+    { value: "name", label: "Name A→Z" },
+    { value: "-name", label: "Name Z→A" },
+    { value: "-staff_count", label: "Most staff" },
+    { value: "staff_count", label: "Fewest staff" },
+    { value: "district", label: "District A→Z" },
+    { value: "-district", label: "District Z→A" },
+];
 
-const StoreDeleteDialog = ({ store, open, onOpenChange, onDeleted }) => {
-    const [submitting, setSubmitting] = useState(false);
+/* ---------------- Rwanda helpers (defensive around lib versions) ----------- */
+const uniqSort = (arr) =>
+    Array.from(new Set((arr || []).filter(Boolean))).sort((a, b) =>
+        String(a).localeCompare(String(b))
+    );
 
-    const [reason, setReason] = useState("duplicate");
-    const [otherReason, setOtherReason] = useState("");
-    const [ack, setAck] = useState(false);
-    const [confirmText, setConfirmText] = useState("");
+const provincesList = () => {
+    try {
+        return uniqSort(RW.Provinces?.() || []);
+    } catch {
+        return [];
+    }
+};
+const districtsList = (province) => {
+    if (!province) return [];
+    try {
+        return uniqSort(RW.Districts?.(province) || []);
+    } catch {
+        return [];
+    }
+};
+const sectorsList = (province, district) => {
+    if (!province || !district) return [];
+    try {
+        return uniqSort(RW.Sectors?.(province, district) || []);
+    } catch {
+        return [];
+    }
+};
 
-    const name = store?.name || "this store";
-    const matchText = (store?.name || "").trim();
-    const isMatch = confirmText.trim() === matchText && !!matchText;
-
-    const canDelete = useMemo(() => {
-        if (!ack) return false;
-        if (!isMatch) return false;
-        if (reason === "other" && !otherReason.trim()) return false;
-        return true;
-    }, [ack, isMatch, reason, otherReason]);
-
-    const resetState = () => {
-        setReason("duplicate");
-        setOtherReason("");
-        setAck(false);
-        setConfirmText("");
-    };
-
-    const remove = async () => {
-        setSubmitting(true);
-        try {
-            const res = await superadmin.deleteStore(store.id);
-            toast.success(res?.message || "Store deleted.");
-            onDeleted?.();
-            resetState();
-        } catch (err) {
-            toast.error(err?.message || "Failed to delete store.");
-        } finally {
-            setSubmitting(false);
-        }
-    };
+/* ----------------- Reusable searchable combobox (shadcn) ------------------- */
+const SearchableCombobox = ({
+    value,
+    onChange,
+    placeholder = "Select…",
+    options = [],
+    className,
+    disabled,
+}) => {
+    const [open, setOpen] = useState(false);
+    const selected = value || "";
 
     return (
-        <AlertDialog
-            open={open}
-            onOpenChange={(o) => {
-                if (!o) resetState();
-                onOpenChange?.(o);
-            }}
-        >
-            <AlertDialogContent
-                // 👇 Force perfect centering on all screens
-                className="
-          fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2
-          w-[92vw] max-w-[600px]
-          bg-white/90 dark:bg-neutral-900/85
-          backdrop-blur-xl
-          border border-neutral-200/70 dark:border-neutral-800
-          shadow-2xl rounded-2xl p-0
-          focus:outline-none
-        "
-            >
-                <div className="p-6">
-                    <AlertDialogHeader className="space-y-3">
-                        <div
-                            className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl"
-                            style={{
-                                background: "color-mix(in oklab, var(--primary-color) 12%, white)",
-                                color: "var(--primary-color)",
-                                boxShadow: "0 8px 24px rgba(31,79,61,0.10)",
-                            }}
-                        >
-                            <ShieldAlert className="h-6 w-6" />
-                        </div>
-                        <AlertDialogTitle className="text-center text-[18px] font-semibold tracking-tight">
-                            Delete store?
-                        </AlertDialogTitle>
-                        <AlertDialogDescription className="mx-auto max-w-[48ch] text-center text-sm text-neutral-600 dark:text-neutral-300">
-                            This action is permanent and may remove related memberships and pending
-                            invitations according to backend policy.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-
-                    <div className="mt-6 rounded-xl border border-neutral-200 bg-white/80 p-4 shadow-sm dark:border-neutral-800 dark:bg-neutral-900/60">
-                        <div className="flex items-start gap-3">
-                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-neutral-100 dark:bg-neutral-800">
-                                <StoreIcon className="h-5 w-5 text-neutral-600 dark:text-neutral-300" />
-                            </div>
-                            <div className="min-w-0 flex-1">
-                                <div className="truncate text-[15px] font-semibold text-neutral-900 dark:text-neutral-100">
-                                    {name}
-                                </div>
-                                <div className="truncate text-xs text-neutral-500">{store?.id}</div>
-                                <div className="mt-3 flex flex-wrap gap-2">
-                                    <InfoPill label="Has admin" value={store?.has_admin ? "Yes" : "No"} />
-                                    <InfoPill label="Admins" value={typeof store?.admin_count === "number" ? store.admin_count : "—"} />
-                                    <InfoPill label="Staff" value={typeof store?.staff_count === "number" ? store.staff_count : "—"} />
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <Separator className="my-6" />
-
-                    <div className="space-y-3">
-                        <Label className="text-sm font-medium">Why are you deleting this store?</Label>
-                        <RadioGroup value={reason} onValueChange={setReason} className="grid gap-2">
-                            {[
-                                { id: "duplicate", label: "Duplicate record" },
-                                { id: "mistake", label: "Created by mistake" },
-                                { id: "closed", label: "Store closed permanently" },
-                                { id: "other", label: "Other" },
-                            ].map((opt) => (
-                                <label
-                                    key={opt.id}
-                                    htmlFor={`reason-${opt.id}`}
-                                    className="group flex cursor-pointer items-center justify-between gap-3 rounded-lg border border-neutral-200 bg-white/85 px-3 py-2.5 text-sm transition hover:border-[var(--primary-color)]/40 hover:bg-white dark:border-neutral-800 dark:bg-neutral-900/60 dark:hover:bg-neutral-900"
-                                >
-                                    <div className="flex items-center gap-2">
-                                        <RadioGroupItem id={`reason-${opt.id}`} value={opt.id} />
-                                        <span>{opt.label}</span>
-                                    </div>
-                                </label>
-                            ))}
-                        </RadioGroup>
-
-                        {reason === "other" && (
-                            <div className="grid gap-1.5">
-                                <Label htmlFor="other-reason" className="text-xs text-neutral-600 dark:text-neutral-300">
-                                    Please describe (required)
-                                </Label>
-                                <Input
-                                    id="other-reason"
-                                    placeholder="Brief reason…"
-                                    value={otherReason}
-                                    onChange={(e) => setOtherReason(e.target.value)}
-                                />
-                            </div>
-                        )}
-                    </div>
-
-                    <div
-                        className="mt-6 space-y-3 rounded-xl border p-4"
-                        style={{
-                            background: "color-mix(in oklab, var(--primary-color) 5%, white)",
-                            borderColor: "color-mix(in oklab, var(--primary-color) 25%, white)",
-                        }}
-                    >
-                        <div className="flex items-start gap-2">
-                            <Checkbox
-                                id="ack"
-                                checked={ack}
-                                onCheckedChange={(v) => setAck(Boolean(v))}
-                                className="mt-0.5"
-                            />
-                            <Label htmlFor="ack" className="text-sm leading-relaxed text-neutral-800 dark:text-neutral-200">
-                                I understand this operation is <span className="font-semibold">irreversible</span> and related data
-                                may be removed per backend policy.
-                            </Label>
-                        </div>
-
-                        <div className="grid gap-1.5">
-                            <Label htmlFor="confirm" className="text-xs text-neutral-600 dark:text-neutral-300">
-                                Type the store name exactly to confirm:
-                                <span className="ml-1 rounded bg-neutral-100 px-1.5 py-0.5 text-[11px] font-semibold text-neutral-700 dark:bg-neutral-800 dark:text-neutral-200">
-                                    {matchText || "—"}
-                                </span>
-                            </Label>
-                            <Input
-                                id="confirm"
-                                placeholder="Type the store name to enable Delete"
-                                value={confirmText}
-                                onChange={(e) => setConfirmText(e.target.value)}
-                                className={
-                                    "transition " +
-                                    (confirmText
-                                        ? isMatch
-                                            ? "border-green-500/60 focus-visible:ring-0"
-                                            : "border-red-500/60 focus-visible:ring-0"
-                                        : "")
-                                }
-                            />
-                            <p
-                                className={
-                                    "text-xs " +
-                                    (confirmText
-                                        ? isMatch
-                                            ? "text-green-600"
-                                            : "text-red-600"
-                                        : "text-neutral-500")
-                                }
-                            >
-                                {confirmText
-                                    ? isMatch
-                                        ? "Name matches."
-                                        : "Name must match exactly."
-                                    : "Enter the exact store name."}
-                            </p>
-                        </div>
-                    </div>
-
-                    <AlertDialogFooter className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-                        <AlertDialogCancel disabled={submitting} className="sm:min-w-[120px] cursor-pointer">
-                            Cancel
-                        </AlertDialogCancel>
-                        <AlertDialogAction
-                            onClick={remove}
-                            disabled={!canDelete || submitting}
-                            className="sm:min-w-[170px] bg-red-600 hover:bg-red-700 disabled:opacity-60 text-white cursor-pointer"
-                            style={{ boxShadow: "0 10px 24px rgba(220, 38, 38, 0.22)" }}
-                        >
-                            {submitting ? "Deleting…" : `Delete "${name}"`}
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-
-                    <p className="mt-3 text-center text-[11px] text-neutral-500">
-                        Not sure? You can edit the store instead.
-                    </p>
-                </div>
-            </AlertDialogContent>
-        </AlertDialog>
+        <Popover open={open} onOpenChange={setOpen}>
+            <PopoverTrigger asChild>
+                <Button
+                    type="button"
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={open}
+                    className={cn("w-full justify-between", className)}
+                    disabled={disabled}
+                >
+                    <span className={cn(!selected && "text-neutral-400")}>
+                        {selected || placeholder}
+                    </span>
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                <Command>
+                    <CommandInput placeholder="Search…" />
+                    <CommandEmpty>No results.</CommandEmpty>
+                    <CommandList className="max-h-64 overflow-y-auto">
+                        <CommandGroup>
+                            {options.map((opt) => {
+                                const isActive =
+                                    String(selected).toLowerCase() === String(opt).toLowerCase();
+                                return (
+                                    <CommandItem
+                                        key={opt}
+                                        value={opt}
+                                        onSelect={(val) => {
+                                            onChange?.(val);
+                                            setOpen(false);
+                                        }}
+                                    >
+                                        <Check
+                                            className={cn(
+                                                "mr-2 h-4 w-4",
+                                                isActive ? "opacity-100" : "opacity-0"
+                                            )}
+                                        />
+                                        {opt}
+                                    </CommandItem>
+                                );
+                            })}
+                        </CommandGroup>
+                    </CommandList>
+                </Command>
+            </PopoverContent>
+        </Popover>
     );
 };
 
-export default StoreDeleteDialog;
+/* ---------------------------- Advanced fields ----------------------------- */
+const AdvancedFields = ({ v, update }) => {
+    // dependent lists
+    const provinces = useMemo(() => provincesList(), []);
+    const districts = useMemo(() => districtsList(v.province), [v.province]);
+    const sectors = useMemo(
+        () => sectorsList(v.province, v.district),
+        [v.province, v.district]
+    );
+
+    // normalize select for has_admin
+    const hasAdminValue =
+        v.has_admin === true ? "true" : v.has_admin === false ? "false" : "all";
+
+    // keep downstream coherence
+    useEffect(() => {
+        // if province cleared, drop district/sector
+        if (!v.province && (v.district || v.sector)) {
+            update({ district: "", sector: "" });
+        }
+    }, [v.province]); // eslint-disable-line
+
+    useEffect(() => {
+        // if district cleared, drop sector
+        if (!v.district && v.sector) {
+            update({ sector: "" });
+        }
+    }, [v.district]); // eslint-disable-line
+
+    return (
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
+            {/* Province (combobox) */}
+            <div className="grid gap-1.5">
+                <Label>Province</Label>
+                <SearchableCombobox
+                    value={v.province || ""}
+                    options={provinces}
+                    placeholder="Select province"
+                    onChange={(val) =>
+                        update({
+                            province: val,
+                            district: "",
+                            sector: "",
+                        })
+                    }
+                />
+            </div>
+
+            {/* District (combobox) */}
+            <div className="grid gap-1.5">
+                <Label>District</Label>
+                <SearchableCombobox
+                    value={v.district || ""}
+                    options={districts}
+                    placeholder="Select district"
+                    onChange={(val) =>
+                        update({
+                            district: val,
+                            sector: "",
+                        })
+                    }
+                    disabled={!v.province}
+                />
+            </div>
+
+            {/* Sector (combobox) */}
+            <div className="grid gap-1.5">
+                <Label>Sector</Label>
+                <SearchableCombobox
+                    value={v.sector || ""}
+                    options={sectors}
+                    placeholder="Select sector"
+                    onChange={(val) => update({ sector: val })}
+                    disabled={!v.province || !v.district}
+                />
+            </div>
+
+            {/* Has admin */}
+            <div className="grid gap-1.5">
+                <Label>Has admin</Label>
+                <Select
+                    value={hasAdminValue}
+                    onValueChange={(val) =>
+                        update({
+                            has_admin: val === "all" ? "" : val === "true",
+                        })
+                    }
+                >
+                    <SelectTrigger>
+                        <SelectValue placeholder="All" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">All</SelectItem>
+                        <SelectItem value="true">Yes</SelectItem>
+                        <SelectItem value="false">No</SelectItem>
+                    </SelectContent>
+                </Select>
+            </div>
+
+            {/* Created after */}
+            <div className="grid gap-1.5">
+                <Label htmlFor="created_after">Created after</Label>
+                <Input
+                    id="created_after"
+                    type="datetime-local"
+                    value={v.created_after || ""}
+                    onChange={(e) => update({ created_after: e.target.value })}
+                />
+            </div>
+
+            {/* Created before */}
+            <div className="grid gap-1.5">
+                <Label htmlFor="created_before">Created before</Label>
+                <Input
+                    id="created_before"
+                    type="datetime-local"
+                    value={v.created_before || ""}
+                    onChange={(e) => update({ created_before: e.target.value })}
+                />
+            </div>
+
+            {/* Ordering */}
+            <div className="grid gap-1.5 lg:col-span-3">
+                <Label>Ordering</Label>
+                <Select
+                    value={v.ordering || "-created_at"}
+                    onValueChange={(val) => update({ ordering: val })}
+                >
+                    <SelectTrigger>
+                        <SelectValue placeholder="Sort by…" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {orders.map((o) => (
+                            <SelectItem key={o.value} value={o.value}>
+                                {o.label}
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+            </div>
+        </div>
+    );
+};
+
+/* --------------------------------- Main UI -------------------------------- */
+const StoreFilters = ({ value, onChange, onReset }) => {
+    const v = value || {};
+    const update = (patch) => onChange?.({ ...v, ...patch });
+
+    const hardReset = () => {
+        const cleared = {
+            search: "",
+            province: "",
+            district: "",
+            sector: "",
+            has_admin: "",
+            created_after: "",
+            created_before: "",
+            ordering: "-created_at",
+        };
+        onChange?.(cleared);
+        onReset?.();
+    };
+
+    return (
+        <div className="rounded-2xl border border-black/5 bg-white/70 p-3 backdrop-blur-md dark:border-white/10 dark:bg-neutral-900/40">
+            {/* Top row: search + mobile actions */}
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                {/* Search input (bordered) */}
+                <div className="relative w-full">
+                    <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 opacity-60" />
+                    <Input
+                        value={v.search || ""}
+                        onChange={(e) => update({ search: e.target.value })}
+                        placeholder="Search by name, email, phone, address…"
+                        className="pl-9 border-neutral-300 focus-visible:ring-0"
+                    />
+                </div>
+
+                {/* Mobile: open sheet */}
+                <div className="flex items-center gap-2 sm:hidden">
+                    <Sheet>
+                        <SheetTrigger asChild>
+                            <Button variant="outline" className="w-full">
+                                <Funnel className="mr-2 h-4 w-4" />
+                                Filters
+                            </Button>
+                        </SheetTrigger>
+                        <SheetContent side="bottom" className="max-h-[85vh] overflow-y-auto">
+                            <SheetHeader>
+                                <SheetTitle>Advanced filters</SheetTitle>
+                            </SheetHeader>
+
+                            <div className="mt-4 space-y-4">
+                                <AdvancedFields v={v} update={update} />
+                            </div>
+
+                            <Separator className="my-4" />
+                            <SheetFooter className="flex w-full items-center justify-between">
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    className="text-red-600"
+                                    onClick={hardReset}
+                                >
+                                    <RotateCcw className="mr-2 h-4 w-4" />
+                                    Reset
+                                </Button>
+                                <SheetClose asChild>
+                                    <Button type="button">Apply</Button>
+                                </SheetClose>
+                            </SheetFooter>
+                        </SheetContent>
+                    </Sheet>
+
+                    {/* Quick reset (mobile) */}
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        className="text-red-600"
+                        onClick={hardReset}
+                        title="Reset all filters"
+                    >
+                        <RotateCcw className="h-4 w-4" />
+                    </Button>
+                </div>
+
+                {/* Desktop / tablet: reset button on right */}
+                <div className="ml-auto hidden sm:flex">
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        className="text-red-600"
+                        onClick={hardReset}
+                    >
+                        <RotateCcw className="mr-2 h-4 w-4" />
+                        Reset
+                    </Button>
+                </div>
+            </div>
+
+            {/* Advanced fields inline (≥ lg) */}
+            <div className="mt-3 hidden lg:block">
+                <AdvancedFields v={v} update={update} />
+            </div>
+        </div>
+    );
+};
+
+export default StoreFilters;
