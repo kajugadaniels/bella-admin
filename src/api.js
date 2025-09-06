@@ -1,10 +1,10 @@
 /* ========================================================================
-   API Client for Bella (Auth + Client modules)
+   API Client for Bella (Auth + Superadmin modules)
    - Normalizes API base to an absolute HTTPS URL
    - Fetch wrapper with timeout, JSON/FormData handling
    - Standard success/error shapes
    - JWT storage (localStorage) and auto attach on auth calls
-   - All endpoints from your Django views are mapped here
+   - Maps all Django endpoints (auth + superadmin)
    ======================================================================== */
 
 /** Normalize base to absolute https and strip trailing slashes */
@@ -71,6 +71,65 @@ function authHeaders() {
 function url(path) {
     const p = String(path || "");
     return `${API_BASE}${p.startsWith("/") ? "" : "/"}${p}`;
+}
+
+/** Build query string from an object.
+ *  - Skips null/undefined/"" (except boolean false and 0)
+ *  - Arrays are appended as repeated keys: ?k=v1&k=v2
+ */
+function toQuery(params = {}) {
+    const qs = new URLSearchParams();
+    Object.entries(params || {}).forEach(([k, v]) => {
+        if (v === undefined || v === null) return;
+        if (Array.isArray(v)) {
+            v.forEach((item) => {
+                if (item === undefined || item === null || item === "") return;
+                qs.append(k, String(item));
+            });
+            return;
+        }
+        if (v === "" && v !== 0) return;
+        if (typeof v === "boolean") {
+            qs.set(k, v ? "true" : "false");
+        } else {
+            qs.set(k, String(v));
+        }
+    });
+    const s = qs.toString();
+    return s ? `?${s}` : "";
+}
+
+/** Detect File/Blob to decide multipart vs JSON */
+function isFileLike(x) {
+    return (typeof File !== "undefined" && x instanceof File) ||
+        (typeof Blob !== "undefined" && x instanceof Blob);
+}
+
+/** Convert a plain object to FormData.
+ *  - Files/Blobs appended raw
+ *  - Arrays/objects JSON.stringified (e.g., `staff` invite payloads)
+ */
+function toFormData(payload = {}) {
+    const fd = new FormData();
+    Object.entries(payload || {}).forEach(([k, v]) => {
+        if (v === undefined || v === null) return;
+        if (isFileLike(v)) {
+            fd.append(k, v);
+        } else if (Array.isArray(v) || (typeof v === "object" && v !== null)) {
+            fd.append(k, JSON.stringify(v));
+        } else {
+            fd.append(k, String(v));
+        }
+    });
+    return fd;
+}
+
+/** If any top-level value is File/Blob, use multipart; else JSON */
+function maybeMultipart(payload) {
+    if (!payload || typeof payload !== "object") return payload;
+    const hasFile =
+        Object.values(payload).some((v) => isFileLike(v));
+    return hasFile ? toFormData(payload) : payload;
 }
 
 /** ------------------------------------------------------------------------
@@ -211,6 +270,7 @@ export async function apiRequest(path, opts = {}) {
 const GET = (path, opts = {}) => apiRequest(path, { ...opts, method: "GET" });
 const POST = (path, body, opts = {}) => apiRequest(path, { ...opts, method: "POST", body });
 const PATCH = (path, body, opts = {}) => apiRequest(path, { ...opts, method: "PATCH", body });
+const DELETE = (path, opts = {}) => apiRequest(path, { ...opts, method: "DELETE" });
 
 /** ------------------------------------------------------------------------
  * Endpoints map (single source of truth)
@@ -226,11 +286,29 @@ export const endpoints = {
     authChangePassword: "/auth/password/change/",
     authPasswordResetRequest: "/auth/password/reset/request/",
     authPasswordResetConfirm: "/auth/password/reset/confirm/",
-    authActivate: "/auth/activate/",
 
-    // Client
-    clientRegisterRequest: "/client/register/request/",
-    clientRegisterConfirm: "/client/register/confirm/",
+    // Superadmin (mounted exactly as in Django URLs you provided)
+    // Stores
+    saStoresList: "/stores/",
+    saStoreCreate: "/store/add/",
+    saStoreDetail: (storeId) => `/store/${storeId}/`,
+    saStoreUpdate: (storeId) => `/store/${storeId}/update/`,
+    saStoreDelete: (storeId) => `/store/${storeId}/delete/`,
+    saStoreStaffAdd: (storeId) => `/store/${storeId}/staff/add/`,
+    saStoreStaffDelete: (storeId, staffId) => `/store/${storeId}/staff/${staffId}/`,
+
+    // Products via StockIn (listing one row per inbound batch)
+    saProductsViaStockIn: "/products/",
+
+    // Product detail + CRUD
+    saProductDetail: (productId) => `/product/${productId}/`,
+    saProductCreateWithStockIn: "/product/add/",
+    saProductUpdate: (productId) => `/product/${productId}/update/`,
+
+    // StockIn (batch) detail + void + delete
+    saStockInDetail: (stockinId) => `/stockin/${stockinId}/`,
+    saStockInVoid: (stockinId) => `/stockin/${stockinId}/void/`,
+    saStockInDelete: (stockinId) => `/stockin/${stockinId}/delete/`,
 };
 
 /** ------------------------------------------------------------------------
@@ -272,17 +350,159 @@ export const auth = {
     passwordResetConfirm(payload) {
         return POST(endpoints.authPasswordResetConfirm, payload, { auth: false });
     },
-    activate(payload) {
-        return POST(endpoints.authActivate, payload, { auth: false });
-    },
 };
 
-export const client = {
-    registerRequest(payload) {
-        return POST(endpoints.clientRegisterRequest, payload, { auth: false });
+/** ------------------------------------------------------------------------
+ * Superadmin module (ADMIN-only on the backend via IsAdminRole)
+ * Notes:
+ *  - All calls set { auth: true } so the server can authorize and enforce role=ADMIN.
+ *  - Query params mirror your DRF filtersets (stores & stockin listing).
+ *  - We never synthesize messages; UI should use `result.message` or thrown `err.message`.
+ * --------------------------------------------------------------------- */
+export const superadmin = {
+    /**
+     * List stores with search/filters/order/pagination
+     * Mirrors StoreListView (django-filters + DRF backends)
+     * @param {{
+     *  // filters:
+     *  name?: string, email?: string, phone?: string,
+     *  province?: string, district?: string, sector?: string, cell?: string, village?: string,
+     *  has_admin?: boolean,
+     *  created_after?: string, created_before?: string, // ISO datetimes
+     *  // search:
+     *  search?: string,
+     *  // ordering (e.g., "-created_at"):
+     *  ordering?: string,
+     *  // pagination:
+     *  page?: number,
+     * }} params
+     */
+    listStores(params = {}) {
+        return GET(`${endpoints.saStoresList}${toQuery(params)}`, { auth: true });
     },
-    registerConfirm(payload) {
-        return POST(endpoints.clientRegisterConfirm, payload, { auth: false });
+
+    /**
+     * Create a store (optionally with staff invites)
+     * Accepts JSON or multipart (image upload). Arrays/objects are JSON.stringified in multipart.
+     * @param {object|FormData} payload
+     */
+    createStore(payload) {
+        const body = payload instanceof FormData ? payload : maybeMultipart(payload);
+        return POST(endpoints.saStoreCreate, body, { auth: true });
+    },
+
+    /** Get store detail */
+    getStore(storeId) {
+        return GET(endpoints.saStoreDetail(storeId), { auth: true });
+    },
+
+    /**
+     * Update store (PATCH). Supports JSON or multipart.
+     * Fields: name, email, phone_number, address, province, district, sector, cell, village, map_url,
+     *         image (file), remove_image (bool)
+     */
+    updateStore(storeId, payload) {
+        const body = payload instanceof FormData ? payload : maybeMultipart(payload);
+        return PATCH(endpoints.saStoreUpdate(storeId), body, { auth: true });
+    },
+
+    /** Delete store (hard delete with cascade semantics handled server-side) */
+    deleteStore(storeId) {
+        return DELETE(endpoints.saStoreDelete(storeId), { auth: true });
+    },
+
+    /**
+     * Add store staff (existing user or invite new)
+     * Existing: { user_id, is_admin?, permissions?, is_active? }
+     * Invite:   { email, username, phone_number, password, confirm_password, is_admin?, permissions?, is_active? }
+     */
+    addStoreStaff(storeId, payload) {
+        return POST(endpoints.saStoreStaffAdd(storeId), payload, { auth: true });
+    },
+
+    /**
+     * Remove store staff membership
+     * @param {string} storeId
+     * @param {string} staffId
+     * @param {{ allow_last_admin?: boolean }} [opts]
+     */
+    removeStoreStaff(storeId, staffId, opts = {}) {
+        const q = toQuery({ allow_last_admin: !!opts.allow_last_admin });
+        return DELETE(`${endpoints.saStoreStaffDelete(storeId, staffId)}${q}`, { auth: true });
+    },
+
+    /**
+     * List products via StockIn (one row per inbound batch) with filters/search/order/pagination
+     * Mirrors StockInProductListView + StockInProductFilter
+     * @param {{
+     *  // filters:
+     *  store_id?: string, store_name?: string,
+     *  product_name?: string, category?: string,
+     *  is_void?: boolean,
+     *  created_after?: string, created_before?: string, // ISO datetime
+     *  expiring_after?: string, expiring_before?: string, // date
+     *  has_store?: boolean, has_remaining?: boolean,
+     *  min_unit_price?: number, max_unit_price?: number,
+     *  // search/order/pagination:
+     *  search?: string, ordering?: string, page?: number
+     * }} params
+     */
+    listProductsViaStockIn(params = {}) {
+        return GET(`${endpoints.saProductsViaStockIn}${toQuery(params)}`, { auth: true });
+    },
+
+    /**
+     * Product detail (rich) with optional query params
+     * @param {string} productId
+     * @param {{ limit_batches?: number, limit_stockouts?: number, include_void?: boolean }} [params]
+     */
+    getProductDetail(productId, params = {}) {
+        return GET(`${endpoints.saProductDetail(productId)}${toQuery(params)}`, { auth: true });
+    },
+
+    /**
+     * Create product + initial StockIn batches (JSON only per your serializer)
+     * payload: { name, category, unit_price, stockins: [{store_id?, quantity, expiry_date?, is_void?}, ...] }
+     */
+    createProductWithStockIn(payload) {
+        return POST(endpoints.saProductCreateWithStockIn, payload, { auth: true });
+    },
+
+    /**
+     * Update product (PATCH). JSON or multipart (image upload).
+     * Fields: name, sku, barcode, category, brand, unit_of_measure, unit_price, tax_rate (percent),
+     *         image (file), remove_image (bool), description, is_active
+     */
+    updateProduct(productId, payload) {
+        const body = payload instanceof FormData ? payload : maybeMultipart(payload);
+        return PATCH(endpoints.saProductUpdate(productId), body, { auth: true });
+    },
+
+    /**
+     * StockIn (batch) detail
+     * @param {string} stockinId
+     * @param {{ include_void?: boolean, limit_stockouts?: number }} [params]
+     */
+    getStockInDetail(stockinId, params = {}) {
+        return GET(`${endpoints.saStockInDetail(stockinId)}${toQuery(params)}`, { auth: true });
+    },
+
+    /**
+     * Void / unvoid a StockIn batch
+     * body: { is_void: true|false, cascade?: true|false }
+     */
+    voidStockIn(stockinId, body) {
+        return PATCH(endpoints.saStockInVoid(stockinId), body, { auth: true });
+    },
+
+    /**
+     * Hard delete a StockIn batch
+     * @param {string} stockinId
+     * @param {{ cascade?: boolean }} [opts]
+     */
+    deleteStockIn(stockinId, opts = {}) {
+        const q = toQuery({ cascade: !!opts.cascade });
+        return DELETE(`${endpoints.saStockInDelete(stockinId)}${q}`, { auth: true });
     },
 };
 
@@ -295,5 +515,5 @@ export default {
     getTokens,
     clearTokens,
     auth,
-    client,
+    superadmin,
 };
