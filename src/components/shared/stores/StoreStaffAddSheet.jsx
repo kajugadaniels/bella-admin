@@ -21,7 +21,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { UserPlus, ShieldCheck } from "lucide-react";
 
-const PERMS = ["read", "write", "edit", "delete"] as const;
+const PERMS = ["read", "write", "edit", "delete"];
 
 const existingUserSchema = z.object({
     user_id: z.string().min(6, "User ID is required"),
