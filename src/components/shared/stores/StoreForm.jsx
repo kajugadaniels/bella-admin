@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useForm, useFieldArray, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -13,17 +13,21 @@ import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Trash2, Plus, UploadCloud, ShieldCheck } from "lucide-react";
+import { Trash2, Plus, UploadCloud, ShieldCheck, ChevronsUpDown, Check } from "lucide-react";
 
-// ------------------ Schema ------------------
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+    Command,
+    CommandEmpty,
+    CommandGroup,
+    CommandInput,
+    CommandItem,
+    CommandList,
+} from "@/components/ui/command";
+import { cn } from "@/lib/utils";
+
+/* -------------------------------- Schemas ------------------------------- */
 const PERMS = ["read", "write", "edit", "delete"];
 const PermEnum = z.enum(PERMS);
 
@@ -55,52 +59,62 @@ const createSchema = baseSchema.extend({
     staff: z.array(staffItem).optional().default([]),
 });
 
-// ------------------ Safe Rwanda helpers ------------------
+/* ----------------------- Safe Rwanda lookups (silent) -------------------- */
 const toKey = (s) => (typeof s === "string" ? s.trim().toLowerCase() : undefined);
-const isArr = (v) => Array.isArray(v);
 
-const safeCall = (fn, ...args) => {
+const callArray = (fn) => {
     try {
-        const out = fn?.(...args);
-        return isArr(out) ? out : [];
-    } catch (e) {
-        // Log once per type for dev; never crash the UI
-        if (process.env.NODE_ENV !== "production") {
-            console.error("[rwanda] call failed:", fn?.name, args, e);
-        }
-        return [];
+        const out = fn();
+        return Array.isArray(out) ? out : null;
+    } catch {
+        return null; // swallow library exceptions completely
     }
 };
 
-const safeProvinces = () => safeCall(Provinces);
-const safeDistricts = (p) => {
-    const P = toKey(p);
+const safeProvinces = () => callArray(() => Provinces()) || [];
+
+const safeDistricts = (province) => {
+    const P = toKey(province);
     if (!P) return [];
-    return safeCall(Districts, P);
-};
-const safeSectors = (p, d) => {
-    const P = toKey(p);
-    const D = toKey(d);
-    if (!P || !D) return [];
-    return safeCall(Sectors, P, D);
-};
-const safeCells = (p, d, s) => {
-    const P = toKey(p);
-    const D = toKey(d);
-    const S = toKey(s);
-    if (!P || !D || !S) return [];
-    return safeCall(Cells, P, D, S);
-};
-const safeVillages = (p, d, s, c) => {
-    const P = toKey(p);
-    const D = toKey(d);
-    const S = toKey(s);
-    const C = toKey(c);
-    if (!P || !D || !S || !C) return [];
-    return safeCall(Villages, P, D, S, C);
+    return callArray(() => Districts(P)) || [];
 };
 
-// ------------------ Small UI bits ------------------
+const safeSectors = (province, district) => {
+    const P = toKey(province);
+    const D = toKey(district);
+    if (!D) return [];
+    // try (province, district) first
+    let res = callArray(() => Sectors(P, D));
+    if (res) return res;
+    // fallback: district-only (package supports optional province)
+    res = callArray(() => Sectors(undefined, D));
+    return res || [];
+};
+
+const safeCells = (province, district, sector) => {
+    const P = toKey(province);
+    const D = toKey(district);
+    const S = toKey(sector);
+    if (!S) return [];
+    let res = callArray(() => Cells(P, D, S));
+    if (res) return res;
+    res = callArray(() => Cells(undefined, D, S));
+    return res || [];
+};
+
+const safeVillages = (province, district, sector, cell) => {
+    const P = toKey(province);
+    const D = toKey(district);
+    const S = toKey(sector);
+    const C = toKey(cell);
+    if (!C) return [];
+    let res = callArray(() => Villages(P, D, S, C));
+    if (res) return res;
+    res = callArray(() => Villages(undefined, D, S, C));
+    return res || [];
+};
+
+/* ------------------------------ UI helpers ------------------------------ */
 const GlassSection = ({ title, children, extra }) => (
     <div className="rounded-2xl border border-black/5 bg-white/60 p-4 backdrop-blur-md dark:border-white/10 dark:bg-neutral-900/40">
         <div className="mb-3 flex items-center justify-between">
@@ -112,7 +126,7 @@ const GlassSection = ({ title, children, extra }) => (
 );
 
 const PermissionPicker = ({ value = [], onChange, disabled }) => (
-    <div className={`grid grid-cols-2 gap-2 ${disabled ? "opacity-60 pointer-events-none" : ""}`}>
+    <div className={cn("grid grid-cols-2 gap-2", disabled && "opacity-60 pointer-events-none")}>
         {PERMS.map((p) => {
             const checked = value.includes(p);
             return (
@@ -206,7 +220,65 @@ const StaffInviteRow = ({ idx, register, control, remove, watch }) => {
     );
 };
 
-// ------------------ Component ------------------
+/* ------------------------- Searchable Combobox -------------------------- */
+const SearchableCombobox = ({
+    value,
+    onChange,
+    placeholder = "Select…",
+    options = [],
+    disabled,
+    className,
+}) => {
+    const [open, setOpen] = useState(false);
+    const selected = value || "";
+
+    return (
+        <Popover open={open} onOpenChange={setOpen}>
+            <PopoverTrigger asChild>
+                <Button
+                    type="button"
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={open}
+                    className={cn("w-full justify-between", className)}
+                    disabled={disabled}
+                >
+                    <span className={cn(!selected && "text-neutral-400")}>
+                        {selected || placeholder}
+                    </span>
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[--radix-popover-trigger-width] p-0 glass-menu">
+                <Command>
+                    <CommandInput placeholder="Search…" />
+                    <CommandEmpty>No results.</CommandEmpty>
+                    <CommandList className="max-h-64 overflow-y-auto">
+                        <CommandGroup>
+                            {options.map((opt) => (
+                                <CommandItem
+                                    key={opt}
+                                    value={opt}
+                                    onSelect={(val) => {
+                                        onChange(val);
+                                        setOpen(false);
+                                    }}
+                                >
+                                    <Check className={cn("mr-2 h-4 w-4", valEq(selected, opt) ? "opacity-100" : "opacity-0")} />
+                                    {opt}
+                                </CommandItem>
+                            ))}
+                        </CommandGroup>
+                    </CommandList>
+                </Command>
+            </PopoverContent>
+        </Popover>
+    );
+};
+
+const valEq = (a, b) => String(a || "").toLowerCase() === String(b || "").toLowerCase();
+
+/* -------------------------------- Component ----------------------------- */
 const StoreForm = ({
     defaultValues,
     onSubmit,
@@ -245,7 +317,7 @@ const StoreForm = ({
     const sc = watch("sector");
     const cl = watch("cell");
 
-    // ✅ Guarded lists for all levels
+    // Guarded lists
     const provinces = useMemo(() => safeProvinces(), []);
     const districts = useMemo(() => safeDistricts(pv), [pv]);
     const sectors = useMemo(() => safeSectors(pv, dt), [pv, dt]);
@@ -271,9 +343,6 @@ const StoreForm = ({
             if (preview) URL.revokeObjectURL(preview);
         };
     }, [preview]);
-
-    // Common class for scrollable menus
-    const MENU_SCROLL = "max-h-64 overflow-y-auto";
 
     return (
         <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4">
@@ -317,25 +386,18 @@ const StoreForm = ({
                             name="province"
                             control={control}
                             render={({ field }) => (
-                                <Select
+                                <SearchableCombobox
                                     value={field.value || ""}
-                                    onValueChange={(v) => {
+                                    onChange={(v) => {
                                         field.onChange(v);
                                         setValue("district", "");
                                         setValue("sector", "");
                                         setValue("cell", "");
                                         setValue("village", "");
                                     }}
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select province" />
-                                    </SelectTrigger>
-                                    <SelectContent className={`glass-menu ${MENU_SCROLL}`}>
-                                        {provinces.map((p) => (
-                                            <SelectItem key={p} value={p}>{p}</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
+                                    options={provinces}
+                                    placeholder="Select province"
+                                />
                             )}
                         />
                     </div>
@@ -347,25 +409,18 @@ const StoreForm = ({
                             name="district"
                             control={control}
                             render={({ field }) => (
-                                <Select
+                                <SearchableCombobox
                                     value={field.value || ""}
-                                    onValueChange={(v) => {
+                                    onChange={(v) => {
                                         field.onChange(v);
                                         setValue("sector", "");
                                         setValue("cell", "");
                                         setValue("village", "");
                                     }}
+                                    options={districts}
+                                    placeholder="Select district"
                                     disabled={!pv}
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select district" />
-                                    </SelectTrigger>
-                                    <SelectContent className={`glass-menu ${MENU_SCROLL}`}>
-                                        {districts.map((d) => (
-                                            <SelectItem key={d} value={d}>{d}</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
+                                />
                             )}
                         />
                     </div>
@@ -377,24 +432,17 @@ const StoreForm = ({
                             name="sector"
                             control={control}
                             render={({ field }) => (
-                                <Select
+                                <SearchableCombobox
                                     value={field.value || ""}
-                                    onValueChange={(v) => {
+                                    onChange={(v) => {
                                         field.onChange(v);
                                         setValue("cell", "");
                                         setValue("village", "");
                                     }}
+                                    options={sectors}
+                                    placeholder="Select sector"
                                     disabled={!pv || !dt}
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select sector" />
-                                    </SelectTrigger>
-                                    <SelectContent className={`glass-menu ${MENU_SCROLL}`}>
-                                        {sectors.map((s) => (
-                                            <SelectItem key={s} value={s}>{s}</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
+                                />
                             )}
                         />
                     </div>
@@ -406,23 +454,16 @@ const StoreForm = ({
                             name="cell"
                             control={control}
                             render={({ field }) => (
-                                <Select
+                                <SearchableCombobox
                                     value={field.value || ""}
-                                    onValueChange={(v) => {
+                                    onChange={(v) => {
                                         field.onChange(v);
                                         setValue("village", "");
                                     }}
+                                    options={cells}
+                                    placeholder="Select cell"
                                     disabled={!pv || !dt || !sc}
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select cell" />
-                                    </SelectTrigger>
-                                    <SelectContent className={`glass-menu ${MENU_SCROLL}`}>
-                                        {cells.map((c) => (
-                                            <SelectItem key={c} value={c}>{c}</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
+                                />
                             )}
                         />
                     </div>
@@ -434,20 +475,13 @@ const StoreForm = ({
                             name="village"
                             control={control}
                             render={({ field }) => (
-                                <Select
+                                <SearchableCombobox
                                     value={field.value || ""}
-                                    onValueChange={field.onChange}
+                                    onChange={field.onChange}
+                                    options={villages}
+                                    placeholder="Select village"
                                     disabled={!pv || !dt || !sc || !cl}
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select village" />
-                                    </SelectTrigger>
-                                    <SelectContent className={`glass-menu ${MENU_SCROLL}`}>
-                                        {villages.map((v) => (
-                                            <SelectItem key={v} value={v}>{v}</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
+                                />
                             )}
                         />
                     </div>
@@ -458,10 +492,12 @@ const StoreForm = ({
             <GlassSection title="Store image" extra={preview ? <Badge variant="secondary" className="glass-badge">Preview</Badge> : null}>
                 <div
                     {...getRootProps()}
-                    className={`group relative grid place-items-center rounded-2xl border border-dashed p-6 transition-colors ${isDragActive
+                    className={cn(
+                        "group relative grid place-items-center rounded-2xl border border-dashed p-6 transition-colors",
+                        isDragActive
                             ? "border-emerald-500 bg-emerald-50"
                             : "border-black/10 bg-white/70 dark:border-white/10 dark:bg-neutral-900/40"
-                        }`}
+                    )}
                 >
                     <input {...getInputProps()} />
                     {!preview ? (
