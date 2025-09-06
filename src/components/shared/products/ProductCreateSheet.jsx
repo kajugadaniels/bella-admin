@@ -9,12 +9,10 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Switch } from "@/components/ui/switch";
-import { Plus, Trash2, Store, Calculator } from "lucide-react";
+import { Plus, Trash2, Store, Tag } from "lucide-react";
 
 /* --------------------------------- schema --------------------------------- */
 const BatchSchema = z.object({
@@ -30,8 +28,103 @@ const ProductSchema = z.object({
     stockins: z.array(BatchSchema).min(1, "Add at least one batch"),
 });
 
+/* ------------------------------ constants ---------------------------------- */
+const CATEGORY_OPTIONS = [
+    "DRINKS",
+    "DAIRY",
+    "BAKERY",
+    "FRUITS",
+    "VEGETABLES",
+    "MEAT",
+    "FROZEN",
+    "SNACKS",
+    "CLEANING",
+    "PERSONAL_CARE",
+    "HOUSEHOLD",
+    "GRAINS",
+];
+
+/* ---------------------------- category select UI --------------------------- */
+function SearchableCategorySelect({
+    value,
+    onChange,
+    placeholder = "Search category…",
+    disabled = false,
+}) {
+    const [open, setOpen] = useState(false);
+    const [q, setQ] = useState("");
+
+    const filtered = useMemo(() => {
+        const s = (q || "").trim().toLowerCase();
+        if (!s) return CATEGORY_OPTIONS;
+        return CATEGORY_OPTIONS.filter((c) => c.toLowerCase().includes(s));
+    }, [q]);
+
+    const label = value || "";
+
+    return (
+        <div className={`relative ${disabled ? "opacity-60 pointer-events-none" : ""}`}>
+            {/* Trigger */}
+            <button
+                type="button"
+                onClick={() => setOpen((o) => !o)}
+                className="w-full rounded-xl border border-black/5 bg-white/80 px-3 py-2 text-left text-sm backdrop-blur hover:bg-white/90 dark:border-white/10 dark:bg-neutral-900/60 dark:hover:bg-neutral-900/70"
+            >
+                <div className="flex items-center gap-2">
+                    <Tag className="h-4 w-4 text-neutral-400" />
+                    <span className={`truncate ${label ? "text-neutral-900 dark:text-neutral-100" : "text-neutral-500"}`}>
+                        {label || "Select a category"}
+                    </span>
+                </div>
+            </button>
+
+            {/* Dropdown */}
+            {open && (
+                <div className="absolute z-20 mt-2 w-full rounded-xl border border-black/5 bg-white/95 p-2 shadow-lg backdrop-blur-sm dark:border-white/10 dark:bg-neutral-900/95">
+                    <div className="relative">
+                        <Input
+                            autoFocus
+                            placeholder={placeholder}
+                            value={q}
+                            onChange={(e) => setQ(e.target.value)}
+                            className="mb-2"
+                        />
+                    </div>
+                    <ScrollArea className="max-h-64 pr-2">
+                        {filtered.length === 0 ? (
+                            <div className="p-2 text-sm text-neutral-500">No categories found.</div>
+                        ) : (
+                            <div className="grid">
+                                {filtered.map((c) => (
+                                    <button
+                                        key={c}
+                                        type="button"
+                                        onClick={() => {
+                                            onChange?.(c);
+                                            setOpen(false);
+                                        }}
+                                        className={`flex items-center gap-2 rounded-lg px-2 py-2 text-left hover:bg-black/[0.04] dark:hover:bg-white/5 ${c === value ? "bg-black/[0.03] dark:bg-white/5" : ""
+                                            }`}
+                                    >
+                                        <span className="text-sm font-medium">{c}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </ScrollArea>
+                </div>
+            )}
+        </div>
+    );
+}
+
 /* ------------------------------ store search UI ------------------------------ */
-function AsyncStoreSelect({ value, onChange, placeholder = "Search store…", disabled = false }) {
+function AsyncStoreSelect({
+    value,
+    onChange,
+    placeholder = "Search store…",
+    disabled = false,
+}) {
     const [q, setQ] = useState("");
     const [loading, setLoading] = useState(false);
     const [opts, setOpts] = useState([]);
@@ -46,7 +139,7 @@ function AsyncStoreSelect({ value, onChange, placeholder = "Search store…", di
                 params.ordering = "name";
                 const { data } = await superadmin.listStores(params);
                 if (!ignore) setOpts(data?.results || []);
-            } catch (err) {
+            } catch {
                 if (!ignore) setOpts([]);
             } finally {
                 if (!ignore) setLoading(false);
@@ -63,7 +156,7 @@ function AsyncStoreSelect({ value, onChange, placeholder = "Search store…", di
     return (
         <div className={`relative ${disabled ? "opacity-60 pointer-events-none" : ""}`}>
             {value ? (
-                <div className="flex items-center justify-between rounded-xl border border-black/5 bg-white/70 px-3 py-2 text-sm dark:border-white/10 dark:bg-neutral-900/60">
+                <div className="flex items-center justify-between rounded-xl border border-black/5 bg-white/80 px-3 py-2 text-sm backdrop-blur dark:border-white/10 dark:bg-neutral-900/60">
                     <div className="min-w-0">
                         <div className="truncate font-medium">{current?.name || "Selected store"}</div>
                         <div className="truncate text-xs text-neutral-500">{value}</div>
@@ -83,11 +176,12 @@ function AsyncStoreSelect({ value, onChange, placeholder = "Search store…", di
                             className="pl-8"
                         />
                     </div>
-                    <div className="absolute z-10 mt-2 w-full rounded-xl border border-black/5 bg-white/95 p-2 shadow-lg backdrop-blur-sm dark:border-white/10 dark:bg-neutral-900/95">
-                        <ScrollArea className="max-h-56">
+                    {/* Glassy dropdown with capped height + scroll */}
+                    <div className="absolute z-20 mt-2 w-full rounded-xl border border-black/5 bg-white/95 p-2 shadow-lg backdrop-blur-sm dark:border-white/10 dark:bg-neutral-900/95">
+                        <ScrollArea className="max-h-72 pr-2">
                             {loading ? (
                                 <div className="grid gap-2 p-2">
-                                    {[...Array(4)].map((_, i) => (
+                                    {[...Array(6)].map((_, i) => (
                                         <Skeleton key={i} className="h-9 w-full rounded-md" />
                                     ))}
                                 </div>
@@ -95,7 +189,7 @@ function AsyncStoreSelect({ value, onChange, placeholder = "Search store…", di
                                 <div className="p-2 text-sm text-neutral-500">No stores found.</div>
                             ) : (
                                 <div className="grid">
-                                    {opts.slice(0, 12).map((o) => (
+                                    {opts.map((o) => (
                                         <button
                                             type="button"
                                             key={o.id}
@@ -141,7 +235,7 @@ export default function ProductCreateSheet({ open, onOpenChange, onDone }) {
         mode: "onChange",
     });
 
-    const { control, register, watch, handleSubmit, reset } = form;
+    const { control, register, watch, handleSubmit, reset, setValue } = form;
     const { fields, append, remove } = useFieldArray({ control, name: "stockins" });
 
     const unitPrice = toNum(watch("unit_price"));
@@ -170,7 +264,6 @@ export default function ProductCreateSheet({ open, onOpenChange, onDone }) {
     const onSubmit = handleSubmit(async (values) => {
         try {
             setSubmitting(true);
-            // Build payload (send numbers as strings to keep decimals friendly)
             const payload = {
                 name: values.name,
                 category: values.category,
@@ -213,26 +306,36 @@ export default function ProductCreateSheet({ open, onOpenChange, onDone }) {
                     <div className="rounded-2xl border border-black/5 bg-white/70 p-4 backdrop-blur dark:border-white/10 dark:bg-neutral-900/50">
                         <div className="mb-3 flex items-center justify-between">
                             <div className="text-sm font-semibold">Product</div>
-                            <Badge variant="secondary" className="glass-badge">
-                                Tax: 18%
-                            </Badge>
+                            <Badge variant="secondary" className="glass-badge">Tax: 18%</Badge>
                         </div>
                         <div className="grid gap-3 sm:grid-cols-3">
                             <div className="grid gap-1.5 sm:col-span-2">
                                 <Label>Name</Label>
                                 <Input placeholder="e.g., Premium Orange Juice 1L" {...register("name")} />
                             </div>
+
+                            {/* Category: glassy, searchable select */}
                             <div className="grid gap-1.5">
                                 <Label>Category</Label>
-                                <Input placeholder="DRINKS, DAIRY, BAKERY…" {...register("category")} />
+                                <Controller
+                                    control={control}
+                                    name="category"
+                                    render={({ field }) => (
+                                        <SearchableCategorySelect
+                                            value={field.value}
+                                            onChange={(v) => field.onChange(v)}
+                                        />
+                                    )}
+                                />
                             </div>
+
                             <div className="grid gap-1.5">
                                 <Label>Unit price</Label>
                                 <Input type="number" step="0.01" placeholder="0.00" {...register("unit_price")} />
                             </div>
                             <div className="grid gap-1.5">
                                 <Label>Price w/ tax (preview)</Label>
-                                <div className="rounded-xl border border-black/5 bg-white/70 px-3 py-2 text-sm dark:border-white/10 dark:bg-neutral-900/60">
+                                <div className="rounded-xl border border-black/5 bg-white/80 px-3 py-2 text-sm backdrop-blur dark:border-white/10 dark:bg-neutral-900/60">
                                     {priceWithTax ? priceWithTax.toFixed(2) : "—"}
                                 </div>
                             </div>
@@ -243,7 +346,12 @@ export default function ProductCreateSheet({ open, onOpenChange, onDone }) {
                     <div className="mt-4 rounded-2xl border border-black/5 bg-white/70 p-4 backdrop-blur dark:border-white/10 dark:bg-neutral-900/50">
                         <div className="mb-3 flex items-center justify-between">
                             <div className="text-sm font-semibold">Initial stock-in batches</div>
-                            <Button type="button" size="sm" onClick={() => append({ store_id: "", quantity: "", expiry_date: "" })} className="cursor-pointer">
+                            <Button
+                                type="button"
+                                size="sm"
+                                onClick={() => append({ store_id: "", quantity: "", expiry_date: "" })}
+                                className="cursor-pointer"
+                            >
                                 <Plus className="mr-2 h-4 w-4" />
                                 Add batch
                             </Button>
