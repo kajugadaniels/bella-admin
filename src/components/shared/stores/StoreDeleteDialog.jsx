@@ -18,10 +18,10 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Separator } from "@/components/ui/separator";
 import { ShieldAlert, Store as StoreIcon } from "lucide-react";
 
-const InfoRow = ({ label, value }) => (
-    <div className="flex items-center justify-between text-sm">
-        <span className="text-neutral-500">{label}</span>
-        <span className="font-medium text-neutral-900 dark:text-neutral-100">{value ?? "—"}</span>
+const InfoPill = ({ label, value }) => (
+    <div className="inline-flex items-center gap-1 rounded-full border border-neutral-200 bg-white/80 px-2.5 py-1 text-xs font-medium text-neutral-700 dark:border-neutral-800 dark:bg-neutral-900/60 dark:text-neutral-200">
+        <span className="opacity-70">{label}:</span>
+        <span>{value ?? "—"}</span>
     </div>
 );
 
@@ -36,14 +36,14 @@ const StoreDeleteDialog = ({ store, open, onOpenChange, onDeleted }) => {
 
     const name = store?.name || "this store";
     const matchText = (store?.name || "").trim();
+    const isMatch = confirmText.trim() === matchText && !!matchText;
 
     const canDelete = useMemo(() => {
         if (!ack) return false;
-        if (!matchText) return false;
-        if (confirmText.trim() !== matchText) return false;
+        if (!isMatch) return false;
         if (reason === "other" && !otherReason.trim()) return false;
         return true;
-    }, [ack, confirmText, matchText, reason, otherReason]);
+    }, [ack, isMatch, reason, otherReason]);
 
     const resetState = () => {
         setReason("duplicate");
@@ -76,131 +76,184 @@ const StoreDeleteDialog = ({ store, open, onOpenChange, onDeleted }) => {
         >
             <AlertDialogContent
                 className="
-          bg-white/80 dark:bg-neutral-900/70
+          relative sm:max-w-[600px]
+          bg-white/90 dark:bg-neutral-900/85
           backdrop-blur-xl
-          border border-white/40 dark:border-white/10
-          shadow-xl
-          sm:max-w-lg
+          border border-neutral-200/70 dark:border-neutral-800
+          shadow-2xl rounded-2xl p-0
         "
             >
-                <AlertDialogHeader>
-                    <div className="flex items-center gap-2">
-                        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-red-50 text-red-600 ring-1 ring-red-100 dark:bg-red-950/40 dark:text-red-400 dark:ring-red-900/40">
-                            <ShieldAlert className="h-5 w-5" />
+                <div className="p-6">
+                    {/* Header */}
+                    <AlertDialogHeader className="space-y-3">
+                        <div
+                            className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl"
+                            style={{
+                                background: "color-mix(in oklab, var(--primary-color) 12%, white)",
+                                color: "var(--primary-color)",
+                                boxShadow: "0 8px 24px rgba(31,79,61,0.10)",
+                            }}
+                        >
+                            <ShieldAlert className="h-6 w-6" />
                         </div>
-                        <div>
-                            <AlertDialogTitle className="leading-none">Delete store?</AlertDialogTitle>
-                            <p className="mt-1 text-xs text-neutral-500">
-                                This action is permanent and may remove related memberships and pending invitations per policy.
+                        <AlertDialogTitle className="text-center text-[18px] font-semibold tracking-tight">
+                            Delete store?
+                        </AlertDialogTitle>
+                        <AlertDialogDescription className="mx-auto max-w-[48ch] text-center text-sm text-neutral-600 dark:text-neutral-300">
+                            This action is permanent and may remove related memberships and pending
+                            invitations according to backend policy.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+
+                    {/* Store snapshot */}
+                    <div className="mt-6 rounded-xl border border-neutral-200 bg-white/80 p-4 shadow-sm dark:border-neutral-800 dark:bg-neutral-900/60">
+                        <div className="flex items-start gap-3">
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-neutral-100 dark:bg-neutral-800">
+                                <StoreIcon className="h-5 w-5 text-neutral-600 dark:text-neutral-300" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                                <div className="truncate text-[15px] font-semibold text-neutral-900 dark:text-neutral-100">
+                                    {name}
+                                </div>
+                                <div className="truncate text-xs text-neutral-500">{store?.id}</div>
+                                <div className="mt-3 flex flex-wrap gap-2">
+                                    <InfoPill label="Has admin" value={store?.has_admin ? "Yes" : "No"} />
+                                    <InfoPill label="Admins" value={typeof store?.admin_count === "number" ? store.admin_count : "—"} />
+                                    <InfoPill label="Staff" value={typeof store?.staff_count === "number" ? store.staff_count : "—"} />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <Separator className="my-6" />
+
+                    {/* Why section */}
+                    <div className="space-y-3">
+                        <Label className="text-sm font-medium">Why are you deleting this store?</Label>
+                        <RadioGroup
+                            value={reason}
+                            onValueChange={setReason}
+                            className="grid gap-2"
+                        >
+                            {[
+                                { id: "duplicate", label: "Duplicate record" },
+                                { id: "mistake", label: "Created by mistake" },
+                                { id: "closed", label: "Store closed permanently" },
+                                { id: "other", label: "Other" },
+                            ].map((opt) => (
+                                <label
+                                    key={opt.id}
+                                    htmlFor={`reason-${opt.id}`}
+                                    className="
+                    group flex cursor-pointer items-center justify-between gap-3
+                    rounded-lg border border-neutral-200 bg-white/85 px-3 py-2.5
+                    text-sm transition hover:border-[var(--primary-color)]/40 hover:bg-white
+                    dark:border-neutral-800 dark:bg-neutral-900/60 dark:hover:bg-neutral-900
+                  "
+                                >
+                                    <div className="flex items-center gap-2">
+                                        <RadioGroupItem id={`reason-${opt.id}`} value={opt.id} />
+                                        <span>{opt.label}</span>
+                                    </div>
+                                </label>
+                            ))}
+                        </RadioGroup>
+
+                        {reason === "other" && (
+                            <div className="grid gap-1.5">
+                                <Label htmlFor="other-reason" className="text-xs text-neutral-600 dark:text-neutral-300">
+                                    Please describe (required)
+                                </Label>
+                                <Input
+                                    id="other-reason"
+                                    placeholder="Brief reason…"
+                                    value={otherReason}
+                                    onChange={(e) => setOtherReason(e.target.value)}
+                                />
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Acknowledgement */}
+                    <div
+                        className="mt-6 space-y-3 rounded-xl border p-4"
+                        style={{
+                            background: "color-mix(in oklab, var(--primary-color) 5%, white)",
+                            borderColor: "color-mix(in oklab, var(--primary-color) 25%, white)",
+                        }}
+                    >
+                        <div className="flex items-start gap-2">
+                            <Checkbox
+                                id="ack"
+                                checked={ack}
+                                onCheckedChange={(v) => setAck(Boolean(v))}
+                                className="mt-0.5"
+                            />
+                            <Label htmlFor="ack" className="text-sm leading-relaxed text-neutral-800 dark:text-neutral-200">
+                                I understand this operation is <span className="font-semibold">irreversible</span> and related data
+                                may be removed per backend policy.
+                            </Label>
+                        </div>
+
+                        <div className="grid gap-1.5">
+                            <Label htmlFor="confirm" className="text-xs text-neutral-600 dark:text-neutral-300">
+                                Type the store name exactly to confirm:
+                                <span className="ml-1 rounded bg-neutral-100 px-1.5 py-0.5 text-[11px] font-semibold text-neutral-700 dark:bg-neutral-800 dark:text-neutral-200">
+                                    {matchText || "—"}
+                                </span>
+                            </Label>
+                            <Input
+                                id="confirm"
+                                placeholder="Type the store name to enable Delete"
+                                value={confirmText}
+                                onChange={(e) => setConfirmText(e.target.value)}
+                                className={
+                                    "transition " +
+                                    (confirmText
+                                        ? isMatch
+                                            ? "border-green-500/60 focus-visible:ring-0"
+                                            : "border-red-500/60 focus-visible:ring-0"
+                                        : "")
+                                }
+                            />
+                            <p
+                                className={
+                                    "text-xs " +
+                                    (confirmText
+                                        ? isMatch
+                                            ? "text-green-600"
+                                            : "text-red-600"
+                                        : "text-neutral-500")
+                                }
+                            >
+                                {confirmText
+                                    ? isMatch
+                                        ? "Name matches."
+                                        : "Name must match exactly."
+                                    : "Enter the exact store name."}
                             </p>
                         </div>
                     </div>
-                </AlertDialogHeader>
 
-                {/* Store snapshot */}
-                <div className="rounded-xl border border-neutral-200 bg-white/60 p-3 shadow-sm dark:border-neutral-800 dark:bg-neutral-900/50">
-                    <div className="mb-2 flex items-center gap-2">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-md bg-neutral-100 dark:bg-neutral-800">
-                            <StoreIcon className="h-4 w-4 text-neutral-600 dark:text-neutral-300" />
-                        </div>
-                        <div className="min-w-0">
-                            <div className="truncate text-sm font-semibold">{name}</div>
-                            <div className="truncate text-xs text-neutral-500">{store?.id}</div>
-                        </div>
-                    </div>
-                    <div className="grid gap-1.5 sm:grid-cols-3">
-                        <InfoRow label="Has admin" value={store?.has_admin ? "Yes" : "No"} />
-                        <InfoRow label="Admins" value={typeof store?.admin_count === "number" ? store.admin_count : "—"} />
-                        <InfoRow label="Staff" value={typeof store?.staff_count === "number" ? store.staff_count : "—"} />
-                    </div>
+                    {/* Footer */}
+                    <AlertDialogFooter className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                        <AlertDialogCancel disabled={submitting} className="sm:min-w-[120px]">
+                            Cancel
+                        </AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={remove}
+                            disabled={!canDelete || submitting}
+                            className="sm:min-w-[170px] bg-red-600 hover:bg-red-700 disabled:opacity-60"
+                            style={{ boxShadow: "0 10px 24px rgba(220, 38, 38, 0.22)" }}
+                        >
+                            {submitting ? "Deleting…" : `Delete "${name}"`}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+
+                    <p className="mt-3 text-center text-[11px] text-neutral-500">
+                        Not sure? You can edit the store instead.
+                    </p>
                 </div>
-
-                <Separator className="my-3" />
-
-                {/* Reason */}
-                <div className="space-y-2">
-                    <Label className="text-sm">Why are you deleting this store?</Label>
-                    <RadioGroup
-                        value={reason}
-                        onValueChange={setReason}
-                        className="grid gap-2 sm:grid-cols-2"
-                    >
-                        <div className="flex items-center space-x-2 rounded-lg border p-2 dark:border-neutral-800">
-                            <RadioGroupItem value="duplicate" id="reason-dup" />
-                            <Label htmlFor="reason-dup" className="text-sm">Duplicate record</Label>
-                        </div>
-                        <div className="flex items-center space-x-2 rounded-lg border p-2 dark:border-neutral-800">
-                            <RadioGroupItem value="mistake" id="reason-mis" />
-                            <Label htmlFor="reason-mis" className="text-sm">Created by mistake</Label>
-                        </div>
-                        <div className="flex items-center space-x-2 rounded-lg border p-2 dark:border-neutral-800">
-                            <RadioGroupItem value="closed" id="reason-close" />
-                            <Label htmlFor="reason-close" className="text-sm">Store closed permanently</Label>
-                        </div>
-                        <div className="flex items-center space-x-2 rounded-lg border p-2 dark:border-neutral-800">
-                            <RadioGroupItem value="other" id="reason-other" />
-                            <Label htmlFor="reason-other" className="text-sm">Other</Label>
-                        </div>
-                    </RadioGroup>
-
-                    {reason === "other" && (
-                        <div className="mt-1">
-                            <Label htmlFor="other-reason" className="text-xs text-neutral-500">
-                                Please describe (required)
-                            </Label>
-                            <Input
-                                id="other-reason"
-                                placeholder="Brief reason…"
-                                value={otherReason}
-                                onChange={(e) => setOtherReason(e.target.value)}
-                                className="mt-1"
-                            />
-                        </div>
-                    )}
-                </div>
-
-                {/* Acknowledgement */}
-                <div className="mt-3 space-y-2 rounded-xl border border-neutral-200 bg-white/60 p-3 dark:border-neutral-800 dark:bg-neutral-900/50">
-                    <div className="flex items-center gap-2">
-                        <Checkbox
-                            id="ack"
-                            checked={ack}
-                            onCheckedChange={(v) => setAck(Boolean(v))}
-                        />
-                        <Label htmlFor="ack" className="text-sm leading-snug">
-                            I understand this operation is irreversible and related data may be removed per backend policy.
-                        </Label>
-                    </div>
-                    <div className="grid gap-1.5">
-                        <Label htmlFor="confirm" className="text-xs text-neutral-500">
-                            To confirm, type the store name exactly:
-                            <span className="ml-1 rounded bg-neutral-100 px-1.5 py-0.5 text-[11px] font-semibold text-neutral-700 dark:bg-neutral-800 dark:text-neutral-200">
-                                {matchText}
-                            </span>
-                        </Label>
-                        <Input
-                            id="confirm"
-                            placeholder="Type the store name to enable Delete"
-                            value={confirmText}
-                            onChange={(e) => setConfirmText(e.target.value)}
-                        />
-                    </div>
-                </div>
-
-                <AlertDialogFooter className="mt-2">
-                    <AlertDialogCancel disabled={submitting}>Cancel</AlertDialogCancel>
-                    <AlertDialogAction
-                        onClick={remove}
-                        disabled={!canDelete || submitting}
-                        className="bg-red-600 hover:bg-red-700 disabled:opacity-60"
-                    >
-                        {submitting ? "Deleting…" : `Delete "${name}"`}
-                    </AlertDialogAction>
-                </AlertDialogFooter>
-
-                <AlertDialogDescription className="mt-1 text-[11px] text-neutral-500">
-                    Tip: If you’re unsure, consider disabling the store or removing specific members instead.
-                </AlertDialogDescription>
             </AlertDialogContent>
         </AlertDialog>
     );
