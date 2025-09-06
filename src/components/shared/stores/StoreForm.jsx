@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo } from "react";
+import React, { useCallback, useEffect, useMemo } from "react";
 import { useForm, useFieldArray, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -32,8 +32,7 @@ const baseSchema = z.object({
     village: z.string().optional().or(z.literal("")),
     map_url: z.string().url("Invalid URL").optional().or(z.literal("")),
     image: z.any().optional(),
-    // update-only
-    remove_image: z.boolean().optional(),
+    remove_image: z.boolean().optional(), // update-only
 });
 
 const staffItem = z.object({
@@ -49,6 +48,78 @@ const createSchema = baseSchema.extend({
     staff: z.array(staffItem).optional().default([]),
 });
 
+/** ----------------------------
+ * Safe wrappers for `rwanda`
+ * ---------------------------*/
+const toKey = (s) => (typeof s === "string" ? s.trim().toLowerCase() : undefined);
+
+const safeProvinces = () => {
+    try {
+        const list = Provinces();
+        return Array.isArray(list) ? list : [];
+    } catch (e) {
+        console.error("[rwanda] Provinces()", e);
+        return [];
+    }
+};
+
+const safeDistricts = (province) => {
+    const p = toKey(province);
+    if (!p) return [];
+    try {
+        const list = Districts(p);
+        return Array.isArray(list) ? list : [];
+    } catch (e) {
+        console.error("[rwanda] Districts()", { province }, e);
+        return [];
+    }
+};
+
+const safeSectors = (province, district) => {
+    const p = toKey(province);
+    const d = toKey(district);
+    if (!p || !d) return [];
+    try {
+        const list = Sectors(p, d);
+        return Array.isArray(list) ? list : [];
+    } catch (e) {
+        console.error("[rwanda] Sectors()", { province, district }, e);
+        return [];
+    }
+};
+
+const safeCells = (province, district, sector) => {
+    const p = toKey(province);
+    const d = toKey(district);
+    const s = toKey(sector);
+    if (!p || !d || !s) return [];
+    try {
+        const list = Cells(p, d, s);
+        return Array.isArray(list) ? list : [];
+    } catch (e) {
+        console.error("[rwanda] Cells()", { province, district, sector }, e);
+        return [];
+    }
+};
+
+const safeVillages = (province, district, sector, cell) => {
+    const p = toKey(province);
+    const d = toKey(district);
+    const s = toKey(sector);
+    const c = toKey(cell);
+    if (!p || !d || !s || !c) return [];
+    try {
+        const list = Villages(p, d, s, c);
+        return Array.isArray(list) ? list : [];
+    } catch (e) {
+        console.error("[rwanda] Villages()", { province, district, sector, cell }, e);
+        return [];
+    }
+};
+
+/** ----------------------------
+ * UI subcomponents
+ * ---------------------------*/
 const GlassSection = ({ title, children, extra }) => (
     <div className="rounded-2xl border border-black/5 bg-white/60 p-4 backdrop-blur-md dark:border-white/10 dark:bg-neutral-900/40">
         <div className="mb-3 flex items-center justify-between">
@@ -65,7 +136,10 @@ const PermissionPicker = ({ value = [], onChange, disabled }) => {
             {PERMS.map((p) => {
                 const checked = value.includes(p);
                 return (
-                    <label key={p} className="flex items-center gap-2 rounded-lg border border-black/5 bg-white/80 px-2 py-1 text-sm backdrop-blur dark:border-white/10 dark:bg-neutral-900/50">
+                    <label
+                        key={p}
+                        className="flex items-center gap-2 rounded-lg border border-black/5 bg-white/80 px-2 py-1 text-sm backdrop-blur dark:border-white/10 dark:bg-neutral-900/50"
+                    >
                         <Checkbox
                             checked={checked}
                             onCheckedChange={(v) => {
@@ -136,7 +210,6 @@ const StaffInviteRow = ({ idx, register, control, remove, watch }) => {
                 </div>
             </div>
 
-            {/* Permissions (only when NOT admin) */}
             {!isAdmin && (
                 <div className="md:col-span-12">
                     <Label className="text-xs text-neutral-500">Permissions</Label>
@@ -158,7 +231,7 @@ const StoreForm = ({
     defaultValues,
     onSubmit,
     submitting = false,
-    mode = "create", // "create" | "update"
+    mode = "create",
 }) => {
     const isCreate = mode === "create";
 
@@ -174,7 +247,7 @@ const StoreForm = ({
             cell: "",
             village: "",
             map_url: "",
-            image: null, // will hold File[] from dropzone
+            image: null,
             remove_image: false,
             staff: [],
             ...(defaultValues || {}),
@@ -186,20 +259,18 @@ const StoreForm = ({
     const { control, handleSubmit, register, watch, setValue, formState } = form;
     const { fields, append, remove } = useFieldArray({ control, name: "staff" });
 
-    // Rwanda cascaded selects
+    // Location watched values
     const pv = watch("province");
     const dt = watch("district");
     const sc = watch("sector");
     const cl = watch("cell");
 
-    const provinces = useMemo(() => (Provinces() || []).map((p) => p), []);
-    const districts = useMemo(() => (pv ? Districts(pv) || [] : []), [pv]);
-    const sectors = useMemo(() => (pv && dt ? Sectors(pv, dt) || [] : []), [pv, dt]);
-    const cells = useMemo(() => (pv && dt && sc ? Cells(pv, dt, sc) || [] : []), [pv, dt, sc]);
-    const villages = useMemo(
-        () => (pv && dt && sc && cl ? Villages(pv, dt, sc, cl) || [] : []),
-        [pv, dt, sc, cl]
-    );
+    // ✅ SAFE: every call wrapped & normalized
+    const provinces = useMemo(() => safeProvinces(), []);
+    const districts = useMemo(() => safeDistricts(pv), [pv]);
+    const sectors = useMemo(() => safeSectors(pv, dt), [pv, dt]);
+    const cells = useMemo(() => safeCells(pv, dt, sc), [pv, dt, sc]);
+    const villages = useMemo(() => safeVillages(pv, dt, sc, cl), [pv, dt, sc, cl]);
 
     // Dropzone
     const onDrop = useCallback(
@@ -208,7 +279,7 @@ const StoreForm = ({
         },
         [setValue]
     );
-    const { getRootProps, getInputProps, isDragActive, acceptedFiles } = useDropzone({
+    const { getRootProps, getInputProps, isDragActive } = useDropzone({
         onDrop,
         accept: { "image/*": [] },
         maxFiles: 1,
@@ -216,6 +287,13 @@ const StoreForm = ({
 
     const file = Array.isArray(watch("image")) ? watch("image")[0] : null;
     const preview = file ? URL.createObjectURL(file) : null;
+
+    // Clean up the preview URL to avoid memory leaks
+    useEffect(() => {
+        return () => {
+            if (preview) URL.revokeObjectURL(preview);
+        };
+    }, [preview]);
 
     return (
         <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4">
@@ -384,11 +462,7 @@ const StoreForm = ({
             {/* Image */}
             <GlassSection
                 title="Store image"
-                extra={
-                    preview ? (
-                        <Badge variant="secondary" className="glass-badge">Preview</Badge>
-                    ) : null
-                }
+                extra={preview ? <Badge variant="secondary" className="glass-badge">Preview</Badge> : null}
             >
                 <div
                     {...getRootProps()}
@@ -417,59 +491,55 @@ const StoreForm = ({
                         </div>
                     )}
                 </div>
-                {/* Fallback manual input for edge cases */}
-                <input type="file" accept="image/*" className="hidden" />
             </GlassSection>
 
             {/* Staff (create-only) */}
             {isCreate && (
-                <>
-                    <GlassSection
-                        title="Invite staff (optional)"
-                        extra={
-                            <Button
-                                type="button"
-                                variant="outline"
-                                onClick={() =>
-                                    append({
-                                        email: "",
-                                        username: "",
-                                        phone_number: "",
-                                        is_admin: false,
-                                        permissions: ["read"],
-                                        is_active: true,
-                                    })
-                                }
-                            >
-                                <Plus className="mr-2 h-4 w-4" />
-                                Add invite
-                            </Button>
-                        }
-                    >
-                        {fields.length === 0 && (
-                            <div className="rounded-xl border border-dashed border-black/10 bg-white/60 p-4 text-center text-sm text-neutral-500 dark:border-white/10 dark:bg-neutral-900/40">
-                                No invites added yet.
-                            </div>
-                        )}
+                <GlassSection
+                    title="Invite staff (optional)"
+                    extra={
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() =>
+                                append({
+                                    email: "",
+                                    username: "",
+                                    phone_number: "",
+                                    is_admin: false,
+                                    permissions: ["read"],
+                                    is_active: true,
+                                })
+                            }
+                        >
+                            <Plus className="mr-2 h-4 w-4" />
+                            Add invite
+                        </Button>
+                    }
+                >
+                    {fields.length === 0 && (
+                        <div className="rounded-xl border border-dashed border-black/10 bg-white/60 p-4 text-center text-sm text-neutral-500 dark:border-white/10 dark:bg-neutral-900/40">
+                            No invites added yet.
+                        </div>
+                    )}
 
-                        {fields.map((f, idx) => (
-                            <StaffInviteRow
-                                key={f.id}
-                                idx={idx}
-                                register={register}
-                                control={control}
-                                remove={remove}
-                                watch={watch}
-                            />
-                        ))}
-                    </GlassSection>
-                </>
+                    {fields.map((f, idx) => (
+                        <StaffInviteRow
+                            key={f.id}
+                            idx={idx}
+                            register={register}
+                            control={control}
+                            remove={remove}
+                            watch={watch}
+                        />
+                    ))}
+                </GlassSection>
             )}
 
-            {/* Sticky bottom actions (inside the form, at the very bottom of the sheet) */}
+            {/* Sticky bottom actions */}
             <div className="sticky bottom-0 z-10 mt-2 rounded-xl border border-black/5 bg-white/85 p-3 backdrop-blur-sm dark:border-white/10 dark:bg-neutral-900/70">
                 <div className="flex items-center justify-end gap-2">
-                    <Button type="button" variant="ghost" onClick={() => window.history.back()}>
+                    <Button type="button" variant="ghost" onClick={() => history.back()}>
                         Cancel
                     </Button>
                     <Button type="submit" disabled={submitting || !formState.isValid}>
