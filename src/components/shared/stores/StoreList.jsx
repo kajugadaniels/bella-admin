@@ -15,6 +15,7 @@ import StoreCreateSheet from "./StoreCreateSheet";
 import StoreUpdateSheet from "./StoreUpdateSheet";
 import StoreDeleteDialog from "./StoreDeleteDialog";
 import useDebounce from "@/hooks/useDebounce";
+import StoreDetailSheet from "./StoreDetailSheet";
 
 // Fallback debounce if "@/hooks/useDebounce" isn't present
 function useDebounceLocal(value, delay = 500) {
@@ -54,6 +55,7 @@ const StoreList = () => {
     const [createOpen, setCreateOpen] = useState(false);
     const [editId, setEditId] = useState(null);
     const [deleteTarget, setDeleteTarget] = useState(null);
+    const [detailId, setDetailId] = useState(null);
 
     const fetchStores = useCallback(async () => {
         setLoading(true);
@@ -210,6 +212,16 @@ const StoreList = () => {
                     refresh();
                 }}
             />
+
+            {detailId && (
+                <StoreDetailSheet
+                    id={detailId}
+                    open={!!detailId}
+                    onOpenChange={(o) => {
+                        if (!o) setDetailId(null);
+                    }}
+                />
+            )}
 
             {/* Update */}
             {editId && (
