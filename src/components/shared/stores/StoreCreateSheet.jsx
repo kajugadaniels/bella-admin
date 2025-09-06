@@ -21,7 +21,7 @@ const PROVINCE_SUBMIT_MAP = {
 /** Only allow permissions your API supports */
 const ALLOWED_PERMS = new Set(["read", "write", "edit", "delete"]);
 
-/** Normalize form values to what the API expects */
+/** Normalize form values to what the API expects (JSON-friendly) */
 function normalizeForAPI(values) {
     const v = { ...values };
 
@@ -31,18 +31,21 @@ function normalizeForAPI(values) {
         v.province = PROVINCE_SUBMIT_MAP[pv] || pv;
     }
 
-    // Trim strings & drop blanks
+    // Trim strings
     ["district", "sector", "cell", "village", "address", "email", "phone_number", "map_url", "name"].forEach((k) => {
         if (typeof v[k] === "string") v[k] = v[k].trim();
     });
 
     // unwrap image to a single File if it's an array/FileList
-    if (Array.isArray(v.image)) v.image = v.image[0] || null;
-    else if (v.image && typeof v.image === "object" && "0" in v.image) v.image = v.image[0] || null;
+    let imageFile = null;
+    if (Array.isArray(v.image)) imageFile = v.image[0] || null;
+    else if (v.image && typeof v.image === "object" && "0" in v.image) imageFile = v.image[0] || null;
+    else if (v.image instanceof File) imageFile = v.image || null;
 
-    // staff normalization
+    // staff normalization (drop empty rows)
+    let staff = [];
     if (Array.isArray(v.staff)) {
-        v.staff = v.staff
+        staff = v.staff
             .filter((s) => s && s.email)
             .map((s) => {
                 const is_admin = !!s.is_admin;
@@ -60,45 +63,22 @@ function normalizeForAPI(values) {
             });
     }
 
-    return v;
-}
+    // final JSON payload (no image file here)
+    const jsonPayload = {
+        name: v.name || "",
+        email: v.email || "",
+        phone_number: v.phone_number || "",
+        address: v.address || "",
+        province: v.province || "",
+        district: v.district || "",
+        sector: v.sector || "",
+        cell: v.cell || "",
+        village: v.village || "",
+        map_url: v.map_url || "",
+        staff,
+    };
 
-/** Build FormData the way DRF parsers like it:
- *  - Simple scalars as normal fields
- *  - image as File
- *  - staff as ONE JSON field (stringified)
- */
-function buildCreateFormData(values) {
-    const fd = new FormData();
-
-    // Simple fields (skip blanks)
-    [
-        "name",
-        "email",
-        "phone_number",
-        "address",
-        "province",
-        "district",
-        "sector",
-        "cell",
-        "village",
-        "map_url",
-    ].forEach((k) => {
-        const v = values[k];
-        if (v !== undefined && v !== null && String(v).trim().length) fd.append(k, v);
-    });
-
-    // Image
-    if (values.image instanceof File) {
-        fd.append("image", values.image);
-    }
-
-    // staff as JSON (NOT bracket notation)
-    if (Array.isArray(values.staff) && values.staff.length) {
-        fd.append("staff", JSON.stringify(values.staff));
-    }
-
-    return fd;
+    return { jsonPayload, imageFile };
 }
 
 /** Works with fetch-style errors thrown by api.js */
@@ -120,7 +100,6 @@ function extractApiError(err) {
                     if (lines.length) return lines.join("\n");
                 } catch { }
             }
-            // fall back to any stringy fields
             try {
                 const lines = [];
                 for (const [k, v] of Object.entries(d)) {
@@ -141,13 +120,47 @@ const StoreCreateSheet = ({ open, onOpenChange, onDone }) => {
     const submit = async (values) => {
         setSubmitting(true);
         try {
-            // 1) normalize
-            const normalized = normalizeForAPI(values);
-            // 2) form-data (image as File, staff as JSON string)
-            const body = buildCreateFormData(normalized);
-            // 3) submit
-            const res = await superadmin.createStore(body);
-            const msg = res?.message || res?.data?.message || "Store created.";
+            // 1) Normalize values; split JSON body & image file
+            const { jsonPayload, imageFile } = normalizeForAPI(values);
+
+            // 2) Create store with JSON (this is the key change; DRF parses 'staff' correctly)
+            // Assumes your superadmin wrapper sets Content-Type: application/json for plain objects.
+            const createRes = await superadmin.createStore(jsonPayload);
+
+            // Try common response shapes
+            const storeId = createRes?.data?.id ?? createRes?.id ?? createRes?.data?.store?.id;
+            if (!storeId) {
+                // If backend returns the created store object directly, keep this friendly fallback
+                throw new Error("Store created but no ID returned from API.");
+            }
+
+            // 3) If image selected, upload it in a separate multipart PATCH
+            if (imageFile instanceof File) {
+                const fd = new FormData();
+                fd.append("image", imageFile);
+
+                // If your wrapper has a specific method, use it; otherwise a generic update works fine.
+                // e.g., await superadmin.updateStoreImage(storeId, fd)
+                const patchFn = superadmin.updateStore || superadmin.patchStore || superadmin.updateStoreImage;
+                if (typeof patchFn === "function") {
+                    await patchFn(storeId, fd);
+                } else {
+                    // Fallback: direct fetch if your wrapper doesn't provide one (adjust URL as needed)
+                    const res = await fetch(`/api/superadmin/stores/${storeId}/`, {
+                        method: "PATCH",
+                        body: fd,
+                    });
+                    if (!res.ok) {
+                        const data = await res.json().catch(() => ({}));
+                        throw { message: "Image upload failed", data };
+                    }
+                }
+            }
+
+            const msg =
+                createRes?.message ||
+                createRes?.data?.message ||
+                "Store created.";
             toast.success(msg);
             onDone?.();
         } catch (err) {
