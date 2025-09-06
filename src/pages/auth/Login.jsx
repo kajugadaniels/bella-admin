@@ -278,8 +278,7 @@ const Login = () => {
                     <Button
                         type="submit"
                         disabled={loading}
-                        className="w-full h-[50px] rounded-lg bg-[var(--primary-color)] text-white 
-             hover:opacity-95 active:opacity-90 outline-none focus-visible:outline-none"
+                        className="w-full h-[50px] rounded-lg bg-[var(--primary-color)] text-white hover:opacity-95 active:opacity-90 outline-none focus-visible:outline-none cursor-pointer"
                     >
                         {loading ? (
                             <span className="inline-flex items-center gap-2">
