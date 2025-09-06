@@ -1,12 +1,12 @@
 // src/components/shared/stores/StoreUpdateSheet.jsx
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { toast } from "sonner";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import StoreForm from "./StoreForm";
+import StaffManager from "./StaffManager";
 import { superadmin } from "@/api";
 
 /* ───────────────────────── Province mapping ───────────────────────── */
-/** Backend expects these; rwanda@2.1.5 often shows "Kigali City" in the picker */
 const PROVINCE_SUBMIT_MAP = {
     East: "Eastern",
     West: "Western",
@@ -19,7 +19,6 @@ const PROVINCE_SUBMIT_MAP = {
     Northern: "Northern",
     Southern: "Southern",
 };
-/** For display in the combobox (what RW.Provinces() likely returns) */
 const PROVINCE_DISPLAY_MAP = {
     Kigali: "Kigali City",
     Eastern: "Eastern",
@@ -65,26 +64,15 @@ function extractToastError(err) {
 /* ───────────────────────── Normalization ───────────────────────── */
 function normalizeUpdate(values) {
     const v = { ...values };
-
-    // Trim simple strings
     ["name", "email", "phone_number", "address", "province", "district", "sector", "cell", "village", "map_url"].forEach((k) => {
         if (typeof v[k] === "string") v[k] = v[k].trim();
     });
-
-    // Province → backend format
     if (v.province) v.province = toSubmitProvince(v.province);
-
-    // Unwrap image to File if array/FileList-like
     if (Array.isArray(v.image)) v.image = v.image[0] || null;
     else if (v.image && typeof v.image === "object" && "0" in v.image) v.image = v.image[0] || null;
-
     return v;
 }
 
-/** Build body for PATCH:
- *  - JSON when no file/remove flag is present
- *  - FormData when image or remove_image are involved
- */
 function buildUpdateBody(values) {
     const v = normalizeUpdate(values);
     const hasFile = v.image instanceof File;
@@ -92,7 +80,6 @@ function buildUpdateBody(values) {
 
     if (!hasFile && !wantsRemove) {
         const { image, remove_image, ...rest } = v;
-        // drop empties
         Object.keys(rest).forEach((k) => {
             if (rest[k] === "" || rest[k] === null || rest[k] === undefined) delete rest[k];
         });
@@ -119,41 +106,53 @@ const StoreUpdateSheet = ({ id, open, onOpenChange, onDone }) => {
     const [storeDefaults, setStoreDefaults] = useState(null);
     const [submitting, setSubmitting] = useState(false);
 
-    // Load store details on open/id change
+    // staff/pending for manager
+    const [staffList, setStaffList] = useState([]);
+    const [pendingInvites, setPendingInvites] = useState([]);
+
+    const load = useCallback(async () => {
+        if (!id) return;
+        setLoading(true);
+        try {
+            const res = await superadmin.getStore(id);
+            const payload = res?.data?.data;
+            if (!payload) throw new Error("Malformed response.");
+
+            const contact = payload.contact || {};
+            const location = payload.location || {};
+
+            setStoreDefaults({
+                name: payload.name || "",
+                email: contact.email || "",
+                phone_number: contact.phone_number || "",
+                address: contact.address || "",
+                province: toDisplayProvince(location.province || ""),
+                district: location.district || "",
+                sector: location.sector || "",
+                cell: location.cell || "",
+                village: location.village || "",
+                map_url: location.map_url || "",
+                image: null,
+                remove_image: false,
+            });
+
+            // staff lists (serializer may expose 'staff' and 'pending_staff'; support both)
+            const staff = Array.isArray(payload.staff) ? payload.staff : (Array.isArray(payload.staff_members) ? payload.staff_members : []);
+            const pending = Array.isArray(payload.pending_staff) ? payload.pending_staff : (Array.isArray(payload.pending) ? payload.pending : []);
+            setStaffList(staff);
+            setPendingInvites(pending);
+        } catch (err) {
+            toast.error(extractToastError(err) || "Failed to load store.");
+            onOpenChange?.(false);
+        } finally {
+            setLoading(false);
+        }
+    }, [id, onOpenChange]);
+
     useEffect(() => {
         if (!open || !id) return;
-        (async () => {
-            setLoading(true);
-            try {
-                const res = await superadmin.getStore(id);
-                const payload = res?.data?.data; // DRF: { status, data }
-                if (!payload) throw new Error("Malformed response.");
-
-                const contact = payload.contact || {};
-                const location = payload.location || {};
-
-                setStoreDefaults({
-                    name: payload.name || "",
-                    email: contact.email || "",
-                    phone_number: contact.phone_number || "",
-                    address: contact.address || "",
-                    province: toDisplayProvince(location.province || ""),
-                    district: location.district || "",
-                    sector: location.sector || "",
-                    cell: location.cell || "",
-                    village: location.village || "",
-                    map_url: location.map_url || "",
-                    image: null,           // no file selected initially
-                    remove_image: false,   // default
-                });
-            } catch (err) {
-                toast.error(extractToastError(err) || "Failed to load store.");
-                onOpenChange?.(false);
-            } finally {
-                setLoading(false);
-            }
-        })();
-    }, [open, id, onOpenChange]);
+        load();
+    }, [open, id, load]);
 
     const onSubmit = async (values) => {
         setSubmitting(true);
@@ -161,6 +160,7 @@ const StoreUpdateSheet = ({ id, open, onOpenChange, onDone }) => {
             const body = buildUpdateBody(values);
             const res = await superadmin.updateStore(id, body);
             toast.success(res?.message || "Store updated successfully.");
+            await load(); // refresh details after update
             onDone?.();
         } catch (err) {
             toast.error(extractToastError(err) || "Failed to update store.");
@@ -176,16 +176,26 @@ const StoreUpdateSheet = ({ id, open, onOpenChange, onDone }) => {
                     <SheetTitle>Update store</SheetTitle>
                 </SheetHeader>
 
-                <div className="py-4">
+                <div className="py-4 space-y-6">
                     {loading ? (
                         <div className="py-12 text-center text-sm text-neutral-500">Loading…</div>
                     ) : storeDefaults ? (
-                        <StoreForm
-                            mode="update"
-                            defaultValues={storeDefaults}
-                            submitting={submitting}
-                            onSubmit={onSubmit}
-                        />
+                        <>
+                            <StoreForm
+                                mode="update"
+                                defaultValues={storeDefaults}
+                                submitting={submitting}
+                                onSubmit={onSubmit}
+                            />
+
+                            {/* ───────────── Staff management (list, invite, attach, remove) ───────────── */}
+                            <StaffManager
+                                storeId={id}
+                                staff={staffList}
+                                pending={pendingInvites}
+                                onChanged={load}
+                            />
+                        </>
                     ) : (
                         <div className="py-12 text-center text-sm text-neutral-500">No data.</div>
                     )}
