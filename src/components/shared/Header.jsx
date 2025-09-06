@@ -120,7 +120,7 @@ const Header = () => {
                 "dark:border-neutral-800 dark:bg-neutral-900/70 dark:supports-[backdrop-filter]:bg-neutral-900/50"
             )}
         >
-            <div className="mx-auto max-w-[1400px] px-4 sm:px-6">
+            <div className="mx-auto">
                 <div className="flex h-16 items-center gap-3">
                     {/* Mobile: open sidebar */}
                     <TooltipProvider delayDuration={150}>
