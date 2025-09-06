@@ -149,7 +149,7 @@ const StaffInviteRow = ({ idx, register, control, remove, watch }) => {
                 </div>
                 <span>Invite #{idx + 1}</span>
                 {isAdmin && (
-                    <Badge className="ml-2 flex items-center gap-1">
+                    <Badge className="ml-2 flex items-center gap-1 text-white">
                         <ShieldCheck className="h-3.5 w-3.5" /> Admin
                     </Badge>
                 )}
@@ -157,7 +157,7 @@ const StaffInviteRow = ({ idx, register, control, remove, watch }) => {
                     type="button"
                     variant="ghost"
                     size="sm"
-                    className="ml-auto text-red-600"
+                    className="ml-auto text-red-600 cursor-pointer"
                     onClick={() => remove(idx)}
                 >
                     <Trash2 className="mr-1 h-4 w-4" /> Remove
@@ -528,6 +528,7 @@ const StoreForm = ({
                                     is_active: true,
                                 })
                             }
+                            className="cursor-pointer"
                         >
                             <Plus className="mr-2 h-4 w-4" />
                             Add invite
@@ -555,10 +556,10 @@ const StoreForm = ({
             {/* Sticky bottom actions */}
             <div className="sticky bottom-0 z-10 mt-2 rounded-xl border border-black/5 bg-white/85 p-3 backdrop-blur-sm dark:border-white/10 dark:bg-neutral-900/70">
                 <div className="flex items-center justify-end gap-2">
-                    <Button type="button" variant="ghost" onClick={() => history.back()}>
+                    <Button type="button" variant="secondary" onClick={() => history.back()} className="cursor-pointer">
                         Cancel
                     </Button>
-                    <Button type="submit" disabled={submitting || !formState.isValid}>
+                    <Button type="submit" disabled={submitting || !formState.isValid} className="text-white cursor-pointer">
                         {submitting ? "Saving…" : "Save store"}
                     </Button>
                 </div>
