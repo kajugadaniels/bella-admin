@@ -1,16 +1,14 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import {
-    CircleAlert,
-    Eye,
     ListFilter,
     Plus,
     RefreshCw,
     Search,
-    SlidersHorizontal,
     SortAsc,
     SortDesc,
-    Store,
+    Eye,
+    CircleAlert,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -23,9 +21,8 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Switch } from "@/components/ui/switch";
-import { ScrollArea } from "@/components/ui/scroll-area";
 
+import ProductFilters, { DEFAULT_PRODUCT_FILTERS } from "./ProductFilters";
 import ProductDetailSheet from "./ProductDetailSheet";
 import ProductCreateSheet from "./ProductCreateSheet";
 
@@ -54,31 +51,6 @@ function dateOnly(iso) {
         return String(iso);
     }
 }
-
-/* --------------------------------- constants --------------------------------- */
-const CATEGORY_OPTIONS = [
-    "DRINKS",
-    "DAIRY",
-    "BAKERY",
-    "FRUITS",
-    "SNACKS",
-    "MEAT",
-    "FROZEN",
-    "CLEANING",
-    "PERSONAL_CARE",
-    "OTHER",
-];
-
-const ORDERING_FIELDS = [
-    { label: "Newest", value: "created_at" },
-    { label: "Expiry date", value: "expiry_date" },
-    { label: "Product name", value: "product__name" },
-    { label: "Store name", value: "store__name" },
-    { label: "Remaining qty", value: "remaining" },
-    { label: "Unit price", value: "product__unit_price" },
-    { label: "Net value", value: "value_net" },
-    { label: "Gross value", value: "value_gross" },
-];
 
 /* --------------------------- Mini Card for small screens --------------------------- */
 function ProductCard({ row, onView }) {
@@ -133,331 +105,6 @@ function ProductCard({ row, onView }) {
     );
 }
 
-/* ------------------------------ Store filter select ------------------------------ */
-function StoreFilterSelect({ value, onChange }) {
-    const [q, setQ] = useState("");
-    const [loading, setLoading] = useState(false);
-    const [opts, setOpts] = useState([]);
-
-    useEffect(() => {
-        let ignore = false;
-        async function run() {
-            setLoading(true);
-            try {
-                const params = {};
-                if (q.trim()) params.search = q.trim();
-                params.ordering = "name";
-                const { data } = await superadmin.listStores(params);
-                if (!ignore) setOpts(data?.results || []);
-            } catch {
-                if (!ignore) setOpts([]);
-            } finally {
-                if (!ignore) setLoading(false);
-            }
-        }
-        run();
-        return () => {
-            ignore = true;
-        };
-    }, [q]);
-
-    const current = useMemo(() => opts.find((o) => o.id === value) || null, [opts, value]);
-
-    return (
-        <div className="grid gap-1.5">
-            <Label className="text-xs text-neutral-500">Store</Label>
-
-            {/* Selected pill */}
-            {value ? (
-                <div className="flex items-center justify-between rounded-xl border border-black/5 bg-white/70 px-3 py-2 text-sm backdrop-blur dark:border-white/10 dark:bg-neutral-900/60">
-                    <div className="min-w-0">
-                        <div className="truncate font-medium">{current?.name || "Selected store"}</div>
-                        <div className="truncate text-xs text-neutral-500">{value}</div>
-                    </div>
-                    <Button variant="ghost" size="sm" onClick={() => onChange("")} className="cursor-pointer">
-                        Clear
-                    </Button>
-                </div>
-            ) : (
-                <>
-                    {/* Search input */}
-                    <div className="relative">
-                        <Store className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
-                        <Input
-                            placeholder="Search store…"
-                            value={q}
-                            onChange={(e) => setQ(e.target.value)}
-                            className="pl-8 glass-input"
-                        />
-                    </div>
-
-                    {/* Results dropdown */}
-                    <div className="relative">
-                        <div className="absolute z-10 mt-2 w-full rounded-xl border border-black/5 bg-white/95 p-2 shadow-lg backdrop-blur-sm dark:border-white/10 dark:bg-neutral-900/95">
-                            <ScrollArea className="max-h-80">
-                                {/* Global option */}
-                                <button
-                                    type="button"
-                                    onClick={() => onChange("")}
-                                    className="mb-1 flex w-full items-center justify-between rounded-lg px-2 py-2 text-left text-sm hover:bg-black/[0.03] dark:hover:bg-white/5"
-                                >
-                                    <span className="truncate">Any store</span>
-                                    <Badge variant="secondary" className="glass-badge">All</Badge>
-                                </button>
-
-                                {loading ? (
-                                    <div className="grid gap-2 p-2">
-                                        {[...Array(5)].map((_, i) => (
-                                            <Skeleton key={i} className="h-9 w-full rounded-md" />
-                                        ))}
-                                    </div>
-                                ) : (opts || []).length === 0 ? (
-                                    <div className="p-2 text-sm text-neutral-500">No stores found.</div>
-                                ) : (
-                                    <div className="grid">
-                                        {opts.map((o) => (
-                                            <button
-                                                type="button"
-                                                key={o.id}
-                                                onClick={() => onChange(o.id)}
-                                                className="flex items-start gap-2 rounded-lg px-2 py-2 text-left hover:bg-black/[0.03] dark:hover:bg-white/5"
-                                            >
-                                                <div className="min-w-0">
-                                                    <div className="truncate text-sm font-medium">{o.name}</div>
-                                                    <div className="truncate text-xs text-neutral-500">{o.id}</div>
-                                                </div>
-                                                <Badge variant={o.has_admin ? "default" : "secondary"} className="ml-auto glass-badge">
-                                                    {o.has_admin ? "Has admin" : "No admin"}
-                                                </Badge>
-                                            </button>
-                                        ))}
-                                    </div>
-                                )}
-                            </ScrollArea>
-                        </div>
-                    </div>
-                </>
-            )}
-        </div>
-    );
-}
-
-/* ------------------------------ Category select ------------------------------ */
-function CategoryFilterSelect({ value, onChange }) {
-    return (
-        <div className="grid gap-1.5">
-            <Label className="text-xs text-neutral-500" htmlFor="category">Category</Label>
-            <select
-                id="category"
-                value={value || ""}
-                onChange={(e) => onChange(e.target.value)}
-                className="h-9 w-full rounded-xl border border-black/5 bg-white/90 px-3 text-sm outline-none transition-[box-shadow] focus:ring-2 focus:ring-emerald-500/30 dark:border-white/10 dark:bg-neutral-900"
-            >
-                <option value="">Any</option>
-                {CATEGORY_OPTIONS.map((c) => (
-                    <option key={c} value={c}>{c}</option>
-                ))}
-            </select>
-        </div>
-    );
-}
-
-/* ------------------------------ Toggles (booleans) ------------------------------ */
-function TogglesFilter({ value, onChange }) {
-    const v = value || {};
-    return (
-        <div className="grid grid-cols-3 gap-3">
-            <div className="grid gap-1.5">
-                <Label className="text-xs text-neutral-500">Has store</Label>
-                <div className="flex items-center gap-2">
-                    <Switch
-                        checked={!!v.has_store}
-                        onCheckedChange={(c) => onChange({ ...v, has_store: c ? true : "" })}
-                    />
-                    <span className="text-sm">Only with store</span>
-                </div>
-            </div>
-            <div className="grid gap-1.5">
-                <Label className="text-xs text-neutral-500">Has remaining</Label>
-                <div className="flex items-center gap-2">
-                    <Switch
-                        checked={!!v.has_remaining}
-                        onCheckedChange={(c) => onChange({ ...v, has_remaining: c ? true : "" })}
-                    />
-                    <span className="text-sm">Remaining &gt; 0</span>
-                </div>
-            </div>
-            <div className="grid gap-1.5">
-                <Label className="text-xs text-neutral-500">Voided</Label>
-                <div className="flex items-center gap-2">
-                    <Switch
-                        checked={!!v.is_void}
-                        onCheckedChange={(c) => onChange({ ...v, is_void: c ? true : "" })}
-                    />
-                    <span className="text-sm">Include voided</span>
-                </div>
-            </div>
-        </div>
-    );
-}
-
-/* ------------------------------ Price & date filters ------------------------------ */
-function MoreFiltersMenu({ value, onChange }) {
-    const v = value || {};
-    return (
-        <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="glass-button cursor-pointer">
-                    <SlidersHorizontal className="mr-2 h-4 w-4" />
-                    More filters
-                </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="glass-menu w-80 p-3">
-                <div className="grid gap-3">
-                    <div className="grid gap-1.5">
-                        <Label className="text-xs">Min unit price</Label>
-                        <Input
-                            type="number"
-                            step="0.01"
-                            value={v.min_unit_price ?? ""}
-                            onChange={(e) => onChange({ ...v, min_unit_price: e.target.value })}
-                        />
-                    </div>
-                    <div className="grid gap-1.5">
-                        <Label className="text-xs">Max unit price</Label>
-                        <Input
-                            type="number"
-                            step="0.01"
-                            value={v.max_unit_price ?? ""}
-                            onChange={(e) => onChange({ ...v, max_unit_price: e.target.value })}
-                        />
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                        <div className="grid gap-1.5">
-                            <Label className="text-xs">Expiring after</Label>
-                            <Input
-                                type="date"
-                                value={v.expiring_after || ""}
-                                onChange={(e) => onChange({ ...v, expiring_after: e.target.value })}
-                            />
-                        </div>
-                        <div className="grid gap-1.5">
-                            <Label className="text-xs">Expiring before</Label>
-                            <Input
-                                type="date"
-                                value={v.expiring_before || ""}
-                                onChange={(e) => onChange({ ...v, expiring_before: e.target.value })}
-                            />
-                        </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                        <div className="grid gap-1.5">
-                            <Label className="text-xs">Created after</Label>
-                            <Input
-                                type="datetime-local"
-                                value={v.created_after || ""}
-                                onChange={(e) => onChange({ ...v, created_after: e.target.value })}
-                            />
-                        </div>
-                        <div className="grid gap-1.5">
-                            <Label className="text-xs">Created before</Label>
-                            <Input
-                                type="datetime-local"
-                                value={v.created_before || ""}
-                                onChange={(e) => onChange({ ...v, created_before: e.target.value })}
-                            />
-                        </div>
-                    </div>
-                </div>
-            </DropdownMenuContent>
-        </DropdownMenu>
-    );
-}
-
-/* ------------------------------ Ordering control ------------------------------ */
-function OrderingControl({ ordering, onChange }) {
-    const dir = ordering.startsWith("-") ? "desc" : "asc";
-    const field = ordering.replace(/^-/, "");
-
-    const setField = (f) => onChange(dir === "desc" ? `-${f}` : f);
-    const toggleDir = () => onChange(dir === "desc" ? field : `-${field}`);
-
-    return (
-        <div className="flex items-center gap-2">
-            <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm" className="glass-button">
-                        {dir === "desc" ? <SortDesc className="mr-2 h-4 w-4" /> : <SortAsc className="mr-2 h-4 w-4" />}
-                        Sort
-                    </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="glass-menu w-56">
-                    {ORDERING_FIELDS.map((o) => (
-                        <DropdownMenuItem
-                            key={o.value}
-                            className="cursor-pointer"
-                            onClick={() => setField(o.value)}
-                        >
-                            {o.label}
-                        </DropdownMenuItem>
-                    ))}
-                    <Separator className="my-1" />
-                    <DropdownMenuItem className="cursor-pointer" onClick={toggleDir}>
-                        {dir === "desc" ? "Switch to ascending" : "Switch to descending"}
-                    </DropdownMenuItem>
-                </DropdownMenuContent>
-            </DropdownMenu>
-            <Badge variant="secondary" className="glass-badge">
-                {ORDERING_FIELDS.find((o) => o.value === field)?.label || "Custom"} · {dir.toUpperCase()}
-            </Badge>
-        </div>
-    );
-}
-
-/* ------------------------------ Filters wrapper bar ------------------------------ */
-function FiltersBar({ value, onChange }) {
-    const v = value || {};
-    const set = (patch) => onChange?.({ ...v, ...patch });
-
-    return (
-        <div className="rounded-2xl border border-black/5 bg-white/70 p-3 backdrop-blur-md dark:border-white/10 dark:bg-neutral-900/60">
-            <div className="grid gap-3 md:grid-cols-4">
-                <CategoryFilterSelect value={v.category} onChange={(category) => set({ category })} />
-                <StoreFilterSelect
-                    value={v.store_id || ""}
-                    onChange={(store_id) => set({ store_id, has_store: store_id ? true : v.has_store })}
-                />
-                <TogglesFilter value={v} onChange={set} />
-                <div className="flex items-end justify-end gap-2">
-                    <MoreFiltersMenu value={v} onChange={set} />
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() =>
-                            onChange?.({
-                                category: "",
-                                store_id: "",
-                                has_store: "",
-                                has_remaining: "",
-                                is_void: "",
-                                min_unit_price: "",
-                                max_unit_price: "",
-                                expiring_after: "",
-                                expiring_before: "",
-                                created_after: "",
-                                created_before: "",
-                            })
-                        }
-                        className="cursor-pointer"
-                    >
-                        Clear
-                    </Button>
-                </div>
-            </div>
-        </div>
-    );
-}
-
 /* ------------------------------------ Main ------------------------------------ */
 const DEFAULT_ORDERING = "-created_at";
 
@@ -467,19 +114,7 @@ const ProductsList = () => {
     const debouncedQuery = useDebounceLocal(query, 500);
 
     // filters/order/page
-    const [filters, setFilters] = useState({
-        category: "",
-        store_id: "",
-        has_store: "",
-        has_remaining: "",
-        is_void: "",
-        min_unit_price: "",
-        max_unit_price: "",
-        expiring_after: "",
-        expiring_before: "",
-        created_after: "",
-        created_before: "",
-    });
+    const [filters, setFilters] = useState({ ...DEFAULT_PRODUCT_FILTERS });
     const [ordering, setOrdering] = useState(DEFAULT_ORDERING);
     const [page, setPage] = useState(1);
 
@@ -543,6 +178,11 @@ const ProductsList = () => {
         [refresh]
     );
 
+    const toggleOrdering = () => {
+        if (ordering.startsWith("-")) setOrdering(ordering.slice(1));
+        else setOrdering(`-${ordering}`);
+    };
+
     return (
         <>
             <motion.div
@@ -568,30 +208,41 @@ const ProductsList = () => {
                 <div className="glass-card flex flex-col gap-4 p-4">
                     {/* Top controls */}
                     <div className="grid gap-3 md:grid-cols-3">
-                        <div className="col-span-2 relative">
-                            <Label htmlFor="q" className="sr-only">Search</Label>
-                            <Search className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
+                        <div className="relative col-span-2">
+                            <Label htmlFor="q" className="sr-only">
+                                Search
+                            </Label>
+                            <Search className="pointer-events-none absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
                             <Input
                                 id="q"
                                 placeholder="Search by product or store name…"
                                 value={query}
                                 onChange={(e) => setQuery(e.target.value)}
-                                className="pl-8 glass-input"
+                                className="glass-input pl-8"
                             />
                         </div>
-                        <div className="flex items-center justify-between md:justify-end gap-2">
-                            <Badge variant="secondary" className="glass-badge">{count} total</Badge>
-                            <OrderingControl ordering={ordering} onChange={setOrdering} />
+                        <div className="flex items-center justify-between gap-2 md:justify-end">
+                            <Badge variant="secondary" className="glass-badge">
+                                {count} total
+                            </Badge>
+                            <Button variant="outline" size="sm" onClick={toggleOrdering} className="glass-button">
+                                {ordering.startsWith("-") ? (
+                                    <SortDesc className="mr-2 h-4 w-4" />
+                                ) : (
+                                    <SortAsc className="mr-2 h-4 w-4" />
+                                )}
+                                Sort
+                            </Button>
                         </div>
                     </div>
 
                     {/* Filters */}
-                    <FiltersBar value={filters} onChange={(f) => setFilters(f)} />
+                    <ProductFilters value={filters} onChange={setFilters} />
 
                     <Separator className="soft-divider" />
 
                     {/* Table (lg+) */}
-                    <div className="hidden lg:block overflow-x-auto rounded-xl ring-1 ring-black/5 dark:ring-white/10">
+                    <div className="hidden overflow-x-auto rounded-xl ring-1 ring-black/5 dark:ring-white/10 lg:block">
                         <Table className="table-glassy">
                             <TableHeader className="sticky top-0 z-10 bg-white/70 backdrop-blur supports-[backdrop-filter]:bg-white/50 dark:bg-neutral-900/50">
                                 <TableRow className="border-0">
@@ -611,7 +262,7 @@ const ProductsList = () => {
                                         <TableCell colSpan={8} className="py-10">
                                             <div className="grid grid-cols-8 gap-3 px-2">
                                                 {[...Array(8)].map((_, i) => (
-                                                    <Skeleton key={i} className="h-5 w-full rounded-md col-span-1" />
+                                                    <Skeleton key={i} className="col-span-1 h-5 w-full rounded-md" />
                                                 ))}
                                             </div>
                                             <div className="mt-3 grid gap-2">
@@ -640,7 +291,10 @@ const ProductsList = () => {
                                         const val = s?.pricing || {};
                                         const d = s?.dates || {};
                                         return (
-                                            <TableRow key={s.id} className="row-soft last:border-0 hover:bg-black/[0.025] dark:hover:bg-white/5 transition-colors">
+                                            <TableRow
+                                                key={s.id}
+                                                className="row-soft transition-colors last:border-0 hover:bg-black/[0.025] dark:hover:bg-white/5"
+                                            >
                                                 <TableCell>
                                                     <div className="min-w-0">
                                                         <div className="truncate text-sm font-medium">{p.name}</div>
@@ -650,7 +304,9 @@ const ProductsList = () => {
                                                 <TableCell>
                                                     <div className="truncate text-sm">{store?.name || "Global"}</div>
                                                     <div className="truncate text-xs text-neutral-500">
-                                                        <Badge variant="secondary" className="glass-badge">{p.category || "—"}</Badge>
+                                                        <Badge variant="secondary" className="glass-badge">
+                                                            {p.category || "—"}
+                                                        </Badge>
                                                     </div>
                                                 </TableCell>
                                                 <TableCell className="text-right">{fmtNum(q.remaining)}</TableCell>
@@ -666,7 +322,10 @@ const ProductsList = () => {
                                                             </Button>
                                                         </DropdownMenuTrigger>
                                                         <DropdownMenuContent align="end" className="glass-menu">
-                                                            <DropdownMenuItem className="cursor-pointer" onClick={() => setDetailProductId(p.id)}>
+                                                            <DropdownMenuItem
+                                                                className="cursor-pointer"
+                                                                onClick={() => setDetailProductId(p.id)}
+                                                            >
                                                                 <Eye className="mr-2 h-4 w-4" />
                                                                 View details
                                                             </DropdownMenuItem>
@@ -681,7 +340,7 @@ const ProductsList = () => {
                     </div>
 
                     {/* Cards (sm–md) */}
-                    <div className="lg:hidden grid gap-3">
+                    <div className="grid gap-3 lg:hidden">
                         {loading && (
                             <div className="grid gap-3">
                                 {[...Array(5)].map((_, i) => (
@@ -698,14 +357,14 @@ const ProductsList = () => {
                             </div>
                         )}
                         {!loading &&
-                            rows?.map((r) => <ProductCard key={r.id} row={r} onView={(pid) => setDetailProductId(pid)} />)}
+                            rows?.map((r) => (
+                                <ProductCard key={r.id} row={r} onView={(pid) => setDetailProductId(pid)} />
+                            ))}
                     </div>
 
                     {/* Pagination */}
                     <div className="mt-1 flex items-center justify-between">
-                        <div className="text-xs text-neutral-500">
-                            Page {page} of {totalPages}
-                        </div>
+                        <div className="text-xs text-neutral-500">Page {page} of {totalPages}</div>
                         <div className="flex items-center gap-2">
                             <Button
                                 variant="outline"
