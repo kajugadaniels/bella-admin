@@ -9,6 +9,8 @@ import {
     SortDesc,
     Eye,
     CircleAlert,
+    Layers,
+    PencilLine,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -25,6 +27,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import ProductFilters, { DEFAULT_PRODUCT_FILTERS } from "./ProductFilters";
 import ProductDetailSheet from "./ProductDetailSheet";
 import ProductCreateSheet from "./ProductCreateSheet";
+import ProductUpdateSheet from "./ProductUpdateSheet";
+import StockInDetailSheet from "./StockInDetailSheet";
 
 /* ---------- Fallback debounce if "@/hooks/useDebounce" isn't present ---------- */
 function useDebounceLocal(value, delay = 500) {
@@ -53,7 +57,7 @@ function dateOnly(iso) {
 }
 
 /* --------------------------- Mini Card for small screens --------------------------- */
-function ProductCard({ row, onView }) {
+function ProductCard({ row, onView, onEdit, onBatch }) {
     const s = row || {};
     const p = s.product || {};
     const store = s.store;
@@ -101,6 +105,18 @@ function ProductCard({ row, onView }) {
                     <div className="font-semibold">{fmtNum(val.value_gross)}</div>
                 </div>
             </div>
+
+            {/* Mobile actions */}
+            <div className="mt-3 flex items-center justify-end gap-2">
+                <Button variant="outline" size="sm" className="glass-button" onClick={() => onBatch?.(s.id)}>
+                    <Layers className="mr-2 h-4 w-4" />
+                    Batch
+                </Button>
+                <Button variant="outline" size="sm" className="glass-button" onClick={() => onEdit?.(p.id)}>
+                    <PencilLine className="mr-2 h-4 w-4" />
+                    Edit
+                </Button>
+            </div>
         </div>
     );
 }
@@ -128,6 +144,10 @@ const ProductsList = () => {
     // modals
     const [detailProductId, setDetailProductId] = useState(null);
     const [createOpen, setCreateOpen] = useState(false);
+
+    // newly added modals
+    const [updateProductId, setUpdateProductId] = useState(null);
+    const [stockInDetailId, setStockInDetailId] = useState(null);
 
     const fetchProducts = useCallback(async () => {
         setLoading(true);
@@ -327,7 +347,21 @@ const ProductsList = () => {
                                                                 onClick={() => setDetailProductId(p.id)}
                                                             >
                                                                 <Eye className="mr-2 h-4 w-4" />
-                                                                View details
+                                                                View product details
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuItem
+                                                                className="cursor-pointer"
+                                                                onClick={() => setStockInDetailId(s.id)}
+                                                            >
+                                                                <Layers className="mr-2 h-4 w-4" />
+                                                                View batch (StockIn) details
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuItem
+                                                                className="cursor-pointer"
+                                                                onClick={() => setUpdateProductId(p.id)}
+                                                            >
+                                                                <PencilLine className="mr-2 h-4 w-4" />
+                                                                Update product
                                                             </DropdownMenuItem>
                                                         </DropdownMenuContent>
                                                     </DropdownMenu>
@@ -358,7 +392,13 @@ const ProductsList = () => {
                         )}
                         {!loading &&
                             rows?.map((r) => (
-                                <ProductCard key={r.id} row={r} onView={(pid) => setDetailProductId(pid)} />
+                                <ProductCard
+                                    key={r.id}
+                                    row={r}
+                                    onView={(pid) => setDetailProductId(pid)}
+                                    onEdit={(pid) => setUpdateProductId(pid)}
+                                    onBatch={(sid) => setStockInDetailId(sid)}
+                                />
                             ))}
                     </div>
 
@@ -389,7 +429,7 @@ const ProductsList = () => {
                 </div>
             </motion.div>
 
-            {/* Detail */}
+            {/* Product detail */}
             {detailProductId && (
                 <ProductDetailSheet
                     id={detailProductId}
@@ -397,6 +437,30 @@ const ProductsList = () => {
                     onOpenChange={(o) => {
                         if (!o) setDetailProductId(null);
                     }}
+                />
+            )}
+
+            {/* Product update */}
+            {updateProductId && (
+                <ProductUpdateSheet
+                    id={updateProductId}
+                    open={!!updateProductId}
+                    onOpenChange={(o) => {
+                        if (!o) setUpdateProductId(null);
+                    }}
+                    onDone={refresh}
+                />
+            )}
+
+            {/* StockIn detail (void/unvoid & delete supported inside) */}
+            {stockInDetailId && (
+                <StockInDetailSheet
+                    id={stockInDetailId}
+                    open={!!stockInDetailId}
+                    onOpenChange={(o) => {
+                        if (!o) setStockInDetailId(null);
+                    }}
+                    onDone={refresh}
                 />
             )}
 
