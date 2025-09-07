@@ -11,6 +11,7 @@ import {
     CircleAlert,
     Layers,
     PencilLine,
+    ImageOff,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -56,6 +57,79 @@ function dateOnly(iso) {
     }
 }
 
+/* ------------------------------- Image helpers ------------------------------- */
+function SvgNotFound({ label = "Image not found" }) {
+    return (
+        <svg viewBox="0 0 120 120" role="img" aria-label={label} className="h-full w-full">
+            <defs>
+                <linearGradient id="nfGrad" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0%" stopColor="rgba(0,0,0,0.05)" />
+                    <stop offset="100%" stopColor="rgba(0,0,0,0.12)" />
+                </linearGradient>
+            </defs>
+            <rect width="120" height="120" fill="url(#nfGrad)" />
+            <g opacity="0.35" transform="translate(30,30)">
+                <path
+                    d="M52 8H8a8 8 0 0 0-8 8v44a8 8 0 0 0 8 8h44a8 8 0 0 0 8-8V16a8 8 0 0 0-8-8Zm-6 36-8-10-12 16-8-10-10 14v4h48v-6l-10-8Z"
+                    fill="currentColor"
+                />
+            </g>
+            <text
+                x="60"
+                y="102"
+                textAnchor="middle"
+                fontSize="10"
+                fill="currentColor"
+                opacity="0.55"
+                style={{ fontFamily: "ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto" }}
+            >
+                Image not found
+            </text>
+        </svg>
+    );
+}
+
+/** Smart thumbnail: lazy-loads, shows skeleton while loading, and falls back to an SVG when missing/broken */
+function ProductThumb({ src, alt, size = 44, rounded = "rounded-xl", className = "" }) {
+    const [loaded, setLoaded] = useState(false);
+    const [failed, setFailed] = useState(false);
+    const showImg = !!src && !failed;
+
+    return (
+        <div
+            className={[
+                "relative shrink-0 overflow-hidden border border-black/5 bg-white/70 dark:border-white/10 dark:bg-neutral-900/60",
+                rounded,
+                className,
+            ].join(" ")}
+            style={{ width: size, height: size }}
+        >
+            {showImg && (
+                <img
+                    src={src}
+                    alt={alt || "Product image"}
+                    loading="lazy"
+                    decoding="async"
+                    draggable={false}
+                    referrerPolicy="no-referrer"
+                    onLoad={() => setLoaded(true)}
+                    onError={() => setFailed(true)}
+                    className="h-full w-full object-cover"
+                />
+            )}
+
+            {!showImg && <SvgNotFound />}
+
+            {/* Skeleton while loading actual image */}
+            {showImg && !loaded && (
+                <div className="absolute inset-0">
+                    <Skeleton className="h-full w-full" />
+                </div>
+            )}
+        </div>
+    );
+}
+
 /* --------------------------- Mini Card for small screens --------------------------- */
 function ProductCard({ row, onView, onEdit, onBatch }) {
     const s = row || {};
@@ -68,13 +142,16 @@ function ProductCard({ row, onView, onEdit, onBatch }) {
     return (
         <div className="rounded-2xl border border-black/5 bg-white/70 p-3 backdrop-blur-md dark:border-white/10 dark:bg-neutral-900/60">
             <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                    <div className="truncate font-medium">{p.name || "—"}</div>
-                    <div className="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-neutral-500">
-                        <Badge variant="secondary" className="glass-badge">{p.category || "UNCAT"}</Badge>
-                        {store?.name ? <span className="truncate">· {store.name}</span> : <span className="truncate">· Global</span>}
-                        <span className="truncate">· {dateOnly(d.received_at)}</span>
-                        {d.expiry_date && <span className="truncate">· Exp {dateOnly(d.expiry_date)}</span>}
+                <div className="min-w-0 flex items-center gap-3">
+                    <ProductThumb src={p.image || null} alt={p.name} size={44} />
+                    <div className="min-w-0">
+                        <div className="truncate font-medium">{p.name || "—"}</div>
+                        <div className="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-neutral-500">
+                            <Badge variant="secondary" className="glass-badge">{p.category || "UNCAT"}</Badge>
+                            {store?.name ? <span className="truncate">· {store.name}</span> : <span className="truncate">· Global</span>}
+                            <span className="truncate">· {dateOnly(d.received_at)}</span>
+                            {d.expiry_date && <span className="truncate">· Exp {dateOnly(d.expiry_date)}</span>}
+                        </div>
                     </div>
                 </div>
                 <Button variant="ghost" size="sm" onClick={() => onView?.(p.id)} className="cursor-pointer">
@@ -266,7 +343,7 @@ const ProductsList = () => {
                         <Table className="table-glassy">
                             <TableHeader className="sticky top-0 z-10 bg-white/70 backdrop-blur supports-[backdrop-filter]:bg-white/50 dark:bg-neutral-900/50">
                                 <TableRow className="border-0">
-                                    <TableHead className="min-w-[280px]">Product</TableHead>
+                                    <TableHead className="min-w-[320px]">Product</TableHead>
                                     <TableHead>Store</TableHead>
                                     <TableHead className="text-right">Remaining</TableHead>
                                     <TableHead className="text-right">Unit&nbsp;Price</TableHead>
@@ -316,9 +393,12 @@ const ProductsList = () => {
                                                 className="row-soft transition-colors last:border-0 hover:bg-black/[0.025] dark:hover:bg-white/5"
                                             >
                                                 <TableCell>
-                                                    <div className="min-w-0">
-                                                        <div className="truncate text-sm font-medium">{p.name}</div>
-                                                        <div className="truncate text-xs text-neutral-500">{p.id}</div>
+                                                    <div className="flex min-w-0 items-center gap-3">
+                                                        <ProductThumb src={p.image || null} alt={p.name} size={40} rounded="rounded-lg" />
+                                                        <div className="min-w-0">
+                                                            <div className="truncate text-sm font-medium">{p.name}</div>
+                                                            <div className="truncate text-[11px] text-neutral-500">{p.id}</div>
+                                                        </div>
                                                     </div>
                                                 </TableCell>
                                                 <TableCell>
