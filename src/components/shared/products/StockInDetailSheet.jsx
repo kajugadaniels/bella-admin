@@ -375,12 +375,12 @@ export default function StockInDetailSheet({ id, open, onOpenChange, onDone }) {
                                                 <Switch checked={!!voidCascade} onCheckedChange={setVoidCascade} />
                                                 <span>Cascade stock-outs</span>
                                             </div>
-                                            <Button variant={isVoided ? "default" : "destructive"} size="sm" onClick={toggleVoid} className="cursor-pointer">
+                                            <Button variant={isVoided ? "default" : "destructive"} size="sm" onClick={toggleVoid} className="cursor-pointer rounded-4xl px-4 py-5">
                                                 {isVoided ? (
-                                                    <>
+                                                    <div className="text-white flex">
                                                         <CircleCheck className="mr-2 h-4 w-4" />
                                                         Restore batch
-                                                    </>
+                                                    </div>
                                                 ) : (
                                                     <>
                                                         <CircleX className="mr-2 h-4 w-4" />
@@ -392,11 +392,11 @@ export default function StockInDetailSheet({ id, open, onOpenChange, onDone }) {
 
                                         <div className="ml-auto flex items-center gap-2">
                                             {/* Hard delete */}
-                                            <div className="flex items-center gap-2 rounded-xl border border-black/5 bg-white/60 px-3 py-2 text-sm dark:border-white/10 dark:bg-neutral-900/50">
+                                            <div className="flex items-center gap-2 rounded-4xl border border-black/5 bg-white/60 px-3 py-2 text-sm dark:border-white/10 dark:bg-neutral-900/50">
                                                 <Switch checked={!!deleteCascade} onCheckedChange={setDeleteCascade} />
                                                 <span>Delete stock-outs first</span>
                                             </div>
-                                            <Button variant="outline" size="sm" onClick={() => setConfirmOpen(true)} className="cursor-pointer text-red-600 hover:text-red-700">
+                                                    <Button variant="outline" size="sm" onClick={() => setConfirmOpen(true)} className="cursor-pointer glass-cta-danger rounded-4xl px-4 py-5">
                                                 <Trash2 className="mr-2 h-4 w-4" />
                                                 Delete batch
                                             </Button>
@@ -433,9 +433,9 @@ export default function StockInDetailSheet({ id, open, onOpenChange, onDone }) {
                         </div>
                     </div>
                     <AlertDialogFooter>
-                        <AlertDialogCancel className="cursor-pointer">Cancel</AlertDialogCancel>
+                        <AlertDialogCancel className="cursor-pointer rounded-4xl px-4 py-5">Cancel</AlertDialogCancel>
                         <AlertDialogAction
-                            className="bg-red-600 text-white hover:bg-red-700 cursor-pointer"
+                            className="glass-cta-danger text-white cursor-pointer rounded-4xl px-4 py-5"
                             onClick={handleDelete}
                         >
                             Delete
