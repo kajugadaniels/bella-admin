@@ -263,9 +263,7 @@ export default function ProductCreateSheet({ open, onOpenChange, onDone }) {
                 if (b.expiry_date) formData.append(`stockins[${i}][expiry_date]`, b.expiry_date);
             });
 
-            const { message } = await superadmin.createProductWithStockIn(formData, {
-                headers: { "Content-Type": "multipart/form-data" },
-            });
+            const { message } = await superadmin.createProductWithStockIn(formData);
 
             toast.success(message || "Product created with initial stock.");
             onDone?.();
@@ -337,6 +335,11 @@ export default function ProductCreateSheet({ open, onOpenChange, onDone }) {
                                         {priceWithTax ? priceWithTax.toFixed(2) : "—"}
                                     </div>
                                 </div>
+                            </div>
+
+                            {/* Dropzone */}
+                            <div className="mt-4">
+                                <ImageDropzone file={imageFile} setFile={setImageFile} />
                             </div>
                         </div>
 
