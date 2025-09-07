@@ -287,7 +287,27 @@ export default function ProductCreateSheet({ open, onOpenChange, onDone }) {
             setValue("category", CATEGORY_OPTIONS[0]);
             setImageFile(null);
         } catch (err) {
-            toast.error(err?.message || "Failed to create product.");
+            if (err?.response?.data) {
+                const data = err.response.data;
+                if (data.errors) {
+                    // Flatten error object into readable string
+                    const msgs = [];
+                    for (const [field, val] of Object.entries(data.errors)) {
+                        if (Array.isArray(val)) {
+                            msgs.push(`${field}: ${val.join(", ")}`);
+                        } else if (typeof val === "object") {
+                            msgs.push(`${field}: ${JSON.stringify(val)}`);
+                        } else {
+                            msgs.push(`${field}: ${val}`);
+                        }
+                    }
+                    toast.error(msgs.join(" | "));
+                } else {
+                    toast.error(data.message || "Validation failed.");
+                }
+            } else {
+                toast.error(err?.message || "Failed to create product.");
+            }
         } finally {
             setSubmitting(false);
         }
