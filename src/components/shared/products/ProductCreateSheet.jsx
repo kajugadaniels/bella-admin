@@ -257,11 +257,7 @@ export default function ProductCreateSheet({ open, onOpenChange, onDone }) {
             formData.append("unit_price", String(values.unit_price));
             if (imageFile) formData.append("image", imageFile);
 
-            values.stockins.forEach((b, i) => {
-                formData.append(`stockins[${i}][quantity]`, String(b.quantity));
-                if (b.store_id) formData.append(`stockins[${i}][store_id]`, b.store_id);
-                if (b.expiry_date) formData.append(`stockins[${i}][expiry_date]`, b.expiry_date);
-            });
+            formData.append("stockins", JSON.stringify(values.stockins));
 
             const { message } = await superadmin.createProductWithStockIn(formData);
 
