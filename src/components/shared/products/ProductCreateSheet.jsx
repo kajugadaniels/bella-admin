@@ -251,16 +251,35 @@ export default function ProductCreateSheet({ open, onOpenChange, onDone }) {
         try {
             setSubmitting(true);
 
-            const formData = new FormData();
-            formData.append("name", values.name);
-            formData.append("category", values.category);
-            formData.append("unit_price", String(values.unit_price));
-            if (imageFile) formData.append("image", imageFile);
+            let payload;
+            if (imageFile) {
+                // Use multipart FormData
+                const fd = new FormData();
+                fd.append("name", values.name);
+                fd.append("category", values.category);
+                fd.append("unit_price", String(values.unit_price));
+                fd.append("image", imageFile);
+                values.stockins.forEach((b, i) => {
+                    fd.append(`stockins[${i}][quantity]`, String(b.quantity));
+                    if (b.store_id) fd.append(`stockins[${i}][store_id]`, b.store_id);
+                    if (b.expiry_date) fd.append(`stockins[${i}][expiry_date]`, b.expiry_date);
+                });
+                payload = fd;
+            } else {
+                // JSON
+                payload = {
+                    name: values.name,
+                    category: values.category,
+                    unit_price: String(values.unit_price),
+                    stockins: values.stockins.map((b) => ({
+                        ...(b.store_id ? { store_id: b.store_id } : {}),
+                        quantity: String(b.quantity),
+                        ...(b.expiry_date ? { expiry_date: b.expiry_date } : {}),
+                    })),
+                };
+            }
 
-            formData.append("stockins", JSON.stringify(values.stockins));
-
-            const { message } = await superadmin.createProductWithStockIn(formData);
-
+            const { message } = await superadmin.createProductWithStockIn(payload);
             toast.success(message || "Product created with initial stock.");
             onDone?.();
             onOpenChange?.(false);
