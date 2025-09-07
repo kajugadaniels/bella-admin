@@ -48,7 +48,7 @@ function AsyncStoreSelect({
     onChange,
     placeholder = "Search store…",
     disabled = false,
-    maxHeightClass = "max-h-80 sm:max-h-[28rem]", // ensures scrolling when long
+    maxHeightClass = "max-h-80 sm:max-h-[12rem]",
 }) {
     const [q, setQ] = useState("");
     const [loading, setLoading] = useState(false);
@@ -103,7 +103,6 @@ function AsyncStoreSelect({
                     </div>
                     <div className="absolute z-10 mt-2 w-full rounded-xl border border-black/5 bg-white/95 p-2 shadow-lg backdrop-blur-sm dark:border-white/10 dark:bg-neutral-900/95">
                         <ScrollArea className={`${maxHeightClass} overflow-auto`}>
-                            {/* Global option */}
                             <button
                                 type="button"
                                 onClick={() => onChange?.("")}
@@ -123,7 +122,6 @@ function AsyncStoreSelect({
                                 <div className="p-2 text-sm text-neutral-500">No stores found.</div>
                             ) : (
                                 <div className="grid">
-                                    {/* Show all; ScrollArea handles overflow */}
                                     {opts.map((o) => (
                                         <button
                                             type="button"
@@ -174,7 +172,7 @@ export default function ProductCreateSheet({ open, onOpenChange, onDone }) {
     const { fields, append, remove } = useFieldArray({ control, name: "stockins" });
 
     const unitPrice = toNum(watch("unit_price"));
-    const priceWithTax = useMemo(() => unitPrice * 1.18, [unitPrice]); // UI preview (server enforces 18%)
+    const priceWithTax = useMemo(() => unitPrice * 1.18, [unitPrice]);
 
     const totals = useMemo(() => {
         const arr = watch("stockins") || [];
@@ -187,11 +185,7 @@ export default function ProductCreateSheet({ open, onOpenChange, onDone }) {
             totalNet += q * unitPrice;
             totalGross += q * priceWithTax;
         });
-        return {
-            qty: totalQty,
-            net: totalNet,
-            gross: totalGross,
-        };
+        return { qty: totalQty, net: totalNet, gross: totalGross };
     }, [watch, unitPrice, priceWithTax]);
 
     const canSubmit = form.formState.isValid && !submitting;
@@ -199,7 +193,6 @@ export default function ProductCreateSheet({ open, onOpenChange, onDone }) {
     const onSubmit = handleSubmit(async (values) => {
         try {
             setSubmitting(true);
-            // Build payload (send numbers as strings to keep decimals friendly)
             const payload = {
                 name: values.name,
                 category: values.category,
@@ -215,7 +208,6 @@ export default function ProductCreateSheet({ open, onOpenChange, onDone }) {
             onDone?.();
             onOpenChange?.(false);
             reset();
-            // Reset defaults after closing to preserve UX next open
             setValue("category", CATEGORY_OPTIONS[0]);
         } catch (err) {
             toast.error(err?.message || "Failed to create product.");
@@ -230,179 +222,180 @@ export default function ProductCreateSheet({ open, onOpenChange, onDone }) {
                 side="right"
                 className="w-[min(820px,100vw)] sm:max-w-[820px] p-0 border-l bg-white/90 backdrop-blur-xl dark:bg-neutral-950/85"
             >
+                {/* Top accent */}
                 <div className="h-1.5 w-full" style={{ background: "linear-gradient(90deg, var(--primary-color), #059669)" }} />
-                <div className="p-5 sm:p-6">
-                    <SheetHeader className="mb-3">
-                        <SheetTitle className="flex items-center gap-2">
-                            <Plus className="h-5 w-5 text-emerald-600" />
-                            New product
-                        </SheetTitle>
-                        <SheetDescription>Create a product and add one or more initial stock-in batches.</SheetDescription>
-                    </SheetHeader>
 
-                    {/* Product block */}
-                    <div className="rounded-2xl border border-black/5 bg-white/70 p-4 backdrop-blur dark:border-white/10 dark:bg-neutral-900/50">
-                        <div className="mb-3 flex items-center justify-between">
-                            <div className="text-sm font-semibold">Product</div>
-                            <Badge variant="secondary" className="glass-badge">
-                                Tax: 18%
-                            </Badge>
+                {/* Scrollable content area */}
+                <div className="flex h-[calc(100vh-0.375rem)] flex-col">
+                    <div className="flex-1 overflow-y-auto p-5 sm:p-6">
+                        <SheetHeader className="mb-3">
+                            <SheetTitle className="flex items-center gap-2">
+                                <Plus className="h-5 w-5 text-emerald-600" />
+                                New product
+                            </SheetTitle>
+                            <SheetDescription>Create a product and add one or more initial stock-in batches.</SheetDescription>
+                        </SheetHeader>
+
+                        {/* Product block */}
+                        <div className="rounded-2xl border border-black/5 bg-white/70 p-4 backdrop-blur dark:border-white/10 dark:bg-neutral-900/50">
+                            <div className="mb-3 flex items-center justify-between">
+                                <div className="text-sm font-semibold">Product</div>
+                                <Badge variant="secondary" className="glass-badge">Tax: 18%</Badge>
+                            </div>
+                            <div className="grid gap-3 sm:grid-cols-3">
+                                <div className="grid gap-1.5 sm:col-span-2">
+                                    <Label>Name</Label>
+                                    <Input placeholder="e.g., Premium Orange Juice 1L" {...register("name")} />
+                                </div>
+
+                                {/* Category as select */}
+                                <div className="grid gap-1.5">
+                                    <Label htmlFor="category">Category</Label>
+                                    <select
+                                        id="category"
+                                        {...register("category")}
+                                        className="h-9 w-full rounded-xl border border-black/5 bg-white/90 px-3 text-sm outline-none transition-[box-shadow] focus:ring-2 focus:ring-emerald-500/30 dark:border-white/10 dark:bg-neutral-900"
+                                    >
+                                        {CATEGORY_OPTIONS.map((c) => (
+                                            <option key={c} value={c}>{c}</option>
+                                        ))}
+                                    </select>
+                                    <p className="text-xs text-neutral-500">Choose a category that best fits the product.</p>
+                                </div>
+
+                                <div className="grid gap-1.5">
+                                    <Label>Unit price</Label>
+                                    <Input type="number" step="0.01" placeholder="0.00" {...register("unit_price")} />
+                                </div>
+                                <div className="grid gap-1.5">
+                                    <Label>Price w/ tax (preview)</Label>
+                                    <div className="rounded-xl border border-black/5 bg-white/70 px-3 py-2 text-sm dark:border-white/10 dark:bg-neutral-900/60">
+                                        {priceWithTax ? priceWithTax.toFixed(2) : "—"}
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                        <div className="grid gap-3 sm:grid-cols-3">
-                            <div className="grid gap-1.5 sm:col-span-2">
-                                <Label>Name</Label>
-                                <Input placeholder="e.g., Premium Orange Juice 1L" {...register("name")} />
-                            </div>
 
-                            {/* Category now a select */}
-                            <div className="grid gap-1.5">
-                                <Label htmlFor="category">Category</Label>
-                                <select
-                                    id="category"
-                                    {...register("category")}
-                                    className="h-9 w-full rounded-xl border border-black/5 bg-white/90 px-3 text-sm outline-none transition-[box-shadow] focus:ring-2 focus:ring-emerald-500/30 dark:border-white/10 dark:bg-neutral-900"
+                        {/* Batches */}
+                        <div className="mt-4 rounded-2xl border border-black/5 bg-white/70 p-4 backdrop-blur dark:border-white/10 dark:bg-neutral-900/50">
+                            <div className="mb-3 flex items-center justify-between">
+                                <div className="text-sm font-semibold">Initial stock-in batches</div>
+                                <Button
+                                    type="button"
+                                    size="sm"
+                                    onClick={() => append({ store_id: "", quantity: "", expiry_date: "" })}
+                                    className="cursor-pointer text-white rounded-4xl px-4 py-5 glass-cta"
                                 >
-                                    {CATEGORY_OPTIONS.map((c) => (
-                                        <option key={c} value={c}>
-                                            {c}
-                                        </option>
-                                    ))}
-                                </select>
-                                <p className="text-xs text-neutral-500">Choose a category that best fits the product.</p>
+                                    <Plus className="mr-2 h-4 w-4" />
+                                    Add batch
+                                </Button>
                             </div>
 
-                            <div className="grid gap-1.5">
-                                <Label>Unit price</Label>
-                                <Input type="number" step="0.01" placeholder="0.00" {...register("unit_price")} />
+                            <div className="grid gap-3">
+                                {fields.map((f, idx) => (
+                                    <div
+                                        key={f.id}
+                                        className="rounded-xl border border-black/5 bg-white/60 p-3 dark:border-white/10 dark:bg-neutral-900/40"
+                                    >
+                                        <div className="mb-2 flex items-center justify-between">
+                                            <div className="text-sm font-medium">Batch #{idx + 1}</div>
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => remove(idx)}
+                                                className="text-red-600 hover:text-red-700 cursor-pointer"
+                                            >
+                                                <Trash2 className="mr-2 h-4 w-4" />
+                                                Remove
+                                            </Button>
+                                        </div>
+
+                                        <div className="grid gap-3 md:grid-cols-3">
+                                            <div className="grid gap-1.5 md:col-span-2">
+                                                <Label>Store (optional)</Label>
+                                                <Controller
+                                                    control={control}
+                                                    name={`stockins.${idx}.store_id`}
+                                                    render={({ field }) => (
+                                                        <AsyncStoreSelect
+                                                            value={field.value || ""}
+                                                            onChange={field.onChange}
+                                                            maxHeightClass="max-h-80 sm:max-h-[12rem]"
+                                                        />
+                                                    )}
+                                                />
+                                                <p className="text-xs text-neutral-500">Leave empty for a global batch (no store).</p>
+                                            </div>
+                                            <div className="grid gap-1.5">
+                                                <Label>Quantity</Label>
+                                                <Input
+                                                    type="number"
+                                                    step="0.01"
+                                                    placeholder="0.00"
+                                                    {...register(`stockins.${idx}.quantity`)}
+                                                />
+                                            </div>
+                                            <div className="grid gap-1.5">
+                                                <Label>Expiry date (optional)</Label>
+                                                <Input type="date" {...register(`stockins.${idx}.expiry_date`)} />
+                                            </div>
+                                        </div>
+
+                                        {/* Live calc per batch */}
+                                        <div className="mt-3 grid grid-cols-3 gap-2 text-sm">
+                                            <div className="rounded-lg border border-black/5 bg-white/60 p-2 dark:border-white/10 dark:bg-neutral-900/50">
+                                                <div className="text-xs uppercase text-neutral-500">Value net</div>
+                                                <div className="font-semibold">
+                                                    {(() => {
+                                                        const q = toNum(form.getValues(`stockins.${idx}.quantity`));
+                                                        return (q * unitPrice || 0).toFixed(2);
+                                                    })()}
+                                                </div>
+                                            </div>
+                                            <div className="rounded-lg border border-black/5 bg-white/60 p-2 dark:border-white/10 dark:bg-neutral-900/50">
+                                                <div className="text-xs uppercase text-neutral-500">Value gross</div>
+                                                <div className="font-semibold">
+                                                    {(() => {
+                                                        const q = toNum(form.getValues(`stockins.${idx}.quantity`));
+                                                        return (q * priceWithTax || 0).toFixed(2);
+                                                    })()}
+                                                </div>
+                                            </div>
+                                            <div className="rounded-lg border border-black/5 bg-white/60 p-2 dark:border-white/10 dark:bg-neutral-900/50">
+                                                <div className="text-xs uppercase text-neutral-500">Price w/ tax</div>
+                                                <div className="font-semibold">{priceWithTax ? priceWithTax.toFixed(2) : "—"}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
                             </div>
-                            <div className="grid gap-1.5">
-                                <Label>Price w/ tax (preview)</Label>
-                                <div className="rounded-xl border border-black/5 bg-white/70 px-3 py-2 text-sm dark:border-white/10 dark:bg-neutral-900/60">
-                                    {priceWithTax ? priceWithTax.toFixed(2) : "—"}
+
+                            {/* Totals */}
+                            <div className="mt-4 grid grid-cols-3 gap-2 text-sm">
+                                <div className="rounded-xl border border-black/5 bg-white/70 p-3 dark:border-white/10 dark:bg-neutral-900/60">
+                                    <div className="text-xs uppercase text-neutral-500">Total qty</div>
+                                    <div className="text-lg font-semibold">{totals.qty.toFixed(2)}</div>
+                                </div>
+                                <div className="rounded-xl border border-black/5 bg-white/70 p-3 dark:border-white/10 dark:bg-neutral-900/60">
+                                    <div className="text-xs uppercase text-neutral-500">Total net value</div>
+                                    <div className="text-lg font-semibold">{totals.net.toFixed(2)}</div>
+                                </div>
+                                <div className="rounded-xl border border-black/5 bg-white/70 p-3 dark:border-white/10 dark:bg-neutral-900/60">
+                                    <div className="text-xs uppercase text-neutral-500">Total gross value</div>
+                                    <div className="text-lg font-semibold">{totals.gross.toFixed(2)}</div>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    {/* Batches */}
-                    <div className="mt-4 rounded-2xl border border-black/5 bg-white/70 p-4 backdrop-blur dark:border-white/10 dark:bg-neutral-900/50">
-                        <div className="mb-3 flex items-center justify-between">
-                            <div className="text-sm font-semibold">Initial stock-in batches</div>
-                            <Button
-                                type="button"
-                                size="sm"
-                                onClick={() => append({ store_id: "", quantity: "", expiry_date: "" })}
-                                className="cursor-pointer"
-                            >
-                                <Plus className="mr-2 h-4 w-4" />
-                                Add batch
-                            </Button>
-                        </div>
-
-                        <div className="grid gap-3">
-                            {fields.map((f, idx) => (
-                                <div
-                                    key={f.id}
-                                    className="rounded-xl border border-black/5 bg-white/60 p-3 dark:border-white/10 dark:bg-neutral-900/40"
-                                >
-                                    <div className="mb-2 flex items-center justify-between">
-                                        <div className="text-sm font-medium">Batch #{idx + 1}</div>
-                                        <Button
-                                            type="button"
-                                            variant="ghost"
-                                            size="sm"
-                                            onClick={() => remove(idx)}
-                                            className="text-red-600 hover:text-red-700"
-                                        >
-                                            <Trash2 className="mr-2 h-4 w-4" />
-                                            Remove
-                                        </Button>
-                                    </div>
-
-                                    <div className="grid gap-3 md:grid-cols-3">
-                                        <div className="grid gap-1.5 md:col-span-2">
-                                            <Label>Store (optional)</Label>
-                                            <Controller
-                                                control={control}
-                                                name={`stockins.${idx}.store_id`}
-                                                render={({ field }) => (
-                                                    <AsyncStoreSelect
-                                                        value={field.value || ""}
-                                                        onChange={field.onChange}
-                                                        maxHeightClass="max-h-80 sm:max-h-[12rem] cursor-pointer" // scroll when long
-                                                    />
-                                                )}
-                                            />
-                                            <p className="text-xs text-neutral-500">Leave empty for a global batch (no store).</p>
-                                        </div>
-                                        <div className="grid gap-1.5">
-                                            <Label>Quantity</Label>
-                                            <Input
-                                                type="number"
-                                                step="0.01"
-                                                placeholder="0.00"
-                                                {...register(`stockins.${idx}.quantity`)}
-                                            />
-                                        </div>
-                                        <div className="grid gap-1.5">
-                                            <Label>Expiry date (optional)</Label>
-                                            <Input type="date" {...register(`stockins.${idx}.expiry_date`)} />
-                                        </div>
-                                    </div>
-
-                                    {/* Live calc per batch */}
-                                    <div className="mt-3 grid grid-cols-3 gap-2 text-sm">
-                                        <div className="rounded-lg border border-black/5 bg-white/60 p-2 dark:border-white/10 dark:bg-neutral-900/50">
-                                            <div className="text-xs uppercase text-neutral-500">Value net</div>
-                                            <div className="font-semibold">
-                                                {(() => {
-                                                    const q = toNum(form.getValues(`stockins.${idx}.quantity`));
-                                                    return (q * unitPrice || 0).toFixed(2);
-                                                })()}
-                                            </div>
-                                        </div>
-                                        <div className="rounded-lg border border-black/5 bg-white/60 p-2 dark:border-white/10 dark:bg-neutral-900/50">
-                                            <div className="text-xs uppercase text-neutral-500">Value gross</div>
-                                            <div className="font-semibold">
-                                                {(() => {
-                                                    const q = toNum(form.getValues(`stockins.${idx}.quantity`));
-                                                    return (q * priceWithTax || 0).toFixed(2);
-                                                })()}
-                                            </div>
-                                        </div>
-                                        <div className="rounded-lg border border-black/5 bg-white/60 p-2 dark:border-white/10 dark:bg-neutral-900/50">
-                                            <div className="text-xs uppercase text-neutral-500">Price w/ tax</div>
-                                            <div className="font-semibold">{priceWithTax ? priceWithTax.toFixed(2) : "—"}</div>
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-
-                        {/* Totals */}
-                        <div className="mt-4 grid grid-cols-3 gap-2 text-sm">
-                            <div className="rounded-xl border border-black/5 bg-white/70 p-3 dark:border-white/10 dark:bg-neutral-900/60">
-                                <div className="text-xs uppercase text-neutral-500">Total qty</div>
-                                <div className="text-lg font-semibold">{totals.qty.toFixed(2)}</div>
-                            </div>
-                            <div className="rounded-xl border border-black/5 bg-white/70 p-3 dark:border-white/10 dark:bg-neutral-900/60">
-                                <div className="text-xs uppercase text-neutral-500">Total net value</div>
-                                <div className="text-lg font-semibold">{totals.net.toFixed(2)}</div>
-                            </div>
-                            <div className="rounded-xl border border-black/5 bg-white/70 p-3 dark:border-white/10 dark:bg-neutral-900/60">
-                                <div className="text-xs uppercase text-neutral-500">Total gross value</div>
-                                <div className="text-lg font-semibold">{totals.gross.toFixed(2)}</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Bottom actions */}
-                    <div className="sticky bottom-0 mt-4 rounded-xl border border-black/5 bg-white/90 p-3 backdrop-blur-sm dark:border-white/10 dark:bg-neutral-900/70">
+                    {/* Bottom actions — pinned at the very bottom of the sheet */}
+                    <div className="sticky bottom-0 mt-4 rounded-none border-t border-black/5 bg-white/90 p-3 backdrop-blur-sm dark:border-white/10 dark:bg-neutral-900/70">
                         <div className="flex items-center justify-end gap-2">
-                            <Button type="button" variant="secondary" onClick={() => onOpenChange?.(false)} className="cursor-pointer">
+                            <Button type="button" variant="secondary" onClick={() => onOpenChange?.(false)} className="cursor-pointer rounded-4xl px-4 py-5">
                                 Cancel
                             </Button>
-                            <Button type="button" disabled={!canSubmit} onClick={onSubmit} className="cursor-pointer text-white">
+                            <Button type="button" disabled={!canSubmit} onClick={onSubmit} className="cursor-pointer text-white rounded-4xl px-4 py-5 glass-cta">
                                 {submitting ? "Creating…" : "Create product"}
                             </Button>
                         </div>
