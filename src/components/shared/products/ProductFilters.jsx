@@ -1,6 +1,7 @@
-import React, { useState, memo } from "react";
+import React, { useEffect, useMemo, useState, memo } from "react";
 import { SlidersHorizontal } from "lucide-react";
 
+import { superadmin } from "@/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,13 +10,13 @@ import { Switch } from "@/components/ui/switch";
 import {
     DropdownMenu,
     DropdownMenuContent,
-    DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
 /** Exported so the parent can share the same defaults */
 export const DEFAULT_PRODUCT_FILTERS = {
     category: "",
+    store_id: "",            // <-- added for store select
     has_store: "",
     has_remaining: "",
     is_void: "",
@@ -27,12 +28,86 @@ export const DEFAULT_PRODUCT_FILTERS = {
     created_before: "",
 };
 
+// Reasonable category list based on your data + common retail sets.
+// Adjust freely to your taxonomy (order matters for UX).
+const CATEGORIES = [
+    "DRINKS",
+    "DAIRY",
+    "BAKERY",
+    "MEAT",
+    "FRUITS",
+    "FROZEN",
+    "SNACKS",
+    "CLEANING",
+    "PERSONAL_CARE",
+];
+
 function ProductFiltersBase({ value, onChange, className }) {
     const [open, setOpen] = useState(false);
     const v = value || DEFAULT_PRODUCT_FILTERS;
 
     const set = (patch) => onChange?.({ ...v, ...patch });
     const reset = () => onChange?.({ ...DEFAULT_PRODUCT_FILTERS });
+
+    // Stores for the Store select
+    const [storeLoading, setStoreLoading] = useState(false);
+    const [stores, setStores] = useState([]);
+
+    useEffect(() => {
+        let ignore = false;
+        async function run() {
+            setStoreLoading(true);
+            try {
+                const params = { ordering: "name" };
+                const { data } = await superadmin.listStores(params);
+                if (!ignore) setStores(data?.results || []);
+            } catch {
+                if (!ignore) setStores([]);
+            } finally {
+                if (!ignore) setStoreLoading(false);
+            }
+        }
+        run();
+        return () => {
+            ignore = true;
+        };
+    }, []);
+
+    // When a store is chosen, we push store_id. We also clear has_store to avoid redundant/competing filters.
+    const handleStoreChange = (e) => {
+        const val = e.target.value;
+        if (val === "__GLOBAL__") {
+            // Special convenience: show batches without a store
+            set({ store_id: "", has_store: false });
+            return;
+        }
+        if (!val) {
+            // All stores (no filter)
+            set({ store_id: "", has_store: "" });
+            return;
+        }
+        set({ store_id: val, has_store: "" });
+    };
+
+    // Nice labels for the active filter summary
+    const activeChips = useMemo(() => {
+        const labels = {
+            category: "category",
+            store_id: "store",
+            has_store: "has store",
+            has_remaining: "has remaining",
+            is_void: "include voided",
+            min_unit_price: "min price",
+            max_unit_price: "max price",
+            expiring_after: "exp ≥",
+            expiring_before: "exp ≤",
+            created_after: "created ≥",
+            created_before: "created ≤",
+        };
+        return Object.entries(v)
+            .filter(([_, val]) => val !== "" && val !== null && val !== undefined)
+            .map(([k]) => labels[k] || k.replaceAll("_", " "));
+    }, [v]);
 
     return (
         <div
@@ -43,18 +118,57 @@ function ProductFiltersBase({ value, onChange, className }) {
             ].join(" ")}
         >
             <div className="flex flex-wrap items-center gap-3">
-                {/* Category */}
+                {/* Category (select) */}
                 <div className="grid min-w-[220px] flex-1 gap-1.5">
                     <Label htmlFor="pf-category" className="text-xs text-neutral-500">
                         Category
                     </Label>
-                    <Input
+                    <select
                         id="pf-category"
-                        placeholder="e.g., DAIRY, DRINKS, BAKERY…"
                         value={v.category || ""}
                         onChange={(e) => set({ category: e.target.value })}
-                        className="glass-input"
-                    />
+                        className={[
+                            "h-9 w-full rounded-xl border px-3 text-sm",
+                            "border-black/5 bg-white text-neutral-900",
+                            "dark:border-white/10 dark:bg-white dark:text-neutral-900",
+                            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                        ].join(" ")}
+                    >
+                        <option value="">All categories</option>
+                        {CATEGORIES.map((c) => (
+                            <option key={c} value={c}>
+                                {c}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+
+                {/* Store (select) */}
+                <div className="grid min-w-[240px] flex-1 gap-1.5">
+                    <Label htmlFor="pf-store" className="text-xs text-neutral-500">
+                        Store
+                    </Label>
+                    <select
+                        id="pf-store"
+                        value={v.store_id || ""}
+                        onChange={handleStoreChange}
+                        disabled={storeLoading}
+                        className={[
+                            "h-9 w-full rounded-xl border px-3 text-sm",
+                            "border-black/5 bg-white text-neutral-900",
+                            "dark:border-white/10 dark:bg-white dark:text-neutral-900",
+                            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                        ].join(" ")}
+                    >
+                        <option value="">{storeLoading ? "Loading…" : "All stores"}</option>
+                        {/* Convenience: batches with no store */}
+                        <option value="__GLOBAL__">Global (no store)</option>
+                        {stores.map((s) => (
+                            <option key={s.id} value={s.id}>
+                                {s.name}
+                            </option>
+                        ))}
+                    </select>
                 </div>
 
                 {/* Toggles */}
@@ -91,7 +205,7 @@ function ProductFiltersBase({ value, onChange, className }) {
                     </div>
                 </div>
 
-                {/* More filters + Reset */}
+                {/* More filters + Reset (dropdown closed by default) */}
                 <div className="ml-auto flex items-center gap-2">
                     <Button
                         type="button"
@@ -175,13 +289,11 @@ function ProductFiltersBase({ value, onChange, className }) {
 
                                 {/* Active filters summary */}
                                 <div className="mt-1 flex flex-wrap gap-1.5">
-                                    {Object.entries(v)
-                                        .filter(([_, val]) => val !== "" && val !== null && val !== undefined)
-                                        .map(([k]) => (
-                                            <Badge key={k} variant="secondary" className="glass-badge">
-                                                {k.replaceAll("_", " ")}
-                                            </Badge>
-                                        ))}
+                                    {activeChips.map((label) => (
+                                        <Badge key={label} variant="secondary" className="glass-badge">
+                                            {label}
+                                        </Badge>
+                                    ))}
                                 </div>
                             </div>
                         </DropdownMenuContent>
