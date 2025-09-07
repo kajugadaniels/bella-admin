@@ -465,7 +465,8 @@ export const superadmin = {
      * payload: { name, category, unit_price, stockins: [{store_id?, quantity, expiry_date?, is_void?}, ...] }
      */
     createProductWithStockIn(payload) {
-        return POST(endpoints.saProductCreateWithStockIn, payload, { auth: true });
+        const body = payload instanceof FormData ? payload : maybeMultipart(payload);
+        return POST(endpoints.saProductCreateWithStockIn, body, { auth: true });
     },
 
     /**
