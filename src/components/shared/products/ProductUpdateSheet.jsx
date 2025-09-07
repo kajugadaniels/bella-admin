@@ -1,7 +1,8 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useCallback } from "react";
 import * as z from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Controller, useForm } from "react-hook-form";
+import { useDropzone } from "react-dropzone";
 import { toast } from "sonner";
 import { superadmin } from "@/api";
 
@@ -16,11 +17,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Calculator, ImageIcon, Save, XCircle } from "lucide-react";
+import {
+    Calculator,
+    ImageIcon,
+    Save,
+    XCircle,
+    X,
+} from "lucide-react";
 
 /* ---------------------------------- schema --------------------------------- */
 const UpdateSchema = z.object({
@@ -35,9 +40,9 @@ const UpdateSchema = z.object({
     description: z.string().optional().or(z.literal("")),
     is_active: z.boolean().default(true),
     remove_image: z.boolean().default(false),
-    // image handled outside zod via file input
 });
 
+/* ---------------------------------- constants --------------------------------- */
 const CATEGORIES = [
     "DRINKS",
     "DAIRY",
@@ -50,10 +55,74 @@ const CATEGORIES = [
     "PERSONAL_CARE",
 ];
 
-/* --------------------------------- helpers --------------------------------- */
-function toNum(v, fallback = 0) {
-    const n = Number(v);
-    return Number.isFinite(n) ? n : fallback;
+/* ----------------------------- Dropzone Component ----------------------------- */
+function ImageDropzone({ value, onChange, onRemove, serverImage }) {
+    const onDrop = useCallback(
+        (acceptedFiles) => {
+            if (acceptedFiles && acceptedFiles.length > 0) {
+                onChange(acceptedFiles[0]);
+                if (onRemove) onRemove(false); // reset remove flag if uploading new
+            }
+        },
+        [onChange, onRemove]
+    );
+
+    const { getRootProps, getInputProps, isDragActive } = useDropzone({
+        onDrop,
+        accept: { "image/*": [] },
+        multiple: false,
+    });
+
+    return (
+        <div
+            {...getRootProps()}
+            className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-neutral-300 bg-white/70 p-4 text-center text-sm text-neutral-500 backdrop-blur hover:border-emerald-500 hover:bg-emerald-50 dark:border-neutral-700 dark:bg-neutral-900/50 dark:hover:border-emerald-400 dark:hover:bg-neutral-900/70 cursor-pointer"
+        >
+            <input {...getInputProps()} />
+            {value ? (
+                <div className="relative">
+                    <img
+                        src={URL.createObjectURL(value)}
+                        alt="Preview"
+                        className="h-32 w-32 rounded-lg object-cover shadow-md"
+                    />
+                    <button
+                        type="button"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onChange(null);
+                        }}
+                        className="absolute -top-2 -right-2 rounded-full bg-red-600 p-1 text-white shadow hover:bg-red-700"
+                    >
+                        <X className="h-4 w-4" />
+                    </button>
+                </div>
+            ) : serverImage && !onRemove ? (
+                <div className="relative">
+                    <img
+                        src={serverImage}
+                        alt="Current"
+                        className="h-32 w-32 rounded-lg object-cover shadow-md"
+                    />
+                    <button
+                        type="button"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onRemove(true);
+                        }}
+                        className="absolute -top-2 -right-2 rounded-full bg-red-600 p-1 text-white shadow hover:bg-red-700"
+                    >
+                        <X className="h-4 w-4" />
+                    </button>
+                </div>
+            ) : (
+                <>
+                    <ImageIcon className="mb-2 h-8 w-8 text-neutral-400" />
+                    {isDragActive ? "Drop image here…" : "Drag & drop or click to upload product image"}
+                </>
+            )}
+        </div>
+    );
 }
 
 /* --------------------------------- component -------------------------------- */
@@ -61,6 +130,7 @@ export default function ProductUpdateSheet({ id, open, onOpenChange, onDone }) {
     const [loading, setLoading] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [imageFile, setImageFile] = useState(null);
+    const [serverImage, setServerImage] = useState(null);
 
     const form = useForm({
         resolver: zodResolver(UpdateSchema),
@@ -80,12 +150,10 @@ export default function ProductUpdateSheet({ id, open, onOpenChange, onDone }) {
         mode: "onChange",
     });
 
-    const unitPrice = toNum(form.watch("unit_price"), undefined);
-    const taxPercent = toNum(form.watch("tax_rate"), 18);
+    const unitPrice = Number(form.watch("unit_price") || 0);
+    const taxPercent = Number(form.watch("tax_rate") || 18);
     const priceWithTax = useMemo(() => {
-        const price = toNum(unitPrice, 0);
-        const tax = toNum(taxPercent, 18);
-        return price * (1 + tax / 100);
+        return unitPrice * (1 + taxPercent / 100);
     }, [unitPrice, taxPercent]);
 
     useEffect(() => {
@@ -94,7 +162,7 @@ export default function ProductUpdateSheet({ id, open, onOpenChange, onDone }) {
             if (!open || !id) return;
             setLoading(true);
             try {
-                const { data } = await superadmin.getProductDetail(id); // expects { data: { product, ... } }
+                const { data } = await superadmin.getProductDetail(id);
                 const p = data?.data?.product || {};
                 if (ignore) return;
                 form.reset({
@@ -111,6 +179,7 @@ export default function ProductUpdateSheet({ id, open, onOpenChange, onDone }) {
                     remove_image: false,
                 });
                 setImageFile(null);
+                setServerImage(p.image || null);
             } catch (err) {
                 toast.error(err?.message || "Failed to load product.");
             } finally {
@@ -127,14 +196,13 @@ export default function ProductUpdateSheet({ id, open, onOpenChange, onDone }) {
     const canSubmit = form.formState.isValid && !submitting;
 
     const buildPayload = (values) => {
-        // If an image file is selected OR remove_image is true, use multipart/form-data (FormData)
         const needsMultipart = !!imageFile || !!values.remove_image;
         if (needsMultipart) {
             const fd = new FormData();
-            if (values.name) fd.append("name", values.name);
-            if (values.category) fd.append("category", values.category);
+            fd.append("name", values.name);
+            fd.append("category", values.category);
             if (values.unit_price !== "") fd.append("unit_price", values.unit_price);
-            if (values.tax_rate !== "") fd.append("tax_rate", values.tax_rate); // percent
+            if (values.tax_rate !== "") fd.append("tax_rate", values.tax_rate);
             if (values.sku) fd.append("sku", values.sku);
             if (values.barcode) fd.append("barcode", values.barcode);
             if (values.brand) fd.append("brand", values.brand);
@@ -145,9 +213,7 @@ export default function ProductUpdateSheet({ id, open, onOpenChange, onDone }) {
             if (imageFile) fd.append("image", imageFile);
             return fd;
         }
-
-        // JSON
-        const payload = {
+        return {
             name: values.name,
             category: values.category,
             ...(values.unit_price !== "" ? { unit_price: values.unit_price } : {}),
@@ -159,7 +225,6 @@ export default function ProductUpdateSheet({ id, open, onOpenChange, onDone }) {
             ...(values.description ? { description: values.description } : {}),
             is_active: !!values.is_active,
         };
-        return payload;
     };
 
     const onSubmit = form.handleSubmit(async (values) => {
@@ -220,12 +285,7 @@ export default function ProductUpdateSheet({ id, open, onOpenChange, onDone }) {
                                     <div className="grid gap-1.5">
                                         <Label>Category</Label>
                                         <select
-                                            className={[
-                                                "h-9 w-full rounded-xl border px-3 text-sm",
-                                                "border-black/5 bg-white text-neutral-900",
-                                                "dark:border-white/10 dark:bg-white dark:text-neutral-900",
-                                                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-                                            ].join(" ")}
+                                            className="h-9 w-full rounded-xl border border-black/5 bg-white/90 px-3 text-sm outline-none dark:border-white/10 dark:bg-neutral-900"
                                             {...form.register("category")}
                                         >
                                             <option value="">Select category</option>
@@ -252,79 +312,32 @@ export default function ProductUpdateSheet({ id, open, onOpenChange, onDone }) {
                                 </div>
                             </div>
 
-                            {/* Extra fields */}
-                            <div className="mt-4 grid gap-4 lg:grid-cols-2">
-                                <div className="rounded-2xl border border-black/5 bg-white/70 p-4 backdrop-blur dark:border-white/10 dark:bg-neutral-900/50">
-                                    <div className="mb-3 text-sm font-semibold">Identifiers</div>
-                                    <div className="grid gap-3">
-                                        <div className="grid gap-1.5">
-                                            <Label>SKU</Label>
-                                            <Input placeholder="POJ-1L-001" {...form.register("sku")} />
-                                        </div>
-                                        <div className="grid gap-1.5">
-                                            <Label>Barcode</Label>
-                                            <Input placeholder="6291041500213" {...form.register("barcode")} />
-                                        </div>
-                                        <div className="grid grid-cols-2 gap-3">
-                                            <div className="grid gap-1.5">
-                                                <Label>Brand</Label>
-                                                <Input placeholder="CitrusCo" {...form.register("brand")} />
-                                            </div>
-                                            <div className="grid gap-1.5">
-                                                <Label>Unit of measure</Label>
-                                                <Input placeholder="PCS" {...form.register("unit_of_measure")} />
-                                            </div>
-                                        </div>
+                            {/* Status & Image */}
+                            <div className="mt-4 rounded-2xl border border-black/5 bg-white/70 p-4 backdrop-blur dark:border-white/10 dark:bg-neutral-900/50">
+                                <div className="mb-3 text-sm font-semibold">Status & Image</div>
+                                <div className="grid gap-3">
+                                    <div className="flex items-center gap-3 rounded-xl border border-black/5 bg-white/60 p-3 dark:border-white/10 dark:bg-neutral-900/40">
+                                        <Controller
+                                            control={form.control}
+                                            name="is_active"
+                                            render={({ field }) => (
+                                                <Switch checked={!!field.value} onCheckedChange={field.onChange} />
+                                            )}
+                                        />
+                                        <div className="text-sm">Active</div>
                                     </div>
-                                </div>
 
-                                <div className="rounded-2xl border border-black/5 bg-white/70 p-4 backdrop-blur dark:border-white/10 dark:bg-neutral-900/50">
-                                    <div className="mb-3 text-sm font-semibold">Status & Image</div>
-                                    <div className="grid gap-3">
-                                        <div className="flex items-center gap-3 rounded-xl border border-black/5 bg-white/60 p-3 dark:border-white/10 dark:bg-neutral-900/40">
-                                            <Controller
-                                                control={form.control}
-                                                name="is_active"
-                                                render={({ field }) => (
-                                                    <Switch checked={!!field.value} onCheckedChange={field.onChange} />
-                                                )}
-                                            />
-                                            <div className="text-sm">Active</div>
-                                        </div>
-
-                                        <div className="grid gap-1.5">
-                                            <Label className="flex items-center gap-2">
-                                                <ImageIcon className="h-4 w-4" />
-                                                Image (optional)
-                                            </Label>
-                                            <Input
-                                                type="file"
-                                                accept="image/*"
-                                                onChange={(e) => setImageFile(e.target.files?.[0] || null)}
-                                            />
-                                            <p className="text-xs text-neutral-500">
-                                                Upload to replace. Square image preferred. Processed server-side.
-                                            </p>
-                                        </div>
-
-                                        <div className="flex items-center gap-3 rounded-xl border border-black/5 bg-white/60 p-3 dark:border-white/10 dark:bg-neutral-900/40">
-                                            <Controller
-                                                control={form.control}
-                                                name="remove_image"
-                                                render={({ field }) => (
-                                                    <Switch
-                                                        checked={!!field.value}
-                                                        onCheckedChange={(v) => {
-                                                            if (imageFile && v) {
-                                                                toast.message("Note", { description: "Remove image is ignored if a new image is uploaded." });
-                                                            }
-                                                            field.onChange(v);
-                                                        }}
-                                                    />
-                                                )}
-                                            />
-                                            <div className="text-sm">Remove current image</div>
-                                        </div>
+                                    <div className="grid gap-1.5">
+                                        <Label>Image</Label>
+                                        <ImageDropzone
+                                            value={imageFile}
+                                            onChange={setImageFile}
+                                            onRemove={(v) => form.setValue("remove_image", v)}
+                                            serverImage={serverImage}
+                                        />
+                                        <p className="text-xs text-neutral-500">
+                                            Upload new image, keep current, or remove it. Square image preferred.
+                                        </p>
                                     </div>
                                 </div>
                             </div>
@@ -335,7 +348,7 @@ export default function ProductUpdateSheet({ id, open, onOpenChange, onDone }) {
                                 <textarea
                                     rows={4}
                                     placeholder="Optional description…"
-                                    className="w-full rounded-xl border border-black/5 bg-white/70 p-3 text-sm outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring dark:border-white/10 dark:bg-neutral-900/50"
+                                    className="w-full rounded-xl border border-black/5 bg-white/70 p-3 text-sm outline-none dark:border-white/10 dark:bg-neutral-900/50"
                                     {...form.register("description")}
                                 />
                             </div>
