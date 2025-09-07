@@ -1,7 +1,8 @@
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useMemo, useState, useEffect, useCallback } from "react";
 import * as z from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Controller, useFieldArray, useForm } from "react-hook-form";
+import { useDropzone } from "react-dropzone";
 import { toast } from "sonner";
 import { superadmin } from "@/api";
 
@@ -12,7 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, Trash2, Store } from "lucide-react";
+import { Plus, Trash2, Store, Upload, X } from "lucide-react";
 
 /* --------------------------------- constants -------------------------------- */
 const CATEGORY_OPTIONS = [
@@ -40,6 +41,7 @@ const ProductSchema = z.object({
     category: z.string().min(2, "Category is required"),
     unit_price: z.string().min(1, "Unit price is required"),
     stockins: z.array(BatchSchema).min(1, "Add at least one batch"),
+    image: z.any().optional(),
 });
 
 /* ------------------------------ store search UI ------------------------------ */
@@ -148,6 +150,60 @@ function AsyncStoreSelect({
     );
 }
 
+/* ----------------------------- Dropzone uploader ---------------------------- */
+function ImageDropzone({ file, setFile }) {
+    const onDrop = useCallback((acceptedFiles) => {
+        if (acceptedFiles?.[0]) {
+            setFile(Object.assign(acceptedFiles[0], { preview: URL.createObjectURL(acceptedFiles[0]) }));
+        }
+    }, []);
+
+    const { getRootProps, getInputProps, isDragActive } = useDropzone({
+        accept: { "image/*": [] },
+        maxFiles: 1,
+        onDrop,
+    });
+
+    return (
+        <div className="grid gap-1.5">
+            <Label>Product image</Label>
+            {file ? (
+                <div className="relative w-32">
+                    <img
+                        src={file.preview}
+                        alt="Preview"
+                        className="h-32 w-32 rounded-lg border border-black/5 object-cover dark:border-white/10"
+                    />
+                    <Button
+                        type="button"
+                        size="icon"
+                        variant="ghost"
+                        className="absolute -top-2 -right-2 h-7 w-7 rounded-full bg-white shadow hover:bg-neutral-100 dark:bg-neutral-900 dark:hover:bg-neutral-800"
+                        onClick={() => setFile(null)}
+                    >
+                        <X className="h-4 w-4 text-red-600" />
+                    </Button>
+                </div>
+            ) : (
+                <div
+                    {...getRootProps()}
+                    className={[
+                        "flex h-32 w-full cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-black/10 bg-white/60 p-4 text-center text-sm backdrop-blur-sm transition hover:border-emerald-500 dark:border-white/10 dark:bg-neutral-900/60",
+                        isDragActive ? "border-emerald-500 bg-emerald-50/60 dark:bg-emerald-500/10" : "",
+                    ].join(" ")}
+                >
+                    <input {...getInputProps()} />
+                    <Upload className="mb-2 h-6 w-6 text-neutral-400" />
+                    <p className="text-neutral-600 dark:text-neutral-400">
+                        {isDragActive ? "Drop the file here…" : "Drag & drop an image, or click to browse"}
+                    </p>
+                    <p className="mt-1 text-xs text-neutral-400">PNG, JPG up to ~5MB</p>
+                </div>
+            )}
+        </div>
+    );
+}
+
 /* ------------------------------- live helpers ------------------------------- */
 function toNum(x) {
     const n = Number(x);
@@ -156,6 +212,7 @@ function toNum(x) {
 
 export default function ProductCreateSheet({ open, onOpenChange, onDone }) {
     const [submitting, setSubmitting] = useState(false);
+    const [imageFile, setImageFile] = useState(null);
 
     const form = useForm({
         resolver: zodResolver(ProductSchema),
@@ -193,22 +250,29 @@ export default function ProductCreateSheet({ open, onOpenChange, onDone }) {
     const onSubmit = handleSubmit(async (values) => {
         try {
             setSubmitting(true);
-            const payload = {
-                name: values.name,
-                category: values.category,
-                unit_price: String(values.unit_price),
-                stockins: values.stockins.map((b) => ({
-                    ...(b.store_id ? { store_id: b.store_id } : {}),
-                    quantity: String(b.quantity),
-                    ...(b.expiry_date ? { expiry_date: b.expiry_date } : {}),
-                })),
-            };
-            const { message } = await superadmin.createProductWithStockIn(payload);
+
+            const formData = new FormData();
+            formData.append("name", values.name);
+            formData.append("category", values.category);
+            formData.append("unit_price", String(values.unit_price));
+            if (imageFile) formData.append("image", imageFile);
+
+            values.stockins.forEach((b, i) => {
+                formData.append(`stockins[${i}][quantity]`, String(b.quantity));
+                if (b.store_id) formData.append(`stockins[${i}][store_id]`, b.store_id);
+                if (b.expiry_date) formData.append(`stockins[${i}][expiry_date]`, b.expiry_date);
+            });
+
+            const { message } = await superadmin.createProductWithStockIn(formData, {
+                headers: { "Content-Type": "multipart/form-data" },
+            });
+
             toast.success(message || "Product created with initial stock.");
             onDone?.();
             onOpenChange?.(false);
             reset();
             setValue("category", CATEGORY_OPTIONS[0]);
+            setImageFile(null);
         } catch (err) {
             toast.error(err?.message || "Failed to create product.");
         } finally {
