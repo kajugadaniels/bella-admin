@@ -1,3 +1,4 @@
+// ProductsList.jsx
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import {
@@ -55,6 +56,44 @@ function dateOnly(iso) {
     } catch {
         return String(iso);
     }
+}
+
+/* Days until helper (date-only safe) */
+function daysUntil(dateStr) {
+    if (!dateStr) return null;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const target = new Date(dateStr);
+    // Normalize parsed target to date-only semantics
+    target.setHours(0, 0, 0, 0);
+    return Math.ceil((target.getTime() - today.getTime()) / 86400000);
+}
+
+/* Expiry badge (color-coded) */
+function ExpiryBadge({ expiryDate }) {
+    const d = daysUntil(expiryDate);
+    if (d === null) return null;
+
+    let cls = "border text-xs px-2.5 py-0.5 rounded-full";
+    let text = "";
+    if (d <= 0) {
+        cls += " bg-red-100 text-red-700 border-red-200 dark:bg-red-400/10 dark:text-red-300 dark:border-red-500/30";
+        text = d === 0 ? "Today" : "Expired";
+    } else if (d <= 2) {
+        // Red when product has 2 days (or fewer) left
+        cls += " bg-red-100 text-red-700 border-red-200 dark:bg-red-400/10 dark:text-red-300 dark:border-red-500/30";
+        text = `${d}d left`;
+    } else if (d <= 7) {
+        cls +=
+            " bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-400/10 dark:text-amber-300 dark:border-amber-500/30";
+        text = `${d}d left`;
+    } else {
+        cls +=
+            " bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-400/10 dark:text-emerald-300 dark:border-emerald-500/30";
+        text = `${d}d left`;
+    }
+
+    return <span className={cls}>{text}</span>;
 }
 
 /* ------------------------------- Image helpers ------------------------------- */
@@ -164,7 +203,7 @@ function ProductCard({ row, onView, onEdit, onBatch, onTogglePublish, publishBus
                         checked={isPublished}
                         disabled={busy}
                         onCheckedChange={(v) => onTogglePublish?.(p.id, !!v)}
-                        className="data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                        className="data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600"
                         aria-label={`Publish ${p.name || "product"}`}
                     />
                     <span className="text-xs text-neutral-600 dark:text-neutral-400">{isPublished ? "Published" : "Unpublished"}</span>
@@ -297,16 +336,8 @@ const ProductsList = () => {
         else setOrdering(`-${ordering}`);
     };
 
-    /**
-     * Publish/unpublish toggle:
-     * The backend endpoint now **toggles**:
-     * - If product is unpublished → it will publish it.
-     * - If product is already published → it will unpublish it.
-     *
-     * We perform an optimistic UI update and roll back on error.
-     */
+    /** Instant publish/unpublish with optimistic UI + rollback (server persists state) */
     const handlePublishToggle = async (productId, nextPublished) => {
-        // optimistic UI change
         setRows((prev) =>
             (prev || []).map((r) =>
                 r?.product?.id === productId ? { ...r, product: { ...r.product, published: nextPublished } } : r
@@ -315,12 +346,9 @@ const ProductsList = () => {
         setPublishBusy((m) => ({ ...m, [productId]: true }));
 
         try {
-            // Single "publish" endpoint now acts as a toggle; no body is required.
-            // If your API wrapper expects a payload, it will simply receive `undefined`.
-            await superadmin.publishProduct(productId);
+            await superadmin.publishProduct(productId); // endpoint toggles/persists on server
             toast.success(nextPublished ? "Product published." : "Product unpublished.");
         } catch (err) {
-            // rollback on failure
             setRows((prev) =>
                 (prev || []).map((r) =>
                     r?.product?.id === productId ? { ...r, product: { ...r.product, published: !nextPublished } } : r
@@ -399,7 +427,7 @@ const ProductsList = () => {
                         <Table className="table-glassy">
                             <TableHeader className="sticky top-0 z-10 bg-white/70 backdrop-blur supports-[backdrop-filter]:bg-white/50 dark:bg-neutral-900/50">
                                 <TableRow className="border-0">
-                                    <TableHead className="min-w-[320px]">Product</TableHead>
+                                    <TableHead className="min-w=[320px]">Product</TableHead>
                                     <TableHead>Store</TableHead>
                                     <TableHead className="text-right">Remaining</TableHead>
                                     <TableHead className="text-right">Unit&nbsp;Price</TableHead>
@@ -473,7 +501,15 @@ const ProductsList = () => {
                                                 <TableCell className="text-right">{fmtNum(val.unit_price)}</TableCell>
                                                 <TableCell className="text-right">{fmtNum(val.value_gross)}</TableCell>
                                                 <TableCell className="text-right">{dateOnly(d.received_at)}</TableCell>
-                                                <TableCell className="text-right">{dateOnly(d.expiry_date)}</TableCell>
+
+                                                {/* Expiry + days-left badge */}
+                                                <TableCell className="text-right">
+                                                    <div className="truncate text-sm">
+                                                        {dateOnly(d.expiry_date)}
+                                                    </div>
+                                                    <ExpiryBadge expiryDate={d.expiry_date} />
+                                                </TableCell>
+
                                                 <TableCell className="text-center">
                                                     <div className="inline-flex items-center gap-2">
                                                         <Checkbox
