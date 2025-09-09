@@ -34,6 +34,11 @@ export const DEFAULT_PRODUCT_FILTERS = {
     created_before: "",
 };
 
+// Non-empty sentinel values for Radix Select items
+const CAT_CLEAR = "__ALL_CATEGORIES__";
+const STORE_ALL = "__ALL_STORES__";
+const STORE_GLOBAL = "__GLOBAL__";
+
 function ProductFiltersBase({ value, onChange, className }) {
     const [open, setOpen] = useState(false);
     const v = value || DEFAULT_PRODUCT_FILTERS;
@@ -55,7 +60,6 @@ function ProductFiltersBase({ value, onChange, className }) {
                 // Normalize -> {value, label}
                 const opts = raw
                     .map((c) => {
-                        // Accept either {code,label} or {value,label}
                         const value = String(c.value ?? c.code ?? "").trim();
                         const label = String(c.label ?? c.name ?? value).trim();
                         return value ? { value, label } : null;
@@ -98,20 +102,16 @@ function ProductFiltersBase({ value, onChange, className }) {
         };
     }, []);
 
-    // Special store values for the Select
-    const STORE_VALUE_ALL = "";
-    const STORE_VALUE_GLOBAL = "__GLOBAL__";
-
-    // Reflect current filter state in the Store Select
+    // Reflect current filter state in the Store Select (value can be empty to show placeholder)
     const storeSelectValue = useMemo(() => {
-        if (v.store_id) return v.store_id; // a specific store
-        if (v.has_store === false) return STORE_VALUE_GLOBAL; // explicitly no-store batches
-        return STORE_VALUE_ALL; // all stores
+        if (v.store_id) return String(v.store_id); // specific store
+        if (v.has_store === false) return STORE_GLOBAL; // explicitly no-store
+        return ""; // all stores (placeholder)
     }, [v.store_id, v.has_store]);
 
     const onStoreSelect = (val) => {
-        if (val === STORE_VALUE_ALL) return set({ store_id: "", has_store: "" });
-        if (val === STORE_VALUE_GLOBAL) return set({ store_id: "", has_store: false });
+        if (val === STORE_ALL) return set({ store_id: "", has_store: "" });
+        if (val === STORE_GLOBAL) return set({ store_id: "", has_store: false });
         return set({ store_id: val, has_store: "" });
     };
 
@@ -127,7 +127,7 @@ function ProductFiltersBase({ value, onChange, className }) {
 
         // Store label
         if (v.store_id) {
-            const s = stores.find((x) => x.id === v.store_id);
+            const s = stores.find((x) => String(x.id) === String(v.store_id));
             labels.push(s?.name || "store");
         } else if (v.has_store === false) {
             labels.push("Global (no store)");
@@ -161,9 +161,11 @@ function ProductFiltersBase({ value, onChange, className }) {
                         Category
                     </Label>
                     <Select
-                        value={v.category || ""}
-                        onValueChange={(val) => set({ category: val })}
-                        disabled={catLoading || !categories.length}
+                        value={v.category || ""} // empty -> shows placeholder
+                        onValueChange={(val) =>
+                            set({ category: val === CAT_CLEAR ? "" : val })
+                        }
+                        disabled={catLoading}
                     >
                         <SelectTrigger
                             id="pf-category"
@@ -185,7 +187,8 @@ function ProductFiltersBase({ value, onChange, className }) {
                 data-[side=bottom]:slide-in-from-top-1 data-[side=top]:slide-in-from-bottom-1
               "
                         >
-                            <SelectItem key="__ALL__" value="">
+                            {/* Non-empty sentinel to clear category */}
+                            <SelectItem key={CAT_CLEAR} value={CAT_CLEAR}>
                                 All categories
                             </SelectItem>
                             {categories.map((opt) => (
@@ -203,7 +206,7 @@ function ProductFiltersBase({ value, onChange, className }) {
                         Store
                     </Label>
                     <Select
-                        value={storeSelectValue}
+                        value={storeSelectValue} // "" -> placeholder
                         onValueChange={onStoreSelect}
                         disabled={storeLoading}
                     >
@@ -227,14 +230,15 @@ function ProductFiltersBase({ value, onChange, className }) {
                 data-[side=bottom]:slide-in-from-top-1 data-[side=top]:slide-in-from-bottom-1
               "
                         >
-                            <SelectItem key="__ALL_STORES__" value={STORE_VALUE_ALL}>
+                            {/* Non-empty sentinel to clear to "all" */}
+                            <SelectItem key={STORE_ALL} value={STORE_ALL}>
                                 All stores
                             </SelectItem>
-                            <SelectItem key="__GLOBAL__" value={STORE_VALUE_GLOBAL}>
+                            <SelectItem key={STORE_GLOBAL} value={STORE_GLOBAL}>
                                 Global (no store)
                             </SelectItem>
                             {stores.map((s) => (
-                                <SelectItem key={s.id} value={s.id}>
+                                <SelectItem key={String(s.id)} value={String(s.id)}>
                                     {s.name}
                                 </SelectItem>
                             ))}
