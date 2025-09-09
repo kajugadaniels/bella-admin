@@ -11,7 +11,6 @@ import {
     CircleAlert,
     Layers,
     PencilLine,
-    ImageOff,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -21,6 +20,7 @@ import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -131,13 +131,16 @@ function ProductThumb({ src, alt, size = 44, rounded = "rounded-xl", className =
 }
 
 /* --------------------------- Mini Card for small screens --------------------------- */
-function ProductCard({ row, onView, onEdit, onBatch }) {
+function ProductCard({ row, onView, onEdit, onBatch, onTogglePublish, publishBusy }) {
     const s = row || {};
     const p = s.product || {};
     const store = s.store;
     const q = s.quantities || {};
     const val = s.pricing || {};
     const d = s.dates || {};
+
+    const isPublished = !!p.is_published;
+    const busy = !!publishBusy?.[p.id];
 
     return (
         <div className="rounded-2xl border border-black/5 bg-white/70 p-3 backdrop-blur-md dark:border-white/10 dark:bg-neutral-900/60">
@@ -154,9 +157,18 @@ function ProductCard({ row, onView, onEdit, onBatch }) {
                         </div>
                     </div>
                 </div>
-                <Button variant="ghost" size="sm" onClick={() => onView?.(p.id)} className="cursor-pointer">
-                    <Eye className="mr-1.5 h-4 w-4" /> Details
-                </Button>
+
+                {/* Publish toggle */}
+                <div className="flex items-center gap-2">
+                    <Checkbox
+                        checked={isPublished}
+                        disabled={busy}
+                        onCheckedChange={(v) => onTogglePublish?.(p.id, !!v)}
+                        className="data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600"
+                        aria-label={`Publish ${p.name || "product"}`}
+                    />
+                    <span className="text-xs text-neutral-600 dark:text-neutral-400">{isPublished ? "Published" : "Unpublished"}</span>
+                </div>
             </div>
 
             <Separator className="my-3" />
@@ -193,6 +205,10 @@ function ProductCard({ row, onView, onEdit, onBatch }) {
                     <PencilLine className="mr-2 h-4 w-4" />
                     Edit
                 </Button>
+                <Button variant="outline" size="sm" className="glass-button" onClick={() => onView?.(p.id)}>
+                    <Eye className="mr-2 h-4 w-4" />
+                    Details
+                </Button>
             </div>
         </div>
     );
@@ -218,11 +234,12 @@ const ProductsList = () => {
     const pageSize = 10;
     const totalPages = Math.max(1, Math.ceil(count / pageSize));
 
+    // publish-in-flight flags (per product)
+    const [publishBusy, setPublishBusy] = useState({}); // { [productId]: true }
+
     // modals
     const [detailProductId, setDetailProductId] = useState(null);
     const [createOpen, setCreateOpen] = useState(false);
-
-    // newly added modals
     const [updateProductId, setUpdateProductId] = useState(null);
     const [stockInDetailId, setStockInDetailId] = useState(null);
 
@@ -278,6 +295,36 @@ const ProductsList = () => {
     const toggleOrdering = () => {
         if (ordering.startsWith("-")) setOrdering(ordering.slice(1));
         else setOrdering(`-${ordering}`);
+    };
+
+    /** Instant publish/unpublish with optimistic UI + rollback */
+    const handlePublishToggle = async (productId, nextPublished) => {
+        // optimistic UI change
+        setRows((prev) =>
+            (prev || []).map((r) =>
+                r?.product?.id === productId ? { ...r, product: { ...r.product, is_published: nextPublished } } : r
+            )
+        );
+        setPublishBusy((m) => ({ ...m, [productId]: true }));
+
+        try {
+            await superadmin.publishProduct(productId, { is_published: !!nextPublished });
+            toast.success(nextPublished ? "Product published." : "Product unpublished.");
+        } catch (err) {
+            // rollback on failure
+            setRows((prev) =>
+                (prev || []).map((r) =>
+                    r?.product?.id === productId ? { ...r, product: { ...r.product, is_published: !nextPublished } } : r
+                )
+            );
+            toast.error(err?.message || "Failed to update publish status.");
+        } finally {
+            setPublishBusy((m) => {
+                const copy = { ...m };
+                delete copy[productId];
+                return copy;
+            });
+        }
     };
 
     return (
@@ -350,15 +397,16 @@ const ProductsList = () => {
                                     <TableHead className="text-right">Gross&nbsp;Value</TableHead>
                                     <TableHead className="text-right">Received</TableHead>
                                     <TableHead className="text-right">Expiry</TableHead>
+                                    <TableHead className="text-center">Published</TableHead>
                                     <TableHead className="w-12" />
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {loading && (
                                     <TableRow className="border-0">
-                                        <TableCell colSpan={8} className="py-10">
-                                            <div className="grid grid-cols-8 gap-3 px-2">
-                                                {[...Array(8)].map((_, i) => (
+                                        <TableCell colSpan={9} className="py-10">
+                                            <div className="grid grid-cols-9 gap-3 px-2">
+                                                {[...Array(9)].map((_, i) => (
                                                     <Skeleton key={i} className="col-span-1 h-5 w-full rounded-md" />
                                                 ))}
                                             </div>
@@ -372,7 +420,7 @@ const ProductsList = () => {
                                 )}
                                 {!loading && (!rows || rows.length === 0) && (
                                     <TableRow className="border-0">
-                                        <TableCell colSpan={8} className="py-10 text-center text-sm text-neutral-500">
+                                        <TableCell colSpan={9} className="py-10 text-center text-sm text-neutral-500">
                                             <div className="inline-flex items-center gap-2">
                                                 <CircleAlert className="h-4 w-4" />
                                                 No products found.
@@ -387,6 +435,9 @@ const ProductsList = () => {
                                         const q = s?.quantities || {};
                                         const val = s?.pricing || {};
                                         const d = s?.dates || {};
+                                        const isPublished = !!p.is_published;
+                                        const busy = !!publishBusy[p.id];
+
                                         return (
                                             <TableRow
                                                 key={s.id}
@@ -414,6 +465,20 @@ const ProductsList = () => {
                                                 <TableCell className="text-right">{fmtNum(val.value_gross)}</TableCell>
                                                 <TableCell className="text-right">{dateOnly(d.received_at)}</TableCell>
                                                 <TableCell className="text-right">{dateOnly(d.expiry_date)}</TableCell>
+                                                <TableCell className="text-center">
+                                                    <div className="inline-flex items-center gap-2">
+                                                        <Checkbox
+                                                            checked={isPublished}
+                                                            disabled={busy}
+                                                            onCheckedChange={(v) => handlePublishToggle(p.id, !!v)}
+                                                            aria-label={`Publish ${p.name || "product"}`}
+                                                            className="data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600"
+                                                        />
+                                                        <span className="text-xs text-neutral-600 dark:text-neutral-400">
+                                                            {isPublished ? "Published" : "Unpublished"}
+                                                        </span>
+                                                    </div>
+                                                </TableCell>
                                                 <TableCell className="text-right">
                                                     <DropdownMenu>
                                                         <DropdownMenuTrigger asChild>
@@ -475,6 +540,8 @@ const ProductsList = () => {
                                 <ProductCard
                                     key={r.id}
                                     row={r}
+                                    publishBusy={publishBusy}
+                                    onTogglePublish={handlePublishToggle}
                                     onView={(pid) => setDetailProductId(pid)}
                                     onEdit={(pid) => setUpdateProductId(pid)}
                                     onBatch={(sid) => setStockInDetailId(sid)}
