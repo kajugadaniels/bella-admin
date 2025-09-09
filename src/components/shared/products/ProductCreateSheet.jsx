@@ -413,7 +413,7 @@ export default function ProductCreateSheet({ open, onOpenChange, onDone }) {
                                             >
                                                 <SelectTrigger
                                                     id="category"
-                                                    className="h-9 w-full rounded-xl border border-black/5 bg-white/90 px-3 text-sm outline-none transition-[box-shadow] focus:ring-2 focus:ring-emerald-500/30 dark:border-white/10 dark:bg-neutral-900"
+                                                    className="py-5 w-full rounded-xl border border-black/5 bg-white/90 px-3 text-sm outline-none transition-[box-shadow] focus:ring-2 focus:ring-emerald-500/30 dark:border-white/10 dark:bg-neutral-900 cursor-pointer"
                                                 >
                                                     <SelectValue placeholder={catLoading ? "Loading…" : "Select a category"} />
                                                 </SelectTrigger>
@@ -422,16 +422,7 @@ export default function ProductCreateSheet({ open, onOpenChange, onDone }) {
                                                 <SelectContent
                                                     position="popper"
                                                     sideOffset={6}
-                                                    className="
-            max-h-64 overflow-y-auto
-            rounded-xl border border-black/5 bg-white/95 backdrop-blur
-            dark:border-white/10 dark:bg-neutral-900/95
-            scrollbar-thin scrollbar-thumb-neutral-300 scrollbar-track-transparent
-            dark:scrollbar-thumb-neutral-700
-            data-[state=open]:animate-in data-[state=closed]:animate-out
-            data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0
-            data-[side=bottom]:slide-in-from-top-1 data-[side=top]:slide-in-from-bottom-1
-          "
+                                                    className="max-h-64 overflow-y-auto rounded-xl border border-black/5 bg-white/95 backdrop-blur dark:border-white/10 dark:bg-neutral-900/95 scrollbar-thin scrollbar-thumb-neutral-300 scrollbar-track-transparent dark:scrollbar-thumb-neutral-700 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0 data-[side=bottom]:slide-in-from-top-1 data-[side=top]:slide-in-from-bottom-1"
                                                 >
                                                     {categories.length ? (
                                                         categories.map((opt) => (
@@ -446,7 +437,6 @@ export default function ProductCreateSheet({ open, onOpenChange, onDone }) {
                                             </Select>
                                         )}
                                     />
-                                    <p className="text-xs text-neutral-500">Choose a category from backend.</p>
                                 </div>
 
                                 {/* Unit price */}
@@ -457,7 +447,7 @@ export default function ProductCreateSheet({ open, onOpenChange, onDone }) {
 
                                 <div className="grid gap-1.5">
                                     <Label>Price w/ tax (preview)</Label>
-                                    <div className="rounded-xl border border-black/5 bg-white/70 px-3 py-2 text-sm dark:border-white/10 dark:bg-neutral-900/60">
+                                    <div className="rounded-lg border border-black bg-white/70 px-3 py-2 text-sm dark:border-white/10 dark:bg-neutral-900/60 cursor-pointer">
                                         {priceWithTax ? priceWithTax.toFixed(2) : "—"}
                                     </div>
                                 </div>
