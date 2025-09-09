@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState, memo } from "react";
-import { SlidersHorizontal } from "lucide-react";
+import { SlidersHorizontal, Search as SearchIcon } from "lucide-react";
 
 import { superadmin } from "@/api";
 import { Button } from "@/components/ui/button";
@@ -35,25 +35,25 @@ export const DEFAULT_PRODUCT_FILTERS = {
     created_before: "",
 };
 
-// Non-empty sentinel used for "All categories"
+// Non-empty sentinels for Radix Select
 const ALL_CATEGORIES_VALUE = "__ALL__";
+const ALL_STORES_VALUE = "__ALL_STORES__";
+const GLOBAL_STORE_VALUE = "__GLOBAL__";
 
 function ProductFiltersBase({ value, onChange, className }) {
-    const [open, setOpen] = useState(false);
+    const [moreOpen, setMoreOpen] = useState(false);
     const v = value || DEFAULT_PRODUCT_FILTERS;
 
     const set = (patch) => onChange?.({ ...v, ...patch });
     const reset = () => onChange?.({ ...DEFAULT_PRODUCT_FILTERS });
 
-    // Stores for the Store select
+    /* ------------------------------ Stores (async) ------------------------------ */
+    const [storeOpen, setStoreOpen] = useState(false);
     const [storeLoading, setStoreLoading] = useState(false);
     const [stores, setStores] = useState([]);
+    const [storeQ, setStoreQ] = useState("");
 
-    // Categories (fetched from backend)
-    const [catLoading, setCatLoading] = useState(false);
-    /** @type {[Array<{value:string; label:string}>, Function]} */
-    const [categories, setCategories] = useState([]);
-
+    // Initial list on mount
     useEffect(() => {
         let ignore = false;
         async function run() {
@@ -69,12 +69,54 @@ function ProductFiltersBase({ value, onChange, className }) {
             }
         }
         run();
-        return () => {
-            ignore = true;
-        };
+        return () => { ignore = true; };
     }, []);
 
-    // Load categories from backend (enum list)
+    // Live search when Select is open
+    useEffect(() => {
+        if (!storeOpen) return;
+        let ignore = false;
+        const id = setTimeout(async () => {
+            setStoreLoading(true);
+            try {
+                const params = { ordering: "name" };
+                if (storeQ.trim()) params.search = storeQ.trim();
+                const { data } = await superadmin.listStores(params);
+                if (!ignore) setStores(data?.results || []);
+            } catch {
+                if (!ignore) setStores([]);
+            } finally {
+                if (!ignore) setStoreLoading(false);
+            }
+        }, 350);
+        return () => { clearTimeout(id); ignore = true; };
+    }, [storeQ, storeOpen]);
+
+    // Derive Select value for store using sentinels
+    const storeSelectValue = (() => {
+        if (v.store_id) return String(v.store_id);
+        if (v.has_store === false) return GLOBAL_STORE_VALUE;      // “Global (no store)”
+        return ALL_STORES_VALUE;                                   // “All stores”
+    })();
+
+    const onStoreValueChange = (val) => {
+        if (val === ALL_STORES_VALUE) {
+            set({ store_id: "", has_store: "" });
+            return;
+        }
+        if (val === GLOBAL_STORE_VALUE) {
+            set({ store_id: "", has_store: false });
+            return;
+        }
+        set({ store_id: val, has_store: "" });
+    };
+
+    /* ------------------------------ Categories (async) ------------------------------ */
+    const [catLoading, setCatLoading] = useState(false);
+    const [categories, setCategories] = useState(
+    /** @type {Array<{value:string; label:string}>} */([])
+    );
+
     useEffect(() => {
         let ignore = false;
         async function load() {
@@ -102,21 +144,7 @@ function ProductFiltersBase({ value, onChange, className }) {
         return () => { ignore = true; };
     }, []);
 
-    // When a store is chosen, push store_id and clear has_store to avoid competing filters.
-    const handleStoreChange = (e) => {
-        const val = e.target.value;
-        if (val === "__GLOBAL__") {
-            set({ store_id: "", has_store: false });
-            return;
-        }
-        if (!val) {
-            set({ store_id: "", has_store: "" });
-            return;
-        }
-        set({ store_id: val, has_store: "" });
-    };
-
-    // Active filter chips
+    /* ------------------------------ Active chips ------------------------------ */
     const activeChips = useMemo(() => {
         const labels = {
             category: "category",
@@ -145,13 +173,12 @@ function ProductFiltersBase({ value, onChange, className }) {
             ].join(" ")}
         >
             <div className="flex flex-wrap items-center gap-3">
-                {/* Category (Select from backend) */}
+                {/* Category (shadcn Select) */}
                 <div className="grid min-w-[220px] flex-1 gap-1.5">
                     <Label htmlFor="pf-category" className="text-xs text-neutral-500">
                         Category
                     </Label>
                     <Select
-                        // Use sentinel when empty to avoid Radix empty-string constraint
                         value={(v.category && String(v.category)) || ALL_CATEGORIES_VALUE}
                         onValueChange={(val) => set({ category: val === ALL_CATEGORIES_VALUE ? "" : val })}
                         disabled={catLoading}
@@ -160,16 +187,14 @@ function ProductFiltersBase({ value, onChange, className }) {
                             id="pf-category"
                             className="h-9 w-full rounded-xl border border-black/5 bg-white/90 px-3 text-sm outline-none transition-[box-shadow] focus:ring-2 focus:ring-emerald-500/30 dark:border-white/10 dark:bg-neutral-900 cursor-pointer"
                         >
-                            <SelectValue />
+                            <SelectValue placeholder={catLoading ? "Loading…" : "All categories"} />
                         </SelectTrigger>
                         <SelectContent
                             position="popper"
                             sideOffset={6}
                             className="max-h-64 overflow-y-auto rounded-xl border border-black/5 bg-white/95 backdrop-blur dark:border-white/10 dark:bg-neutral-900/95 scrollbar-thin scrollbar-thumb-neutral-300 scrollbar-track-transparent dark:scrollbar-thumb-neutral-700 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0 data-[side=bottom]:slide-in-from-top-1 data-[side=top]:slide-in-from-bottom-1"
                         >
-                            {/* “All categories” option uses non-empty sentinel */}
                             <SelectItem value={ALL_CATEGORIES_VALUE}>All categories</SelectItem>
-
                             {catLoading ? (
                                 <div className="p-2 text-sm text-neutral-500">Loading…</div>
                             ) : categories.length ? (
@@ -185,31 +210,65 @@ function ProductFiltersBase({ value, onChange, className }) {
                     </Select>
                 </div>
 
-                {/* Store (native select) */}
+                {/* Store (shadcn Select with live search) */}
                 <div className="grid min-w-[240px] flex-1 gap-1.5">
                     <Label htmlFor="pf-store" className="text-xs text-neutral-500">
                         Store
                     </Label>
-                    <select
-                        id="pf-store"
-                        value={v.store_id || ""}
-                        onChange={handleStoreChange}
-                        disabled={storeLoading}
-                        className={[
-                            "h-9 w-full rounded-xl border px-3 text-sm",
-                            "border-black/5 bg-white text-neutral-900",
-                            "dark:border-white/10 dark:bg-white dark:text-neutral-900",
-                            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-                        ].join(" ")}
+                    <Select
+                        value={storeSelectValue}
+                        onValueChange={onStoreValueChange}
+                        onOpenChange={(o) => {
+                            setStoreOpen(o);
+                            if (!o) setStoreQ("");
+                        }}
+                        disabled={storeLoading && !storeOpen}
                     >
-                        <option value="">{storeLoading ? "Loading…" : "All stores"}</option>
-                        <option value="__GLOBAL__">Global (no store)</option>
-                        {stores.map((s) => (
-                            <option key={s.id} value={s.id}>
-                                {s.name}
-                            </option>
-                        ))}
-                    </select>
+                        <SelectTrigger
+                            id="pf-store"
+                            className="h-9 w-full rounded-xl border border-black/5 bg-white/90 px-3 text-sm outline-none transition-[box-shadow] focus:ring-2 focus:ring-emerald-500/30 dark:border-white/10 dark:bg-neutral-900 cursor-pointer"
+                        >
+                            <SelectValue placeholder={storeLoading ? "Loading…" : "All stores"} />
+                        </SelectTrigger>
+                        <SelectContent
+                            position="popper"
+                            sideOffset={6}
+                            className="w-[var(--radix-select-trigger-width)] max-h-72 overflow-y-auto rounded-xl border border-black/5 bg-white/95 p-0 backdrop-blur dark:border-white/10 dark:bg-neutral-900/95"
+                        >
+                            {/* Inline search input inside the Select popover */}
+                            <div className="sticky top-0 z-10 border-b border-black/5 bg-white/95 p-2 backdrop-blur dark:border-white/10 dark:bg-neutral-900/95">
+                                <div className="relative">
+                                    <SearchIcon className="pointer-events-none absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
+                                    <Input
+                                        placeholder="Search store…"
+                                        value={storeQ}
+                                        onChange={(e) => setStoreQ(e.target.value)}
+                                        className="h-8 w-full rounded-lg pl-8"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Static options */}
+                            <SelectItem value={ALL_STORES_VALUE}>All stores</SelectItem>
+                            <SelectItem value={GLOBAL_STORE_VALUE}>Global (no store)</SelectItem>
+
+                            {/* Dynamic options */}
+                            <div className="px-1 py-1">
+                                {storeLoading && (
+                                    <div className="px-2 py-1 text-xs text-neutral-500">Loading…</div>
+                                )}
+                                {!storeLoading && (!stores || stores.length === 0) && (
+                                    <div className="px-2 py-1 text-xs text-neutral-500">No stores found.</div>
+                                )}
+                                {!storeLoading &&
+                                    (stores || []).map((s) => (
+                                        <SelectItem key={s.id} value={s.id}>
+                                            {s.name}
+                                        </SelectItem>
+                                    ))}
+                            </div>
+                        </SelectContent>
+                    </Select>
                 </div>
 
                 {/* Toggles */}
@@ -258,7 +317,7 @@ function ProductFiltersBase({ value, onChange, className }) {
                         Reset
                     </Button>
 
-                    <DropdownMenu open={open} onOpenChange={setOpen}>
+                    <DropdownMenu open={moreOpen} onOpenChange={setMoreOpen}>
                         <DropdownMenuTrigger asChild>
                             <Button
                                 variant="outline"
