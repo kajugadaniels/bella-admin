@@ -15,9 +15,9 @@ import {
 import {
     Select,
     SelectTrigger,
-    SelectValue,
     SelectContent,
     SelectItem,
+    SelectValue,
 } from "@/components/ui/select";
 
 /** Exported so the parent can share the same defaults */
@@ -42,37 +42,14 @@ function ProductFiltersBase({ value, onChange, className }) {
     const set = (patch) => onChange?.({ ...v, ...patch });
     const reset = () => onChange?.({ ...DEFAULT_PRODUCT_FILTERS });
 
-    // ---------- Dynamic Categories (from backend) ----------
-    const [catLoading, setCatLoading] = useState(false);
-    const [categories, setCategories] = useState([]);
-
-    useEffect(() => {
-        let ignore = false;
-        (async () => {
-            setCatLoading(true);
-            try {
-                const { data } = await superadmin.getProductCategories();
-                // Be liberal about response shape
-                const list =
-                    Array.isArray(data) ? data
-                        : Array.isArray(data?.results) ? data.results
-                            : Array.isArray(data?.categories) ? data.categories
-                                : [];
-                if (!ignore) setCategories(list.filter(Boolean));
-            } catch {
-                if (!ignore) setCategories([]);
-            } finally {
-                if (!ignore) setCatLoading(false);
-            }
-        })();
-        return () => {
-            ignore = true;
-        };
-    }, []);
-
-    // ---------- Stores for the Store select ----------
+    // Stores for the Store select
     const [storeLoading, setStoreLoading] = useState(false);
     const [stores, setStores] = useState([]);
+
+    // Categories (fetched from backend)
+    const [catLoading, setCatLoading] = useState(false);
+    /** @type {[Array<{value:string; label:string}>, Function]} */
+    const [categories, setCategories] = useState([]);
 
     useEffect(() => {
         let ignore = false;
@@ -92,6 +69,37 @@ function ProductFiltersBase({ value, onChange, className }) {
         return () => {
             ignore = true;
         };
+    }, []);
+
+    // Load categories from backend (enum list)
+    useEffect(() => {
+        let ignore = false;
+        async function load() {
+            setCatLoading(true);
+            try {
+                const { data } = await superadmin.getProductCategories();
+                const raw = Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : [];
+
+                // Normalize to { value, label } and de-dupe by value
+                const norm = raw
+                    .map((item) => {
+                        if (typeof item === "string") return { value: item, label: item };
+                        const value = String(item?.code ?? item?.value ?? item?.id ?? item?.name ?? "").trim();
+                        const label = String(item?.label ?? item?.name ?? item?.title ?? item?.code ?? item?.value ?? value).trim();
+                        return value ? { value, label } : null;
+                    })
+                    .filter(Boolean);
+
+                const unique = Array.from(new Map(norm.map((o) => [o.value, o])).values());
+                if (!ignore) setCategories(unique);
+            } catch {
+                if (!ignore) setCategories([]);
+            } finally {
+                if (!ignore) setCatLoading(false);
+            }
+        }
+        load();
+        return () => { ignore = true; };
     }, []);
 
     // When a store is chosen, we push store_id. We also clear has_store to avoid redundant/competing filters.
@@ -139,7 +147,7 @@ function ProductFiltersBase({ value, onChange, className }) {
             ].join(" ")}
         >
             <div className="flex flex-wrap items-center gap-3">
-                {/* Category (shadcn Select, dynamic from backend) */}
+                {/* Category (Select from backend) */}
                 <div className="grid min-w-[220px] flex-1 gap-1.5">
                     <Label htmlFor="pf-category" className="text-xs text-neutral-500">
                         Category
@@ -149,21 +157,34 @@ function ProductFiltersBase({ value, onChange, className }) {
                         onValueChange={(val) => set({ category: val })}
                         disabled={catLoading}
                     >
-                        <SelectTrigger id="pf-category" className="rounded-xl">
-                            <SelectValue placeholder={catLoading ? "Loading categories…" : "All categories"} />
+                        <SelectTrigger
+                            id="pf-category"
+                            className="h-9 w-full rounded-xl border border-black/5 bg-white/90 px-3 text-sm outline-none transition-[box-shadow] focus:ring-2 focus:ring-emerald-500/30 dark:border-white/10 dark:bg-neutral-900 cursor-pointer"
+                        >
+                            <SelectValue placeholder={catLoading ? "Loading…" : "All categories"} />
                         </SelectTrigger>
-                        <SelectContent className="glass-menu">
+                        <SelectContent
+                            position="popper"
+                            sideOffset={6}
+                            className="max-h-64 overflow-y-auto rounded-xl border border-black/5 bg-white/95 backdrop-blur dark:border-white/10 dark:bg-neutral-900/95 scrollbar-thin scrollbar-thumb-neutral-300 scrollbar-track-transparent dark:scrollbar-thumb-neutral-700 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0 data-[side=bottom]:slide-in-from-top-1 data-[side=top]:slide-in-from-bottom-1"
+                        >
+                            {/* "All" option */}
                             <SelectItem value="">All categories</SelectItem>
-                            {categories.map((c) => (
-                                <SelectItem key={c} value={c}>
-                                    {c}
-                                </SelectItem>
-                            ))}
+                            {/* Dynamic categories */}
+                            {categories.length ? (
+                                categories.map((opt) => (
+                                    <SelectItem key={opt.value} value={opt.value}>
+                                        {opt.label}
+                                    </SelectItem>
+                                ))
+                            ) : (
+                                !catLoading && <div className="p-2 text-sm text-neutral-500">No categories.</div>
+                            )}
                         </SelectContent>
                     </Select>
                 </div>
 
-                {/* Store (native select retained) */}
+                {/* Store (select) */}
                 <div className="grid min-w-[240px] flex-1 gap-1.5">
                     <Label htmlFor="pf-store" className="text-xs text-neutral-500">
                         Store
