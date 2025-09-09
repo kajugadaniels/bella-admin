@@ -139,7 +139,7 @@ function ProductCard({ row, onView, onEdit, onBatch, onTogglePublish, publishBus
     const val = s.pricing || {};
     const d = s.dates || {};
 
-    const isPublished = !!p.is_published;
+    const isPublished = !!p.published;
     const busy = !!publishBusy?.[p.id];
 
     return (
@@ -164,7 +164,7 @@ function ProductCard({ row, onView, onEdit, onBatch, onTogglePublish, publishBus
                         checked={isPublished}
                         disabled={busy}
                         onCheckedChange={(v) => onTogglePublish?.(p.id, !!v)}
-                        className="data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600"
+                        className="data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                         aria-label={`Publish ${p.name || "product"}`}
                     />
                     <span className="text-xs text-neutral-600 dark:text-neutral-400">{isPublished ? "Published" : "Unpublished"}</span>
@@ -297,24 +297,33 @@ const ProductsList = () => {
         else setOrdering(`-${ordering}`);
     };
 
-    /** Instant publish/unpublish with optimistic UI + rollback */
+    /**
+     * Publish/unpublish toggle:
+     * The backend endpoint now **toggles**:
+     * - If product is unpublished → it will publish it.
+     * - If product is already published → it will unpublish it.
+     *
+     * We perform an optimistic UI update and roll back on error.
+     */
     const handlePublishToggle = async (productId, nextPublished) => {
         // optimistic UI change
         setRows((prev) =>
             (prev || []).map((r) =>
-                r?.product?.id === productId ? { ...r, product: { ...r.product, is_published: nextPublished } } : r
+                r?.product?.id === productId ? { ...r, product: { ...r.product, published: nextPublished } } : r
             )
         );
         setPublishBusy((m) => ({ ...m, [productId]: true }));
 
         try {
-            await superadmin.publishProduct(productId, { is_published: !!nextPublished });
+            // Single "publish" endpoint now acts as a toggle; no body is required.
+            // If your API wrapper expects a payload, it will simply receive `undefined`.
+            await superadmin.publishProduct(productId);
             toast.success(nextPublished ? "Product published." : "Product unpublished.");
         } catch (err) {
             // rollback on failure
             setRows((prev) =>
                 (prev || []).map((r) =>
-                    r?.product?.id === productId ? { ...r, product: { ...r.product, is_published: !nextPublished } } : r
+                    r?.product?.id === productId ? { ...r, product: { ...r.product, published: !nextPublished } } : r
                 )
             );
             toast.error(err?.message || "Failed to update publish status.");
@@ -435,7 +444,7 @@ const ProductsList = () => {
                                         const q = s?.quantities || {};
                                         const val = s?.pricing || {};
                                         const d = s?.dates || {};
-                                        const isPublished = !!p.is_published;
+                                        const isPublished = !!p.published;
                                         const busy = !!publishBusy[p.id];
 
                                         return (
