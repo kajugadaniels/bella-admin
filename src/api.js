@@ -107,7 +107,7 @@ function isFileLike(x) {
 
 /** Convert a plain object to FormData.
  *  - Files/Blobs appended raw
- *  - Arrays/objects JSON.stringified (e.g., `staff` invite payloads)
+ *  - Arrays/objects JSON.stringified (e.g., `staff` or `stockins` payloads)
  */
 function toFormData(payload = {}) {
     const fd = new FormData();
@@ -287,7 +287,7 @@ export const endpoints = {
     authPasswordResetRequest: "/auth/password/reset/request/",
     authPasswordResetConfirm: "/auth/password/reset/confirm/",
 
-    // Superadmin (mounted exactly as in Django URLs you provided)
+    // Superadmin (mounted exactly as in Django URLs)
     // Stores
     saStoresList: "/superadmin/stores/",
     saStoreCreate: "/superadmin/store/add/",
@@ -309,6 +309,11 @@ export const endpoints = {
     saStockInDetail: (stockinId) => `/superadmin/stockin/${stockinId}/`,
     saStockInVoid: (stockinId) => `/superadmin/stockin/${stockinId}/void/`,
     saStockInDelete: (stockinId) => `/superadmin/stockin/${stockinId}/delete/`,
+
+    // NEW: Publish + Categories
+    saProductPublishSingle: (productId) => `/superadmin/product/${productId}/publish/`,
+    saProductsPublish: "/superadmin/products/publish/",
+    saProductCategories: "/superadmin/product-categories/",
 };
 
 /** ------------------------------------------------------------------------
@@ -357,25 +362,13 @@ export const auth = {
  * Notes:
  *  - All calls set { auth: true } so the server can authorize and enforce role=ADMIN.
  *  - Query params mirror your DRF filtersets (stores & stockin listing).
- *  - We never synthesize messages; UI should use `result.message` or thrown `err.message`.
+ *  - Arrays/objects are JSON.stringified automatically in multipart via toFormData().
  * --------------------------------------------------------------------- */
 export const superadmin = {
     /**
      * List stores with search/filters/order/pagination
      * Mirrors StoreListView (django-filters + DRF backends)
-     * @param {{
-     *  // filters:
-     *  name?: string, email?: string, phone?: string,
-     *  province?: string, district?: string, sector?: string, cell?: string, village?: string,
-     *  has_admin?: boolean,
-     *  created_after?: string, created_before?: string, // ISO datetimes
-     *  // search:
-     *  search?: string,
-     *  // ordering (e.g., "-created_at"):
-     *  ordering?: string,
-     *  // pagination:
-     *  page?: number,
-     * }} params
+     * @param {Object} params
      */
     listStores(params = {}) {
         return GET(`${endpoints.saStoresList}${toQuery(params)}`, { auth: true });
@@ -384,7 +377,6 @@ export const superadmin = {
     /**
      * Create a store (optionally with staff invites)
      * Accepts JSON or multipart (image upload). Arrays/objects are JSON.stringified in multipart.
-     * @param {object|FormData} payload
      */
     createStore(payload) {
         const body = payload instanceof FormData ? payload : maybeMultipart(payload);
@@ -434,18 +426,7 @@ export const superadmin = {
     /**
      * List products via StockIn (one row per inbound batch) with filters/search/order/pagination
      * Mirrors StockInProductListView + StockInProductFilter
-     * @param {{
-     *  // filters:
-     *  store_id?: string, store_name?: string,
-     *  product_name?: string, category?: string,
-     *  is_void?: boolean,
-     *  created_after?: string, created_before?: string, // ISO datetime
-     *  expiring_after?: string, expiring_before?: string, // date
-     *  has_store?: boolean, has_remaining?: boolean,
-     *  min_unit_price?: number, max_unit_price?: number,
-     *  // search/order/pagination:
-     *  search?: string, ordering?: string, page?: number
-     * }} params
+     * @param {Object} params
      */
     listProductsViaStockIn(params = {}) {
         return GET(`${endpoints.saProductsViaStockIn}${toQuery(params)}`, { auth: true });
@@ -461,8 +442,16 @@ export const superadmin = {
     },
 
     /**
-     * Create product + initial StockIn batches (JSON only per your serializer)
-     * payload: { name, category, unit_price, stockins: [{store_id?, quantity, expiry_date?, is_void?}, ...] }
+     * Create product + initial StockIn batches (JSON **or multipart** for image upload).
+     * payload: {
+     *   name: string,
+     *   category: string,
+     *   unit_price: number|string,
+     *   image?: File,                // optional
+     *   publish?: boolean,           // optional
+     *   stockins: Array<{ store_id?: string, quantity: number|string, expiry_date?: string (YYYY-MM-DD), is_void?: boolean }>
+     * }
+     * Note: when using multipart, arrays/objects are JSON.stringified automatically.
      */
     createProductWithStockIn(payload) {
         const body = payload instanceof FormData ? payload : maybeMultipart(payload);
@@ -472,7 +461,10 @@ export const superadmin = {
     /**
      * Update product (PATCH). JSON or multipart (image upload).
      * Fields: name, sku, barcode, category, brand, unit_of_measure, unit_price, tax_rate (percent),
-     *         image (file), remove_image (bool), description, is_active
+     *         image (file), remove_image (bool), description, is_active, publish?
+     * Also supports batch edits via:
+     *         stockins: [{ id: string, quantity?: number|string, expiry_date?: string, store_id?: string }]
+     * (Arrays/objects are JSON.stringified automatically in multipart.)
      */
     updateProduct(productId, payload) {
         const body = payload instanceof FormData ? payload : maybeMultipart(payload);
@@ -504,6 +496,25 @@ export const superadmin = {
     deleteStockIn(stockinId, opts = {}) {
         const q = toQuery({ cascade: !!opts.cascade });
         return DELETE(`${endpoints.saStockInDelete(stockinId)}${q}`, { auth: true });
+    },
+
+    /** Publish a single product */
+    publishProduct(productId) {
+        return PATCH(endpoints.saProductPublishSingle(productId), {}, { auth: true });
+    },
+
+    /**
+     * Publish multiple products
+     * @param {string[]} ids
+     * @param {boolean} [strict=false] - when true, fail if any id is missing
+     */
+    publishProducts(ids, strict = false) {
+        return PATCH(endpoints.saProductsPublish, { ids, strict }, { auth: true });
+    },
+
+    /** Get all product categories (enum values from backend) */
+    getProductCategories() {
+        return GET(endpoints.saProductCategories, { auth: true });
     },
 };
 
