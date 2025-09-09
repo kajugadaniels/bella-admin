@@ -23,7 +23,7 @@ import {
 /** Exported so the parent can share the same defaults */
 export const DEFAULT_PRODUCT_FILTERS = {
     category: "",
-    store_id: "",            // <-- added for store select
+    store_id: "",
     has_store: "",
     has_remaining: "",
     is_void: "",
@@ -34,6 +34,9 @@ export const DEFAULT_PRODUCT_FILTERS = {
     created_after: "",
     created_before: "",
 };
+
+// Non-empty sentinel used for "All categories"
+const ALL_CATEGORIES_VALUE = "__ALL__";
 
 function ProductFiltersBase({ value, onChange, className }) {
     const [open, setOpen] = useState(false);
@@ -79,8 +82,6 @@ function ProductFiltersBase({ value, onChange, className }) {
             try {
                 const { data } = await superadmin.getProductCategories();
                 const raw = Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : [];
-
-                // Normalize to { value, label } and de-dupe by value
                 const norm = raw
                     .map((item) => {
                         if (typeof item === "string") return { value: item, label: item };
@@ -89,7 +90,6 @@ function ProductFiltersBase({ value, onChange, className }) {
                         return value ? { value, label } : null;
                     })
                     .filter(Boolean);
-
                 const unique = Array.from(new Map(norm.map((o) => [o.value, o])).values());
                 if (!ignore) setCategories(unique);
             } catch {
@@ -102,23 +102,21 @@ function ProductFiltersBase({ value, onChange, className }) {
         return () => { ignore = true; };
     }, []);
 
-    // When a store is chosen, we push store_id. We also clear has_store to avoid redundant/competing filters.
+    // When a store is chosen, push store_id and clear has_store to avoid competing filters.
     const handleStoreChange = (e) => {
         const val = e.target.value;
         if (val === "__GLOBAL__") {
-            // Special convenience: show batches without a store
             set({ store_id: "", has_store: false });
             return;
         }
         if (!val) {
-            // All stores (no filter)
             set({ store_id: "", has_store: "" });
             return;
         }
         set({ store_id: val, has_store: "" });
     };
 
-    // Nice labels for the active filter summary
+    // Active filter chips
     const activeChips = useMemo(() => {
         const labels = {
             category: "category",
@@ -153,38 +151,41 @@ function ProductFiltersBase({ value, onChange, className }) {
                         Category
                     </Label>
                     <Select
-                        value={v.category ?? ""}
-                        onValueChange={(val) => set({ category: val })}
+                        // Use sentinel when empty to avoid Radix empty-string constraint
+                        value={(v.category && String(v.category)) || ALL_CATEGORIES_VALUE}
+                        onValueChange={(val) => set({ category: val === ALL_CATEGORIES_VALUE ? "" : val })}
                         disabled={catLoading}
                     >
                         <SelectTrigger
                             id="pf-category"
                             className="h-9 w-full rounded-xl border border-black/5 bg-white/90 px-3 text-sm outline-none transition-[box-shadow] focus:ring-2 focus:ring-emerald-500/30 dark:border-white/10 dark:bg-neutral-900 cursor-pointer"
                         >
-                            <SelectValue placeholder={catLoading ? "Loading…" : "All categories"} />
+                            <SelectValue />
                         </SelectTrigger>
                         <SelectContent
                             position="popper"
                             sideOffset={6}
                             className="max-h-64 overflow-y-auto rounded-xl border border-black/5 bg-white/95 backdrop-blur dark:border-white/10 dark:bg-neutral-900/95 scrollbar-thin scrollbar-thumb-neutral-300 scrollbar-track-transparent dark:scrollbar-thumb-neutral-700 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0 data-[side=bottom]:slide-in-from-top-1 data-[side=top]:slide-in-from-bottom-1"
                         >
-                            {/* "All" option */}
-                            <SelectItem value="">All categories</SelectItem>
-                            {/* Dynamic categories */}
-                            {categories.length ? (
+                            {/* “All categories” option uses non-empty sentinel */}
+                            <SelectItem value={ALL_CATEGORIES_VALUE}>All categories</SelectItem>
+
+                            {catLoading ? (
+                                <div className="p-2 text-sm text-neutral-500">Loading…</div>
+                            ) : categories.length ? (
                                 categories.map((opt) => (
                                     <SelectItem key={opt.value} value={opt.value}>
                                         {opt.label}
                                     </SelectItem>
                                 ))
                             ) : (
-                                !catLoading && <div className="p-2 text-sm text-neutral-500">No categories.</div>
+                                <div className="p-2 text-sm text-neutral-500">No categories.</div>
                             )}
                         </SelectContent>
                     </Select>
                 </div>
 
-                {/* Store (select) */}
+                {/* Store (native select) */}
                 <div className="grid min-w-[240px] flex-1 gap-1.5">
                     <Label htmlFor="pf-store" className="text-xs text-neutral-500">
                         Store
@@ -202,7 +203,6 @@ function ProductFiltersBase({ value, onChange, className }) {
                         ].join(" ")}
                     >
                         <option value="">{storeLoading ? "Loading…" : "All stores"}</option>
-                        {/* Convenience: batches with no store */}
                         <option value="__GLOBAL__">Global (no store)</option>
                         {stores.map((s) => (
                             <option key={s.id} value={s.id}>
@@ -246,7 +246,7 @@ function ProductFiltersBase({ value, onChange, className }) {
                     </div>
                 </div>
 
-                {/* More filters + Reset (dropdown closed by default) */}
+                {/* More filters + Reset */}
                 <div className="ml-auto flex items-center gap-2">
                     <Button
                         type="button"
