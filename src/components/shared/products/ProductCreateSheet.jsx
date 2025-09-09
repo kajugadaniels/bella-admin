@@ -1,8 +1,9 @@
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useMemo, useState, useEffect, useCallback } from "react";
 import * as z from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Controller, useFieldArray, useForm } from "react-hook-form";
 import { toast } from "sonner";
+import { useDropzone } from "react-dropzone";
 import { superadmin } from "@/api";
 
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -12,21 +13,15 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, Trash2, Store } from "lucide-react";
-
-/* --------------------------------- constants -------------------------------- */
-const CATEGORY_OPTIONS = [
-    "DRINKS",
-    "DAIRY",
-    "BAKERY",
-    "FRUITS",
-    "SNACKS",
-    "MEAT",
-    "FROZEN",
-    "CLEANING",
-    "PERSONAL_CARE",
-    "OTHER",
-];
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import {
+    Select,
+    SelectTrigger,
+    SelectContent,
+    SelectItem,
+    SelectValue,
+} from "@/components/ui/select";
+import { Plus, Trash2, Store, Image as ImageIcon, X } from "lucide-react";
 
 /* --------------------------------- schema --------------------------------- */
 const BatchSchema = z.object({
@@ -40,16 +35,25 @@ const ProductSchema = z.object({
     category: z.string().min(2, "Category is required"),
     unit_price: z.string().min(1, "Unit price is required"),
     stockins: z.array(BatchSchema).min(1, "Add at least one batch"),
+    image: z.any().optional().nullable(), // File from dropzone
 });
 
-/* ------------------------------ store search UI ------------------------------ */
+/* ------------------------------- helpers ---------------------------------- */
+function toNum(x) {
+    const n = Number(x);
+    return Number.isFinite(n) ? n : 0;
+}
+
+/* ------------------------------ Store picker ------------------------------ */
+/** Popover-based async store search. Closed by default; opens on click. */
 function AsyncStoreSelect({
     value,
     onChange,
-    placeholder = "Search store…",
+    placeholder = "Choose store…",
     disabled = false,
-    maxHeightClass = "max-h-80 sm:max-h-[12rem]",
+    buttonClassName = "",
 }) {
+    const [open, setOpen] = useState(false);
     const [q, setQ] = useState("");
     const [loading, setLoading] = useState(false);
     const [opts, setOpts] = useState([]);
@@ -70,64 +74,73 @@ function AsyncStoreSelect({
                 if (!ignore) setLoading(false);
             }
         }
-        run();
+        if (open) run();
         return () => {
             ignore = true;
         };
-    }, [q]);
+    }, [q, open]);
 
     const current = useMemo(() => opts.find((o) => o.id === value) || null, [opts, value]);
+    const label = current?.name || (value ? "Selected store" : "No store (Global)");
 
     return (
-        <div className={`relative ${disabled ? "opacity-60 pointer-events-none" : ""}`}>
-            {value ? (
-                <div className="flex items-center justify-between rounded-xl border border-black/5 bg-white/70 px-3 py-2 text-sm backdrop-blur dark:border-white/10 dark:bg-neutral-900/60">
-                    <div className="min-w-0">
-                        <div className="truncate font-medium">{current?.name || "Selected store"}</div>
-                        <div className="truncate text-xs text-neutral-500">{value}</div>
+        <Popover open={open} onOpenChange={setOpen}>
+            <PopoverTrigger asChild disabled={disabled}>
+                <Button
+                    type="button"
+                    variant="outline"
+                    className={`h-9 w-full justify-between rounded-xl border border-black/5 bg-white/90 px-3 text-sm dark:border-white/10 dark:bg-neutral-900 ${buttonClassName}`}
+                >
+                    <div className="flex items-center gap-2 min-w-0">
+                        <Store className="h-4 w-4 shrink-0 text-neutral-400" />
+                        <span className="truncate">{label}</span>
                     </div>
-                    <Button variant="ghost" size="sm" onClick={() => onChange?.("")} className="cursor-pointer">
-                        Clear
-                    </Button>
-                </div>
-            ) : (
-                <>
+                    <span className="text-xs text-neutral-500">Change</span>
+                </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[min(560px,90vw)] p-2 rounded-xl border border-black/5 bg-white/95 shadow-lg backdrop-blur-sm dark:border-white/10 dark:bg-neutral-900/95">
+                <div className="space-y-2">
                     <div className="relative">
-                        <Store className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
                         <Input
-                            placeholder={placeholder}
+                            placeholder="Search store…"
                             value={q}
                             onChange={(e) => setQ(e.target.value)}
-                            className="pl-8"
+                            className="pl-3"
                         />
                     </div>
-                    <div className="absolute z-10 mt-2 w-full rounded-xl border border-black/5 bg-white/95 p-2 shadow-lg backdrop-blur-sm dark:border-white/10 dark:bg-neutral-900/95">
-                        <ScrollArea className={`${maxHeightClass} overflow-auto`}>
-                            <button
-                                type="button"
-                                onClick={() => onChange?.("")}
-                                className="mb-1 flex w-full items-center justify-between rounded-lg px-2 py-2 text-left text-sm hover:bg-black/[0.03] dark:hover:bg-white/5"
-                            >
-                                <span className="truncate">No store (Global)</span>
-                                <Badge variant="secondary" className="glass-badge">Global</Badge>
-                            </button>
+                    <div className="rounded-lg border border-black/5 bg-white/90 p-1 dark:border-white/10 dark:bg-neutral-900/80">
+                        <ScrollArea className="max-h-64">
+                            <div className="grid gap-1">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        onChange?.("");
+                                        setOpen(false);
+                                    }}
+                                    className="mb-1 flex w-full items-center justify-between rounded-md px-2 py-2 text-left text-sm hover:bg-black/[0.03] dark:hover:bg-white/5"
+                                >
+                                    <span className="truncate">No store (Global)</span>
+                                    <Badge variant="secondary" className="glass-badge">Global</Badge>
+                                </button>
 
-                            {loading ? (
-                                <div className="grid gap-2 p-2">
-                                    {[...Array(5)].map((_, i) => (
-                                        <Skeleton key={i} className="h-9 w-full rounded-md" />
-                                    ))}
-                                </div>
-                            ) : (opts || []).length === 0 ? (
-                                <div className="p-2 text-sm text-neutral-500">No stores found.</div>
-                            ) : (
-                                <div className="grid">
-                                    {opts.map((o) => (
+                                {loading ? (
+                                    <div className="grid gap-2 p-2">
+                                        {[...Array(5)].map((_, i) => (
+                                            <Skeleton key={i} className="h-9 w-full rounded-md" />
+                                        ))}
+                                    </div>
+                                ) : (opts || []).length === 0 ? (
+                                    <div className="p-2 text-sm text-neutral-500">No stores found.</div>
+                                ) : (
+                                    opts.map((o) => (
                                         <button
                                             type="button"
                                             key={o.id}
-                                            onClick={() => onChange?.(o.id)}
-                                            className="flex items-start gap-2 rounded-lg px-2 py-2 text-left hover:bg-black/[0.03] dark:hover:bg-white/5"
+                                            onClick={() => {
+                                                onChange?.(o.id);
+                                                setOpen(false);
+                                            }}
+                                            className="flex items-start gap-2 rounded-md px-2 py-2 text-left hover:bg-black/[0.03] dark:hover:bg-white/5"
                                         >
                                             <div className="min-w-0">
                                                 <div className="truncate text-sm font-medium">{o.name}</div>
@@ -137,39 +150,168 @@ function AsyncStoreSelect({
                                                 {o.has_admin ? "Has admin" : "No admin"}
                                             </Badge>
                                         </button>
-                                    ))}
-                                </div>
-                            )}
+                                    ))
+                                )}
+                            </div>
                         </ScrollArea>
                     </div>
-                </>
-            )}
+                </div>
+            </PopoverContent>
+        </Popover>
+    );
+}
+
+/* ----------------------------- Image Dropzone ------------------------------ */
+function ImageDropzone({ value, onChange }) {
+    const [preview, setPreview] = useState("");
+
+    useEffect(() => {
+        if (value instanceof File) {
+            const url = URL.createObjectURL(value);
+            setPreview(url);
+            return () => URL.revokeObjectURL(url);
+        }
+        setPreview("");
+    }, [value]);
+
+    const onDrop = useCallback(
+        (accepted) => {
+            const file = accepted?.[0];
+            if (!file) return;
+            if (file.size > 5 * 1024 * 1024) {
+                toast.error("Image too large (max 5MB).");
+                return;
+            }
+            onChange?.(file);
+        },
+        [onChange]
+    );
+
+    const { getRootProps, getInputProps, isDragActive } = useDropzone({
+        accept: { "image/*": [] },
+        maxFiles: 1,
+        multiple: false,
+        onDrop,
+    });
+
+    return (
+        <div className="space-y-2">
+            <div
+                {...getRootProps()}
+                className={`group relative flex cursor-pointer items-center justify-center rounded-2xl border border-dashed p-4 transition
+          ${isDragActive ? "border-emerald-500/60 bg-emerald-50/60 dark:bg-emerald-900/20" : "border-black/10 bg-white/70 dark:border-white/10 dark:bg-neutral-900/40"}`}
+            >
+                <input {...getInputProps()} />
+                {!value ? (
+                    <div className="flex items-center gap-3 text-sm text-neutral-600 dark:text-neutral-300">
+                        <ImageIcon className="h-5 w-5" />
+                        <div className="text-center">
+                            <div className="font-medium">Drag & drop product image</div>
+                            <div className="text-xs">or click to browse (JPEG/PNG, max 5MB)</div>
+                        </div>
+                    </div>
+                ) : (
+                    <div className="flex w-full items-center gap-3">
+                        <div className="relative h-16 w-16 overflow-hidden rounded-lg border border-black/5 dark:border-white/10">
+                            {preview ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img alt="preview" src={preview} className="h-full w-full object-cover" />
+                            ) : (
+                                <ImageIcon className="m-auto h-6 w-6 text-neutral-400" />
+                            )}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                            <div className="truncate text-sm font-medium">{value.name}</div>
+                            <div className="text-xs text-neutral-500">
+                                {(value.size / 1024).toFixed(0)} KB • {value.type || "image/*"}
+                            </div>
+                        </div>
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            className="shrink-0 text-red-600 hover:text-red-700"
+                            onClick={(e) => {
+                                e.preventDefault();
+                                onChange?.(null);
+                            }}
+                        >
+                            <X className="mr-2 h-4 w-4" />
+                            Remove
+                        </Button>
+                    </div>
+                )}
+            </div>
         </div>
     );
 }
 
-/* ------------------------------- live helpers ------------------------------- */
-function toNum(x) {
-    const n = Number(x);
-    return Number.isFinite(n) ? n : 0;
-}
-
+/* ============================= Main component ============================= */
 export default function ProductCreateSheet({ open, onOpenChange, onDone }) {
     const [submitting, setSubmitting] = useState(false);
+    const [categories, setCategories] = useState(
+        /** @type {Array<{value:string; label:string}>} */([])
+    );
+    const [catLoading, setCatLoading] = useState(true);
+
+    // Load categories from backend
+    useEffect(() => {
+        let ignore = false;
+        async function load() {
+            setCatLoading(true);
+            try {
+                const { data } = await superadmin.getProductCategories();
+                const raw = Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : [];
+
+                // Normalize to { value, label } and de-dupe by value
+                const norm = raw
+                    .map((item) => {
+                        if (typeof item === "string") return { value: item, label: item };
+                        const value = String(
+                            item?.code ?? item?.value ?? item?.id ?? item?.name ?? ""
+                        ).trim();
+                        const label = String(
+                            item?.label ?? item?.name ?? item?.title ?? item?.code ?? item?.value ?? value
+                        ).trim();
+                        return value ? { value, label } : null;
+                    })
+                    .filter(Boolean);
+
+                const unique = Array.from(new Map(norm.map((o) => [o.value, o])).values());
+
+                if (!ignore) setCategories(unique);
+            } catch {
+                if (!ignore) setCategories([]);
+            } finally {
+                if (!ignore) setCatLoading(false);
+            }
+        }
+        load();
+        return () => { ignore = true; };
+    }, []);
 
     const form = useForm({
         resolver: zodResolver(ProductSchema),
         defaultValues: {
             name: "",
-            category: CATEGORY_OPTIONS[0],
+            category: "",
             unit_price: "",
             stockins: [{ store_id: "", quantity: "", expiry_date: "" }],
+            image: null,
         },
         mode: "onChange",
     });
 
     const { control, register, watch, handleSubmit, reset, setValue } = form;
     const { fields, append, remove } = useFieldArray({ control, name: "stockins" });
+
+    // Initialize category once categories load
+    useEffect(() => {
+        if (!catLoading) {
+            const current = form.getValues("category");
+            const first = categories?.[0]?.value || "";
+            if (!current && first) setValue("category", first, { shouldValidate: true });
+        }
+    }, [catLoading, categories]);
 
     const unitPrice = toNum(watch("unit_price"));
     const priceWithTax = useMemo(() => unitPrice * 1.18, [unitPrice]);
@@ -202,13 +344,19 @@ export default function ProductCreateSheet({ open, onOpenChange, onDone }) {
                     quantity: String(b.quantity),
                     ...(b.expiry_date ? { expiry_date: b.expiry_date } : {}),
                 })),
+                ...(values.image instanceof File ? { image: values.image } : {}), // triggers multipart in api helper
             };
             const { message } = await superadmin.createProductWithStockIn(payload);
             toast.success(message || "Product created with initial stock.");
             onDone?.();
             onOpenChange?.(false);
-            reset();
-            setValue("category", CATEGORY_OPTIONS[0]);
+            reset({
+                name: "",
+                category: categories?.[0]?.value || "",
+                unit_price: "",
+                stockins: [{ store_id: "", quantity: "", expiry_date: "" }],
+                image: null,
+            });
         } catch (err) {
             toast.error(err?.message || "Failed to create product.");
         } finally {
@@ -220,7 +368,7 @@ export default function ProductCreateSheet({ open, onOpenChange, onDone }) {
         <Sheet open={open} onOpenChange={onOpenChange}>
             <SheetContent
                 side="right"
-                className="w-[min(820px,100vw)] sm:max-w-[820px] p-0 border-l bg-white/90 backdrop-blur-xl dark:bg-neutral-950/85"
+                className="w-[min(920px,100vw)] sm:max-w-[920px] p-0 border-l bg-white/90 backdrop-blur-xl dark:bg-neutral-950/85"
             >
                 {/* Top accent */}
                 <div className="h-1.5 w-full" style={{ background: "linear-gradient(90deg, var(--primary-color), #059669)" }} />
@@ -242,36 +390,65 @@ export default function ProductCreateSheet({ open, onOpenChange, onDone }) {
                                 <div className="text-sm font-semibold">Product</div>
                                 <Badge variant="secondary" className="glass-badge">Tax: 18%</Badge>
                             </div>
-                            <div className="grid gap-3 sm:grid-cols-3">
+
+                            <div className="grid gap-4 sm:grid-cols-3">
+                                {/* Name */}
                                 <div className="grid gap-1.5 sm:col-span-2">
                                     <Label>Name</Label>
                                     <Input placeholder="e.g., Premium Orange Juice 1L" {...register("name")} />
                                 </div>
 
-                                {/* Category as select */}
+                                {/* Category (Select) */}
                                 <div className="grid gap-1.5">
                                     <Label htmlFor="category">Category</Label>
-                                    <select
-                                        id="category"
-                                        {...register("category")}
-                                        className="h-9 w-full rounded-xl border border-black/5 bg-white/90 px-3 text-sm outline-none transition-[box-shadow] focus:ring-2 focus:ring-emerald-500/30 dark:border-white/10 dark:bg-neutral-900"
-                                    >
-                                        {CATEGORY_OPTIONS.map((c) => (
-                                            <option key={c} value={c}>{c}</option>
-                                        ))}
-                                    </select>
-                                    <p className="text-xs text-neutral-500">Choose a category that best fits the product.</p>
+                                    <Controller
+                                        control={control}
+                                        name="category"
+                                        render={({ field }) => (
+                                            <Select value={field.value} onValueChange={field.onChange} disabled={catLoading || !categories.length}>
+                                                <SelectTrigger className="h-9 w-full rounded-xl border border-black/5 bg-white/90 px-3 text-sm dark:border-white/10 dark:bg-neutral-900">
+                                                    <SelectValue placeholder={catLoading ? "Loading…" : "Select a category"} />
+                                                </SelectTrigger>
+                                                <SelectContent className="rounded-xl border border-black/5 bg-white/95 backdrop-blur dark:border-white/10 dark:bg-neutral-900/95">
+                                                    {categories.length ? (
+                                                        categories.map((opt) => (
+                                                            <SelectItem key={opt.value} value={opt.value}>
+                                                                {opt.label}
+                                                            </SelectItem>
+                                                        ))
+                                                    ) : (
+                                                        <div className="p-2 text-sm text-neutral-500">No categories.</div>
+                                                    )}
+                                                </SelectContent>
+                                            </Select>
+                                        )}
+                                    />
+                                    <p className="text-xs text-neutral-500">Choose a category from backend.</p>
                                 </div>
 
+                                {/* Unit price */}
                                 <div className="grid gap-1.5">
                                     <Label>Unit price</Label>
                                     <Input type="number" step="0.01" placeholder="0.00" {...register("unit_price")} />
                                 </div>
+
                                 <div className="grid gap-1.5">
                                     <Label>Price w/ tax (preview)</Label>
                                     <div className="rounded-xl border border-black/5 bg-white/70 px-3 py-2 text-sm dark:border-white/10 dark:bg-neutral-900/60">
                                         {priceWithTax ? priceWithTax.toFixed(2) : "—"}
                                     </div>
+                                </div>
+
+                                {/* Image Dropzone (spans full width on small, two cols on large) */}
+                                <div className="sm:col-span-3">
+                                    <Label>Image (optional)</Label>
+                                    <Controller
+                                        control={control}
+                                        name="image"
+                                        render={({ field }) => (
+                                            <ImageDropzone value={field.value} onChange={field.onChange} />
+                                        )}
+                                    />
                                 </div>
                             </div>
                         </div>
@@ -312,6 +489,7 @@ export default function ProductCreateSheet({ open, onOpenChange, onDone }) {
                                         </div>
 
                                         <div className="grid gap-3 md:grid-cols-3">
+                                            {/* Store (Popover, closed by default) */}
                                             <div className="grid gap-1.5 md:col-span-2">
                                                 <Label>Store (optional)</Label>
                                                 <Controller
@@ -321,12 +499,13 @@ export default function ProductCreateSheet({ open, onOpenChange, onDone }) {
                                                         <AsyncStoreSelect
                                                             value={field.value || ""}
                                                             onChange={field.onChange}
-                                                            maxHeightClass="max-h-80 sm:max-h-[12rem]"
+                                                            buttonClassName=""
                                                         />
                                                     )}
                                                 />
                                                 <p className="text-xs text-neutral-500">Leave empty for a global batch (no store).</p>
                                             </div>
+
                                             <div className="grid gap-1.5">
                                                 <Label>Quantity</Label>
                                                 <Input
