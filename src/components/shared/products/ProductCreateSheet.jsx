@@ -27,7 +27,7 @@ import { Plus, Trash2, Store, Image as ImageIcon, X } from "lucide-react";
 const BatchSchema = z.object({
     store_id: z.string().uuid().optional().or(z.literal("")).nullable(),
     quantity: z.string().min(1, "Quantity is required"),
-    expiry_date: z.string().optional().or(z.literal("")),
+    expiry_date: z.string().min(1, "Expiry date is required"),
 });
 
 const ProductSchema = z.object({
@@ -516,7 +516,7 @@ export default function ProductCreateSheet({ open, onOpenChange, onDone }) {
                                                 />
                                             </div>
                                             <div className="grid gap-1.5">
-                                                <Label>Expiry date (optional)</Label>
+                                                <Label>Expiry date</Label>
                                                 <Input type="date" {...register(`stockins.${idx}.expiry_date`)} />
                                             </div>
                                         </div>

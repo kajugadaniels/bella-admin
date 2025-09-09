@@ -49,7 +49,7 @@ const BatchSchema = z.object({
         .or(z.literal(""))
         .nullable(),
     quantity: z.string().optional().or(z.literal("")),
-    expiry_date: z.string().optional().or(z.literal("")),
+    expiry_date: z.string().min(1, "Expiry date is required"),
 });
 
 const UpdateSchema = z.object({
@@ -707,7 +707,7 @@ export default function ProductUpdateSheet({ id, open, onOpenChange, onDone }) {
                                                         </div>
 
                                                         <div className="grid gap-1.5">
-                                                            <Label>Expiry date (optional)</Label>
+                                                            <Label>Expiry Date</Label>
                                                             <Controller
                                                                 control={control}
                                                                 name={`batches.${idx}.expiry_date`}
