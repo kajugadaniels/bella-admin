@@ -12,6 +12,13 @@ import {
     DropdownMenuContent,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+    Select,
+    SelectTrigger,
+    SelectValue,
+    SelectContent,
+    SelectItem,
+} from "@/components/ui/select";
 
 /** Exported so the parent can share the same defaults */
 export const DEFAULT_PRODUCT_FILTERS = {
@@ -28,20 +35,6 @@ export const DEFAULT_PRODUCT_FILTERS = {
     created_before: "",
 };
 
-// Reasonable category list based on your data + common retail sets.
-// Adjust freely to your taxonomy (order matters for UX).
-const CATEGORIES = [
-    "DRINKS",
-    "DAIRY",
-    "BAKERY",
-    "MEAT",
-    "FRUITS",
-    "FROZEN",
-    "SNACKS",
-    "CLEANING",
-    "PERSONAL_CARE",
-];
-
 function ProductFiltersBase({ value, onChange, className }) {
     const [open, setOpen] = useState(false);
     const v = value || DEFAULT_PRODUCT_FILTERS;
@@ -49,7 +42,35 @@ function ProductFiltersBase({ value, onChange, className }) {
     const set = (patch) => onChange?.({ ...v, ...patch });
     const reset = () => onChange?.({ ...DEFAULT_PRODUCT_FILTERS });
 
-    // Stores for the Store select
+    // ---------- Dynamic Categories (from backend) ----------
+    const [catLoading, setCatLoading] = useState(false);
+    const [categories, setCategories] = useState([]);
+
+    useEffect(() => {
+        let ignore = false;
+        (async () => {
+            setCatLoading(true);
+            try {
+                const { data } = await superadmin.getProductCategories();
+                // Be liberal about response shape
+                const list =
+                    Array.isArray(data) ? data
+                        : Array.isArray(data?.results) ? data.results
+                            : Array.isArray(data?.categories) ? data.categories
+                                : [];
+                if (!ignore) setCategories(list.filter(Boolean));
+            } catch {
+                if (!ignore) setCategories([]);
+            } finally {
+                if (!ignore) setCatLoading(false);
+            }
+        })();
+        return () => {
+            ignore = true;
+        };
+    }, []);
+
+    // ---------- Stores for the Store select ----------
     const [storeLoading, setStoreLoading] = useState(false);
     const [stores, setStores] = useState([]);
 
@@ -118,32 +139,31 @@ function ProductFiltersBase({ value, onChange, className }) {
             ].join(" ")}
         >
             <div className="flex flex-wrap items-center gap-3">
-                {/* Category (select) */}
+                {/* Category (shadcn Select, dynamic from backend) */}
                 <div className="grid min-w-[220px] flex-1 gap-1.5">
                     <Label htmlFor="pf-category" className="text-xs text-neutral-500">
                         Category
                     </Label>
-                    <select
-                        id="pf-category"
-                        value={v.category || ""}
-                        onChange={(e) => set({ category: e.target.value })}
-                        className={[
-                            "h-9 w-full rounded-xl border px-3 text-sm",
-                            "border-black/5 bg-white text-neutral-900",
-                            "dark:border-white/10 dark:bg-white dark:text-neutral-900",
-                            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-                        ].join(" ")}
+                    <Select
+                        value={v.category ?? ""}
+                        onValueChange={(val) => set({ category: val })}
+                        disabled={catLoading}
                     >
-                        <option value="">All categories</option>
-                        {CATEGORIES.map((c) => (
-                            <option key={c} value={c}>
-                                {c}
-                            </option>
-                        ))}
-                    </select>
+                        <SelectTrigger id="pf-category" className="rounded-xl">
+                            <SelectValue placeholder={catLoading ? "Loading categories…" : "All categories"} />
+                        </SelectTrigger>
+                        <SelectContent className="glass-menu">
+                            <SelectItem value="">All categories</SelectItem>
+                            {categories.map((c) => (
+                                <SelectItem key={c} value={c}>
+                                    {c}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
                 </div>
 
-                {/* Store (select) */}
+                {/* Store (native select retained) */}
                 <div className="grid min-w-[240px] flex-1 gap-1.5">
                     <Label htmlFor="pf-store" className="text-xs text-neutral-500">
                         Store
