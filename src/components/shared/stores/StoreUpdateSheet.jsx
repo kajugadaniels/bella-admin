@@ -1,7 +1,7 @@
-// src/components/shared/stores/StoreUpdateSheet.jsx
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Button } from "@/components/ui/button";
 import StoreForm from "./StoreForm";
 import { superadmin } from "@/api";
 
@@ -100,11 +100,7 @@ function buildUpdateBody(values) {
     }
 
     const fd = new FormData();
-    [
-        "name", "email", "phone_number", "address",
-        "province", "district", "sector", "cell", "village",
-        "map_url",
-    ].forEach((k) => {
+    ["name", "email", "phone_number", "address", "province", "district", "sector", "cell", "village", "map_url"].forEach((k) => {
         const val = v[k];
         if (val !== undefined && val !== null && String(val).trim().length) fd.append(k, val);
     });
@@ -114,10 +110,13 @@ function buildUpdateBody(values) {
 }
 
 /* ───────────────────────── Component ───────────────────────── */
+const FORM_ID = "store-update-form";
+
 const StoreUpdateSheet = ({ id, open, onOpenChange, onDone }) => {
     const [loading, setLoading] = useState(false);
     const [storeDefaults, setStoreDefaults] = useState(null);
     const [submitting, setSubmitting] = useState(false);
+    const [formMeta, setFormMeta] = useState({ isValid: false, isDirty: false });
 
     // Load store details on open/id change
     useEffect(() => {
@@ -143,8 +142,8 @@ const StoreUpdateSheet = ({ id, open, onOpenChange, onDone }) => {
                     cell: location.cell || "",
                     village: location.village || "",
                     map_url: location.map_url || "",
-                    image: null,           // no file selected initially
-                    remove_image: false,   // default
+                    image: null, // no file selected initially
+                    remove_image: false, // default
                 });
             } catch (err) {
                 toast.error(extractToastError(err) || "Failed to load store.");
@@ -162,6 +161,7 @@ const StoreUpdateSheet = ({ id, open, onOpenChange, onDone }) => {
             const res = await superadmin.updateStore(id, body);
             toast.success(res?.message || "Store updated successfully.");
             onDone?.();
+            // keep the sheet open to allow further edits; user can Cancel to close
         } catch (err) {
             toast.error(extractToastError(err) || "Failed to update store.");
         } finally {
@@ -169,26 +169,64 @@ const StoreUpdateSheet = ({ id, open, onOpenChange, onDone }) => {
         }
     };
 
+    const canSave = !!storeDefaults && !loading && formMeta.isValid && !submitting;
+
     return (
         <Sheet open={open} onOpenChange={onOpenChange}>
-            <SheetContent side="right" className="w-full overflow-y-auto sm:max-w-xl bg-white/95 backdrop-blur">
-                <SheetHeader>
-                    <SheetTitle>Update store</SheetTitle>
-                </SheetHeader>
+            <SheetContent
+                side="right"
+                className="w-[min(920px,100vw)] sm:max-w-[920px] p-0 border-l bg-white/90 backdrop-blur-xl dark:bg-neutral-950/85"
+            >
+                {/* Top accent */}
+                <div
+                    className="h-1.5 w-full"
+                    style={{ background: "linear-gradient(90deg, var(--primary-color), #059669)" }}
+                />
 
-                <div className="py-4">
-                    {loading ? (
-                        <div className="py-12 text-center text-sm text-neutral-500">Loading…</div>
-                    ) : storeDefaults ? (
-                        <StoreForm
-                            mode="update"
-                            defaultValues={storeDefaults}
-                            submitting={submitting}
-                            onSubmit={onSubmit}
-                        />
-                    ) : (
-                        <div className="py-12 text-center text-sm text-neutral-500">No data.</div>
-                    )}
+                {/* Full-height column with scrollable content and pinned footer */}
+                <div className="flex h-[calc(100vh-0.375rem)] flex-col">
+                    <div className="flex-1 overflow-y-auto p-5 sm:p-6">
+                        <SheetHeader className="mb-3">
+                            <SheetTitle>Update store</SheetTitle>
+                        </SheetHeader>
+
+                        {loading ? (
+                            <div className="py-12 text-center text-sm text-neutral-500">Loading…</div>
+                        ) : storeDefaults ? (
+                            <StoreForm
+                                formId={FORM_ID}
+                                mode="update"
+                                defaultValues={storeDefaults}
+                                submitting={submitting}
+                                onSubmit={onSubmit}
+                                onFormStateChange={setFormMeta}
+                            />
+                        ) : (
+                            <div className="py-12 text-center text-sm text-neutral-500">No data.</div>
+                        )}
+                    </div>
+
+                    {/* Bottom actions — pinned at the very bottom of the sheet */}
+                    <div className="sticky bottom-0 mt-4 rounded-none border-t border-black/5 bg-white/90 p-3 backdrop-blur-sm dark:border-white/10 dark:bg-neutral-900/70">
+                        <div className="flex items-center justify-end gap-2">
+                            <Button
+                                type="button"
+                                variant="secondary"
+                                onClick={() => onOpenChange?.(false)}
+                                className="cursor-pointer rounded-4xl px-4 py-5"
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                type="submit"
+                                form={FORM_ID}
+                                disabled={!canSave}
+                                className="cursor-pointer text-white rounded-4xl px-4 py-5 glass-cta"
+                            >
+                                {submitting ? "Saving…" : "Save changes"}
+                            </Button>
+                        </div>
+                    </div>
                 </div>
             </SheetContent>
         </Sheet>
