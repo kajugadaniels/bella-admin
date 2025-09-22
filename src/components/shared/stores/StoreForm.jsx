@@ -260,7 +260,14 @@ const SearchableCombobox = ({ value, onChange, placeholder = "Select…", option
 };
 
 /* -------------------------------- Component ----------------------------- */
-const StoreForm = ({ defaultValues, onSubmit, submitting = false, mode = "create" }) => {
+const StoreForm = ({
+    formId = "store-create-form",
+    defaultValues,
+    onSubmit,
+    onFormStateChange,
+    submitting = false,
+    mode = "create",
+}) => {
     const isCreate = mode === "create";
 
     const form = useForm({
@@ -286,6 +293,12 @@ const StoreForm = ({ defaultValues, onSubmit, submitting = false, mode = "create
 
     const { control, handleSubmit, register, watch, setValue, formState } = form;
     const { fields, append, remove } = useFieldArray({ control, name: "staff" });
+
+    // Bubble up validity to parent to control the footer Save button
+    const { isValid, isDirty, isSubmitting } = formState;
+    useEffect(() => {
+        onFormStateChange?.({ isValid, isDirty, isSubmitting });
+    }, [isValid, isDirty, isSubmitting, onFormStateChange]);
 
     // Watch location fields
     const pv = watch("province");
@@ -318,7 +331,7 @@ const StoreForm = ({ defaultValues, onSubmit, submitting = false, mode = "create
     }, [preview]);
 
     return (
-        <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4">
+        <form id={formId} onSubmit={handleSubmit(onSubmit)} className="grid gap-4">
             {/* Store Info */}
             <GlassSection title="Store information">
                 <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
@@ -534,18 +547,6 @@ const StoreForm = ({ defaultValues, onSubmit, submitting = false, mode = "create
                     ))}
                 </GlassSection>
             )}
-
-            {/* Sticky bottom actions */}
-            <div className="sticky bottom-0 z-10 mt-2 rounded-xl border border-black/5 bg-white/85 p-3 backdrop-blur-sm dark:border-white/10 dark:bg-neutral-900/70">
-                <div className="flex items-center justify-end gap-2">
-                    <Button variant="secondary" onClick={() => history.back()} className="cursor-pointer px-6 py-4 rounded-4xl">
-                        Cancel
-                    </Button>
-                    <Button type="submit" disabled={submitting || !formState.isValid} className="text-white cursor-pointer px-6 py-4 rounded-4xl glass-cta">
-                        {submitting ? "Saving…" : "Save store"}
-                    </Button>
-                </div>
-            </div>
         </form>
     );
 };
