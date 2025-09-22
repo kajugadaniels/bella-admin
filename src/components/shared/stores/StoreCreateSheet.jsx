@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { toast } from "sonner";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Button } from "@/components/ui/button";
 import StoreForm from "./StoreForm";
 import { superadmin } from "@/api";
 
@@ -114,8 +115,11 @@ function extractApiError(err) {
     return "Validation failed. Please review your inputs.";
 }
 
+const FORM_ID = "store-create-form";
+
 const StoreCreateSheet = ({ open, onOpenChange, onDone }) => {
     const [submitting, setSubmitting] = useState(false);
+    const [formMeta, setFormMeta] = useState({ isValid: false, isDirty: false });
 
     const submit = async (values) => {
         setSubmitting(true);
@@ -123,14 +127,12 @@ const StoreCreateSheet = ({ open, onOpenChange, onDone }) => {
             // 1) Normalize values; split JSON body & image file
             const { jsonPayload, imageFile } = normalizeForAPI(values);
 
-            // 2) Create store with JSON (this is the key change; DRF parses 'staff' correctly)
-            // Assumes your superadmin wrapper sets Content-Type: application/json for plain objects.
+            // 2) Create store with JSON
             const createRes = await superadmin.createStore(jsonPayload);
 
             // Try common response shapes
             const storeId = createRes?.data?.id ?? createRes?.id ?? createRes?.data?.store?.id;
             if (!storeId) {
-                // If backend returns the created store object directly, keep this friendly fallback
                 throw new Error("Store created but no ID returned from API.");
             }
 
@@ -139,13 +141,10 @@ const StoreCreateSheet = ({ open, onOpenChange, onDone }) => {
                 const fd = new FormData();
                 fd.append("image", imageFile);
 
-                // If your wrapper has a specific method, use it; otherwise a generic update works fine.
-                // e.g., await superadmin.updateStoreImage(storeId, fd)
                 const patchFn = superadmin.updateStore || superadmin.patchStore || superadmin.updateStoreImage;
                 if (typeof patchFn === "function") {
                     await patchFn(storeId, fd);
                 } else {
-                    // Fallback: direct fetch if your wrapper doesn't provide one (adjust URL as needed)
                     const res = await fetch(`/api/superadmin/stores/${storeId}/`, {
                         method: "PATCH",
                         body: fd,
@@ -157,12 +156,10 @@ const StoreCreateSheet = ({ open, onOpenChange, onDone }) => {
                 }
             }
 
-            const msg =
-                createRes?.message ||
-                createRes?.data?.message ||
-                "Store created.";
+            const msg = createRes?.message || createRes?.data?.message || "Store created.";
             toast.success(msg);
             onDone?.();
+            // (Keep sheet open by design; use Cancel to close. Mirror of your original behavior.)
         } catch (err) {
             toast.error(extractApiError(err));
         } finally {
@@ -172,13 +169,52 @@ const StoreCreateSheet = ({ open, onOpenChange, onDone }) => {
 
     return (
         <Sheet open={open} onOpenChange={onOpenChange}>
-            <SheetContent side="right" className="w-full overflow-y-auto sm:max-w-xl bg-white/95 backdrop-blur">
-                <SheetHeader>
-                    <SheetTitle>Create a new store</SheetTitle>
-                </SheetHeader>
+            <SheetContent
+                side="right"
+                className="w-[min(920px,100vw)] sm:max-w-[920px] p-0 border-l bg-white/90 backdrop-blur-xl dark:bg-neutral-950/85"
+            >
+                {/* Top accent */}
+                <div className="h-1.5 w-full" style={{ background: "linear-gradient(90deg, var(--primary-color), #059669)" }} />
 
-                <div className="py-4">
-                    <StoreForm mode="create" submitting={submitting} onSubmit={submit} />
+                {/* Full-height column with scrollable content and pinned footer */}
+                <div className="flex h-[calc(100vh-0.375rem)] flex-col">
+                    <div className="flex-1 overflow-y-auto p-5 sm:p-6">
+                        <SheetHeader className="mb-3">
+                            <SheetTitle>Create a new store</SheetTitle>
+                        </SheetHeader>
+
+                        <StoreForm
+                            formId={FORM_ID}
+                            mode="create"
+                            submitting={submitting}
+                            onSubmit={submit}
+                            onFormStateChange={setFormMeta}
+                        />
+                    </div>
+
+                    {/* Bottom actions — pinned at the very bottom of the sheet */}
+                    <div className="sticky bottom-0 mt-4 rounded-none border-t border-black/5 bg-white/90 p-3 backdrop-blur-sm dark:border-white/10 dark:bg-neutral-900/70">
+                        <div className="flex items-center justify-end gap-2">
+                            <Button
+                                type="button"
+                                variant="secondary"
+                                onClick={() => onOpenChange?.(false)}
+                                className="cursor-pointer rounded-4xl px-4 py-5"
+                            >
+                                Cancel
+                            </Button>
+
+                            {/* This button submits the child form via HTML form attribute */}
+                            <Button
+                                type="submit"
+                                form={FORM_ID}
+                                disabled={submitting || !formMeta.isValid}
+                                className="cursor-pointer text-white rounded-4xl px-4 py-5 glass-cta"
+                            >
+                                {submitting ? "Saving…" : "Save store"}
+                            </Button>
+                        </div>
+                    </div>
                 </div>
             </SheetContent>
         </Sheet>
