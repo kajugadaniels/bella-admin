@@ -1,4 +1,3 @@
-// src/components/shared/Header.jsx
 import React, { useMemo, useCallback, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -151,15 +150,14 @@ const Header = () => {
                                                 />
                                             ) : null}
                                             <AvatarFallback
-                                                style={{ backgroundImage: avatarBg }}
-                                                className="text-white shadow-inner"
+                                                className="text-white shadow-inner glass-cta"
                                             >
                                                 {avatarInitials}
                                             </AvatarFallback>
                                         </Avatar>
                                     </div>
                                     <div className="ml-2 hidden sm:flex flex-col text-left leading-tight cursor-pointer">
-                                        <span className="text-xs font-medium text-neutral-900 dark:text-neutral-50 line-clamp-1 uppercase font-bold">
+                                        <span className="text-xs text-neutral-900 dark:text-neutral-50 line-clamp-1 uppercase font-bold">
                                             {user?.username || user?.email?.split("@")[0] || "User"}
 
                                             {role === "ADMIN" && (
