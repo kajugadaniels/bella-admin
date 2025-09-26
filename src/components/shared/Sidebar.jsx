@@ -11,6 +11,9 @@ import {
     Package,
     Settings,
     Truck,
+    User2,
+    UserCheck,
+    UserCog,
 } from "lucide-react";
 
 import { auth } from "@/api";
@@ -112,6 +115,9 @@ const Sidebar = () => {
     const nav = useMemo(
         () => [
             { to: "/dashboard", icon: Home, label: "Dashboard", end: true },
+            { to: "/admins", icon: User2, label: "Admins", end: true },
+            { to: "/users", icon: UserCheck, label: "Users", end: true },
+            { to: "/store-members", icon: UserCog, label: "Store Members", end: true },
             { to: "/stores", icon: Building2, label: "Stores" },
             { to: "/products", icon: Package, label: "Products" },
             { to: "/stockin", icon: Boxes, label: "Stock In" },
