@@ -3,7 +3,7 @@ import { toast } from "sonner";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import StoreForm from "./StoreForm";
-import { superadmin } from "@/api";
+import { superadmin, API_BASE } from "@/api";
 
 /* ───────────────────────── Province mapping ───────────────────────── */
 /** Backend expects these; rwanda@2.1.5 often shows "Kigali City" in the picker */
@@ -46,7 +46,7 @@ function extractToastError(err) {
                         else if (typeof v === "string") lines.push(`${k}: ${v}`);
                     }
                     if (lines.length) return lines.join("\n");
-                } catch { }
+                } catch {}
             }
             try {
                 const lines = [];
@@ -55,11 +55,32 @@ function extractToastError(err) {
                     else if (typeof v === "string") lines.push(`${k}: ${v}`);
                 }
                 if (lines.length) return lines.join("\n");
-            } catch { }
+            } catch {}
         }
         if (typeof err.message === "string") return err.message;
     }
     return "Something went wrong.";
+}
+
+/* ───────────────────────── Utilities ───────────────────────── */
+/** Try common fields for an image URL, and normalize relative URLs to absolute. */
+function pickImageUrl(payload = {}) {
+    const candidates = [
+        payload.image_url,
+        payload.image,
+        payload.logo_url,
+        payload.logo,
+        payload.photo_url,
+        payload.photo,
+        payload.media?.image_url,
+        payload.media?.image,
+        payload.image?.url,
+    ];
+    let u = candidates.find((x) => typeof x === "string" && x.trim().length) || "";
+    if (u && !/^https?:\/\//i.test(u)) {
+        u = `${API_BASE}${u.startsWith("/") ? "" : "/"}${u}`;
+    }
+    return u;
 }
 
 /* ───────────────────────── Normalization ───────────────────────── */
@@ -130,6 +151,7 @@ const StoreUpdateSheet = ({ id, open, onOpenChange, onDone }) => {
 
                 const contact = payload.contact || {};
                 const location = payload.location || {};
+                const image_url = pickImageUrl(payload);
 
                 setStoreDefaults({
                     name: payload.name || "",
@@ -142,8 +164,9 @@ const StoreUpdateSheet = ({ id, open, onOpenChange, onDone }) => {
                     cell: location.cell || "",
                     village: location.village || "",
                     map_url: location.map_url || "",
-                    image: null, // no file selected initially
-                    remove_image: false, // default
+                    image: null,          // no new file selected initially
+                    remove_image: false,  // default
+                    current_image_url: image_url || "", // used for preview
                 });
             } catch (err) {
                 toast.error(extractToastError(err) || "Failed to load store.");
@@ -194,12 +217,14 @@ const StoreUpdateSheet = ({ id, open, onOpenChange, onDone }) => {
                             <div className="py-12 text-center text-sm text-neutral-500">Loading…</div>
                         ) : storeDefaults ? (
                             <StoreForm
+                                key={id} /* ensures RHF resets when a different store is opened */
                                 formId={FORM_ID}
                                 mode="update"
                                 defaultValues={storeDefaults}
                                 submitting={submitting}
                                 onSubmit={onSubmit}
                                 onFormStateChange={setFormMeta}
+                                initialImageUrl={storeDefaults.current_image_url}
                             />
                         ) : (
                             <div className="py-12 text-center text-sm text-neutral-500">No data.</div>
