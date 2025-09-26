@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { Trash2, Plus, UploadCloud, ShieldCheck, ChevronsUpDown, Check } from "lucide-react";
+import { Trash2, Plus, UploadCloud, ShieldCheck, ChevronsUpDown, Check, XCircle } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
     Command,
@@ -267,6 +267,7 @@ const StoreForm = ({
     onFormStateChange,
     submitting = false,
     mode = "create",
+    initialImageUrl, // <- new: pass existing image URL when updating
 }) => {
     const isCreate = mode === "create";
 
@@ -314,21 +315,42 @@ const StoreForm = ({
     const villages = useMemo(() => safeVillages(pv, dt, sc, cl), [pv, dt, sc, cl]);
 
     // Dropzone
-    const onDrop = useCallback((acceptedFiles) => setValue("image", acceptedFiles, { shouldDirty: true }), [setValue]);
+    const onDrop = useCallback(
+        (acceptedFiles) => {
+            setValue("image", acceptedFiles, { shouldDirty: true });
+            setValue("remove_image", false, { shouldDirty: true }); // uploading a new file cancels removal
+        },
+        [setValue]
+    );
     const { getRootProps, getInputProps, isDragActive } = useDropzone({
         onDrop,
         accept: { "image/*": [] },
         maxFiles: 1,
     });
 
+    // Image state
     const file = Array.isArray(watch("image")) ? watch("image")[0] : null;
-    const preview = file ? URL.createObjectURL(file) : null;
+    const removeCurrent = !!watch("remove_image");
 
+    const [blobUrl, setBlobUrl] = useState(null);
     useEffect(() => {
-        return () => {
-            if (preview) URL.revokeObjectURL(preview);
-        };
-    }, [preview]);
+        if (file) {
+            const u = URL.createObjectURL(file);
+            setBlobUrl(u);
+            return () => URL.revokeObjectURL(u);
+        }
+        setBlobUrl(null);
+    }, [file]);
+
+    const showingExisting = !!initialImageUrl && !file && !removeCurrent;
+    const previewSrc = file ? blobUrl : showingExisting ? initialImageUrl : null;
+
+    const clearNewFile = () => setValue("image", null, { shouldDirty: true });
+    const markRemove = () => {
+        setValue("image", null, { shouldDirty: true });
+        setValue("remove_image", true, { shouldDirty: true });
+    };
+    const undoRemove = () => setValue("remove_image", false, { shouldDirty: true });
 
     return (
         <form id={formId} onSubmit={handleSubmit(onSubmit)} className="grid gap-4">
@@ -479,7 +501,13 @@ const StoreForm = ({
             {/* Image */}
             <GlassSection
                 title="Store image"
-                extra={preview ? <Badge variant="secondary" className="glass-badge">Preview</Badge> : null}
+                extra={
+                    previewSrc ? (
+                        <Badge variant="secondary" className="glass-badge">
+                            {file ? "New image" : "Current image"}
+                        </Badge>
+                    ) : null
+                }
             >
                 <div
                     {...getRootProps()}
@@ -491,22 +519,57 @@ const StoreForm = ({
                     )}
                 >
                     <input {...getInputProps()} />
-                    {!preview ? (
+
+                    {/* Case: Removing current image */}
+                    {!file && removeCurrent && (
+                        <div className="flex flex-col items-center text-center">
+                            <XCircle className="mb-2 h-6 w-6 opacity-70" />
+                            <div className="text-sm font-medium">Image will be removed on save</div>
+                            <div className="mt-2">
+                                <Button type="button" variant="outline" size="sm" className="rounded-3xl" onClick={undoRemove}>
+                                    Undo remove
+                                </Button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Case: Preview (new file or existing) */}
+                    {previewSrc && !removeCurrent && (
+                        <div className="w-full">
+                            <img
+                                src={previewSrc}
+                                alt="Preview"
+                                className="mx-auto h-40 w-full max-w-sm rounded-xl object-cover ring-1 ring-black/5 dark:ring-white/10"
+                            />
+                            <div className="mt-2 flex items-center justify-center gap-2 text-xs text-neutral-500">
+                                {file ? (
+                                    <>
+                                        <span>{file?.name} — {(file?.size / 1024 / 1024).toFixed(2)} MB</span>
+                                        <Button type="button" variant="ghost" size="sm" className="rounded-3xl" onClick={clearNewFile}>
+                                            Clear selection
+                                        </Button>
+                                    </>
+                                ) : (
+                                    <>
+                                        <span>Using current image</span>
+                                        <Button type="button" variant="ghost" size="sm" className="rounded-3xl" onClick={markRemove}>
+                                            Remove current image
+                                        </Button>
+                                    </>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Case: No image at all */}
+                    {!previewSrc && !removeCurrent && (
                         <div className="flex flex-col items-center text-center">
                             <UploadCloud className="mb-2 h-6 w-6 opacity-70" />
                             <div className="text-sm font-medium">Drag & drop an image</div>
                             <div className="text-xs text-neutral-500">or click to browse</div>
-                        </div>
-                    ) : (
-                        <div className="w-full">
-                            <img
-                                src={preview}
-                                alt="Preview"
-                                className="mx-auto h-40 w-full max-w-sm rounded-xl object-cover ring-1 ring-black/5 dark:ring-white/10"
-                            />
-                            <div className="mt-2 text-center text-xs text-neutral-500">
-                                {file?.name} — {(file?.size / 1024 / 1024).toFixed(2)} MB
-                            </div>
+                            {initialImageUrl ? (
+                                <div className="mt-2 text-xs text-neutral-500">No image selected — drop a new one to replace.</div>
+                            ) : null}
                         </div>
                     )}
                 </div>
