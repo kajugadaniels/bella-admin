@@ -188,7 +188,7 @@ function extractDetailsList(json) {
  * @param {Record<string,string>} [opts.headers]
  * @param {boolean} [opts.auth=false]
  * @param {number} [opts.timeout=20000]
- * @returns {Promise<{ ok: true, status: number, data: T, message?: string } | never>}
+ * @returns {Promise<{ ok: true, status: number, data: T, message?: string, headers: Record<string,string> } | never>}
  * @throws {{ ok:false, status:number, message?:string, errors?:any, details?:string[], data?:any }}
  */
 export async function apiRequest(path, opts = {}) {
@@ -251,7 +251,13 @@ export async function apiRequest(path, opts = {}) {
         if (data && typeof data === "object" && data.tokens && (data.tokens.access || data.tokens.refresh)) {
             setTokens(data.tokens);
         }
-        return { ok: true, status: res.status, data, message: extractMessage(data) };
+        // expose headers to callers (non-breaking addition)
+        const headersObj = {};
+        try {
+            for (const [k, v] of res.headers.entries()) headersObj[k.toLowerCase()] = v;
+        } catch { /* no-op */ }
+
+        return { ok: true, status: res.status, data, message: extractMessage(data), headers: headersObj };
     }
 
     // Normalize errors with details[]
@@ -375,7 +381,7 @@ export const superadmin = {
     },
 
     /**
-     * Create a store (optionally with staff invites)
+     * Create a store (optionally with staff invites + image)
      * Accepts JSON or multipart (image upload). Arrays/objects are JSON.stringified in multipart.
      */
     createStore(payload) {
@@ -410,17 +416,6 @@ export const superadmin = {
      */
     addStoreStaff(storeId, payload) {
         return POST(endpoints.saStoreStaffAdd(storeId), payload, { auth: true });
-    },
-
-    /**
-     * Remove store staff membership
-     * @param {string} storeId
-     * @param {string} staffId
-     * @param {{ allow_last_admin?: boolean }} [opts]
-     */
-    removeStoreStaff(storeId, staffId, opts = {}) {
-        const q = toQuery({ allow_last_admin: !!opts.allow_last_admin });
-        return DELETE(`${endpoints.saStoreStaffDelete(storeId, staffId)}${q}`, { auth: true });
     },
 
     /**
