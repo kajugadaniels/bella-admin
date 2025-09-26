@@ -14,7 +14,7 @@ const App = () => {
                     richColors
                     closeButton
                     expand={false}
-                    duration={30000}
+                    duration={3000}
                     toastOptions={{
                         className: 'text-[14px]',
                     }}
