@@ -64,7 +64,7 @@ function normalizeForAPI(values) {
             });
     }
 
-    // final JSON payload (no image file here)
+    // final JSON payload
     const jsonPayload = {
         name: v.name || "",
         email: v.email || "",
@@ -124,42 +124,20 @@ const StoreCreateSheet = ({ open, onOpenChange, onDone }) => {
     const submit = async (values) => {
         setSubmitting(true);
         try {
-            // 1) Normalize values; split JSON body & image file
+            // 1) Normalize values; include image directly in payload if provided
             const { jsonPayload, imageFile } = normalizeForAPI(values);
+            const payload = imageFile instanceof File ? { ...jsonPayload, image: imageFile } : jsonPayload;
 
-            // 2) Create store with JSON
-            const createRes = await superadmin.createStore(jsonPayload);
+            // 2) Create store (JSON or multipart decided automatically by api client)
+            const createRes = await superadmin.createStore(payload);
 
-            // Try common response shapes
-            const storeId = createRes?.data?.id ?? createRes?.id ?? createRes?.data?.store?.id;
-            if (!storeId) {
-                throw new Error("Store created but no ID returned from API.");
-            }
-
-            // 3) If image selected, upload it in a separate multipart PATCH
-            if (imageFile instanceof File) {
-                const fd = new FormData();
-                fd.append("image", imageFile);
-
-                const patchFn = superadmin.updateStore || superadmin.patchStore || superadmin.updateStoreImage;
-                if (typeof patchFn === "function") {
-                    await patchFn(storeId, fd);
-                } else {
-                    const res = await fetch(`/api/superadmin/stores/${storeId}/`, {
-                        method: "PATCH",
-                        body: fd,
-                    });
-                    if (!res.ok) {
-                        const data = await res.json().catch(() => ({}));
-                        throw { message: "Image upload failed", data };
-                    }
-                }
-            }
-
+            // 3) Success UI
             const msg = createRes?.message || createRes?.data?.message || "Store created.";
             toast.success(msg);
+
+            // Notify parent to refresh list, etc.
             onDone?.();
-            // (Keep sheet open by design; use Cancel to close. Mirror of your original behavior.)
+            // Keep sheet open by design; use Cancel to close.
         } catch (err) {
             toast.error(extractApiError(err));
         } finally {
