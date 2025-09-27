@@ -11,6 +11,11 @@ const RIGHT_SIDE_META = {
         title: "Bella",
         tagline: "The easiest way to manage your groceries.",
     },
+    "/verify": {
+        image: Img4,
+        title: "Bella",
+        tagline: "Enter OTP sent to you email address to verify your account",
+    },
     "/forget-password": {
         image: Img2,
         title: "Forgot your password?",
