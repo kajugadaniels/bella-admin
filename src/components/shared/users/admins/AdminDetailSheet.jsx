@@ -1,125 +1,375 @@
-import React, { useEffect, useState } from "react";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { superadmin } from "@/api";
+import React, { useEffect, useMemo, useState, useCallback } from "react";
+import {
+    ClipboardCopy,
+    Copy,
+    ExternalLink,
+    Mail,
+    Phone,
+    Shield,
+    ShieldCheck,
+    UserCircle2,
+} from "lucide-react";
 import { toast } from "sonner";
-import { Loader2, Mail, Phone, Shield } from "lucide-react";
+import { superadmin } from "@/api";
+
+import {
+    Sheet,
+    SheetContent,
+    SheetDescription,
+    SheetHeader,
+    SheetTitle,
+} from "@/components/ui/sheet";
+import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Skeleton } from "@/components/ui/skeleton";
+
 import AdminDeleteDialog from "./AdminDeleteDialog";
 
-function extractToastError(err, fallback = "Unable to load admin") {
-    try {
-        return err?.response?.data?.message || err?.message || fallback;
-    } catch {
-        return fallback;
-    }
+/* --------------------------------- utils -------------------------------- */
+function initials(text = "") {
+    const n = (text || "").trim();
+    if (!n) return "A";
+    if (n.includes("@")) return n[0].toUpperCase();
+    const parts = n.split(/\s+/);
+    const a = parts[0]?.[0] || "A";
+    const b = (parts[1]?.[0] || n[1] || "").toUpperCase();
+    return (a + b).toUpperCase();
 }
 
-function KV({ label, value }) {
-    return (
-        <div className="flex items-start justify-between gap-4 py-1">
-            <span className="text-sm text-muted-foreground">{label}</span>
-            <span className="text-sm font-medium text-right max-w-[70%] break-words">{value ?? "—"}</span>
+const GlassCard = ({ className = "", children }) => (
+    <div
+        className={[
+            "rounded-2xl border p-3",
+            "border-neutral-200/80 bg-white/70 backdrop-blur-md",
+            "dark:border-neutral-800 dark:bg-neutral-900/60",
+            className,
+        ].join(" ")}
+    >
+        {children}
+    </div>
+);
+
+const InfoRow = ({ icon: Icon, label, value, href, copyable }) => {
+    const content = (
+        <div className="min-w-0 flex-1 truncate text-sm text-neutral-800 dark:text-neutral-200">
+            {value ?? "—"}
         </div>
     );
-}
 
+    const copy = async () => {
+        try {
+            await navigator.clipboard.writeText(String(value ?? ""));
+            toast.success(`${label} copied`);
+        } catch {
+            toast.error("Could not copy");
+        }
+    };
+
+    return (
+        <div className="flex items-center gap-3 rounded-xl px-3 py-2 transition-colors hover:bg-black/[0.03] dark:hover:bg-white/5">
+            <div className="h-8 w-8 grid place-items-center rounded-lg border border-neutral-200/80 bg-white/70 text-neutral-600 backdrop-blur-sm dark:border-neutral-800 dark:bg-neutral-900/60 dark:text-neutral-300">
+                <Icon className="h-4 w-4" />
+            </div>
+            <div className="w-28 shrink-0 text-xs font-medium uppercase tracking-wide text-neutral-500">
+                {label}
+            </div>
+            {href ? (
+                <a
+                    href={href}
+                    target={href.startsWith("http") ? "_blank" : undefined}
+                    rel="noreferrer"
+                    className="flex-1 min-w-0"
+                >
+                    <div className="group flex items-center gap-2">
+                        {content}
+                        <ExternalLink className="h-3.5 w-3.5 opacity-60 group-hover:opacity-100" />
+                    </div>
+                </a>
+            ) : (
+                content
+            )}
+            {copyable && value ? (
+                <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={copy}
+                    className="h-8 w-8 text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-100"
+                >
+                    <Copy className="h-4 w-4" />
+                </Button>
+            ) : null}
+        </div>
+    );
+};
+
+const HeaderSkeleton = () => (
+    <div className="flex items-center gap-3">
+        <Skeleton className="h-14 w-14 rounded-xl" />
+        <div className="min-w-0 flex-1 space-y-2">
+            <Skeleton className="h-5 w-1/2" />
+            <Skeleton className="h-3 w-1/3" />
+        </div>
+        <Skeleton className="h-9 w-28 rounded-xl" />
+    </div>
+);
+
+/* ------------------------------- component ------------------------------- */
 export default function AdminDetailSheet({ adminId, open, onOpenChange, onDeleted }) {
     const [loading, setLoading] = useState(false);
-    const [row, setRow] = useState(null);
+    const [payload, setPayload] = useState(null);
     const [confirmDelete, setConfirmDelete] = useState(false);
 
-    useEffect(() => {
+    const fetchAdmin = useCallback(async () => {
         if (!open || !adminId) return;
-        (async () => {
-            setLoading(true);
-            try {
-                // Auto-detect default status server-side
-                const res = await superadmin.getAdmin(adminId);
-                const data = res?.data?.data || res?.data;
-                setRow(data || null);
-            } catch (err) {
-                toast.error(extractToastError(err));
-            } finally {
-                setLoading(false);
-            }
-        })();
+        setLoading(true);
+        try {
+            // Server auto-detects status (active/pending)
+            const res = await superadmin.getAdmin(adminId);
+            const data = res?.data?.data || res?.data;
+            setPayload(data || null);
+        } catch (err) {
+            const msg =
+                err?.response?.data?.message ||
+                err?.response?.data?.detail ||
+                err?.message ||
+                "Unable to load admin";
+            toast.error(msg);
+            setPayload(null);
+        } finally {
+            setLoading(false);
+        }
     }, [open, adminId]);
 
-    const n = row || {};
-    const user = n.user || n; // tolerate either shape
+    useEffect(() => {
+        let ignore = false;
+        (async () => {
+            if (!open || !adminId) return;
+            if (!ignore) await fetchAdmin();
+        })();
+        return () => {
+            ignore = true;
+        };
+    }, [open, adminId, fetchAdmin]);
 
-    const canDelete = !user?.is_superuser; // extra guard; backend also enforces 'no self / no superuser'
+    // tolerate both shapes: { user, status } OR the user directly
+    const n = payload || {};
+    const user = n.user || n;
+
+    const avatar = useMemo(() => {
+        const text = user?.email || user?.username || "Admin";
+        if (user?.image_url || user?.image) {
+            return (
+                <img
+                    src={user.image_url || user.image}
+                    alt={text}
+                    className="h-14 w-14 rounded-xl object-cover ring-1 ring-black/5 dark:ring-white/10"
+                />
+            );
+        }
+        return (
+            <div
+                className="grid h-14 w-14 place-items-center rounded-xl text-sm font-semibold text-white ring-1 ring-black/5 dark:ring-white/10"
+                style={{ background: "linear-gradient(135deg, var(--primary-color), #059669)" }}
+            >
+                {initials(text)}
+            </div>
+        );
+    }, [user]);
+
+    const canDelete = !user?.is_superuser; // backend also enforces no self / no superuser
+
+    const copyId = async () => {
+        try {
+            await navigator.clipboard.writeText(String(user?.id || n?.id || adminId || ""));
+            toast.success("Admin ID copied");
+        } catch {
+            toast.error("Could not copy ID");
+        }
+    };
 
     return (
         <Sheet open={open} onOpenChange={onOpenChange}>
-            <SheetContent className="w-full sm:max-w-xl">
-                <SheetHeader>
-                    <SheetTitle>Admin details</SheetTitle>
-                    <SheetDescription>Profile and status of this administrator.</SheetDescription>
-                </SheetHeader>
-
-                <div className="mt-4 space-y-4">
-                    {loading ? (
-                        <div className="h-32 grid place-items-center">
-                            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-                        </div>
-                    ) : !user?.id ? (
-                        <div className="text-sm text-muted-foreground">Admin not found.</div>
-                    ) : (
-                        <>
-                            <div className="flex items-center gap-3">
-                                {user?.image_url ? (
-                                    <img
-                                        src={user.image_url}
-                                        alt={user?.email || "Admin"}
-                                        className="h-12 w-12 rounded-full object-cover ring-1 ring-black/5 dark:ring-white/10"
-                                    />
-                                ) : (
-                                    <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center ring-1 ring-black/5 dark:ring-white/10">
-                                        <Shield className="h-5 w-5 text-emerald-600" />
+            <SheetContent
+                side="right"
+                className="
+          p-0 
+          w-[min(980px,100vw)] sm:max-w-[980px]
+          data-[state=open]:animate-in data-[state=closed]:animate-out
+          data-[state=open]:slide-in-from-right data-[state=closed]:slide-out-to-right
+          border-l border-neutral-200 bg-white/90 backdrop-blur-xl dark:border-neutral-800 dark:bg-neutral-950/85
+        "
+            >
+                {/* Top banner */}
+                <div
+                    className="h-20 w-full"
+                    style={{ background: "linear-gradient(90deg, var(--primary-color), #059669)" }}
+                />
+                {/* Header */}
+                <div className="-mt-10 px-5 sm:px-6">
+                    <GlassCard className="p-4">
+                        <SheetHeader className="mb-1">
+                            <SheetTitle className="sr-only">Admin details</SheetTitle>
+                            {loading ? (
+                                <HeaderSkeleton />
+                            ) : (
+                                <div className="flex flex-wrap items-center gap-3">
+                                    {avatar}
+                                    <div className="min-w-0 flex-1">
+                                        <div className="truncate text-xl font-semibold">
+                                            {user?.email || user?.username || "Admin details"}
+                                        </div>
+                                        <SheetDescription className="truncate text-xs">
+                                            {user?.id || n?.id || adminId || ""}
+                                        </SheetDescription>
                                     </div>
-                                )}
-                                <div>
-                                    <div className="font-semibold leading-tight">{user?.email}</div>
-                                    <div className="text-xs text-muted-foreground">{user?.username}</div>
+
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <Badge
+                                            variant={(n?.status || "active") === "pending" ? "secondary" : "default"}
+                                            className="glass-badge"
+                                        >
+                                            {n?.status || "active"}
+                                        </Badge>
+
+                                        <Button
+                                            variant="outline"
+                                            onClick={copyId}
+                                            className="cursor-pointer px-6 py-4 rounded-4xl"
+                                        >
+                                            <ClipboardCopy className="mr-2 h-4 w-4" />
+                                            Copy ID
+                                        </Button>
+
+                                        {user?.email && (
+                                            <a href={`mailto:${user.email}`} className="contents">
+                                                <Button variant="outline" className="cursor-pointer px-6 py-4 rounded-4xl">
+                                                    <Mail className="mr-2 h-4 w-4" />
+                                                    Email
+                                                </Button>
+                                            </a>
+                                        )}
+                                        {user?.phone_number && (
+                                            <a href={`tel:${user.phone_number}`} className="contents">
+                                                <Button variant="outline" className="cursor-pointer px-6 py-4 rounded-4xl">
+                                                    <Phone className="mr-2 h-4 w-4" />
+                                                    Call
+                                                </Button>
+                                            </a>
+                                        )}
+
+                                        <Button
+                                            variant="destructive"
+                                            className="glass-button px-6 py-4 rounded-4xl"
+                                            onClick={() => setConfirmDelete(true)}
+                                            disabled={!canDelete}
+                                            title={canDelete ? "Delete admin" : "Cannot delete superuser"}
+                                        >
+                                            Delete
+                                        </Button>
+                                    </div>
                                 </div>
-                                <div className="ml-auto">
-                                    <Badge variant={n?.status === "pending" ? "secondary" : "default"}>
-                                        {n?.status || "active"}
-                                    </Badge>
+                            )}
+                        </SheetHeader>
+                    </GlassCard>
+                </div>
+
+                {/* Body */}
+                <div className="px-5 pb-6 pt-4 sm:px-6">
+                    <Separator className="my-4 border-neutral-200 dark:border-neutral-800" />
+
+                    {loading ? (
+                        <div className="space-y-3">
+                            <Skeleton className="h-28 w-full rounded-xl" />
+                            <Skeleton className="h-28 w-full rounded-xl" />
+                        </div>
+                    ) : !user?.id && !n?.id ? (
+                        <div className="text-sm text-neutral-500">Admin not found.</div>
+                    ) : (
+                        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                            {/* LEFT: Contact */}
+                            <GlassCard>
+                                <div className="mb-1 flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-neutral-600 dark:text-neutral-400">
+                                    <UserCircle2 className="h-4 w-4" />
+                                    Profile & Contact
                                 </div>
-                            </div>
+                                <div className="mt-2 space-y-1">
+                                    <InfoRow
+                                        icon={Mail}
+                                        label="Email"
+                                        value={user?.email}
+                                        href={user?.email ? `mailto:${user.email}` : undefined}
+                                        copyable
+                                    />
+                                    <InfoRow
+                                        icon={UserCircle2}
+                                        label="Username"
+                                        value={user?.username}
+                                        copyable
+                                    />
+                                    <InfoRow
+                                        icon={Phone}
+                                        label="Phone"
+                                        value={user?.phone_number}
+                                        href={user?.phone_number ? `tel:${user.phone_number}` : undefined}
+                                        copyable
+                                    />
+                                </div>
+                            </GlassCard>
 
-                            <Separator />
-
-                            <div className="space-y-1.5">
-                                <KV label="Email" value={<span className="inline-flex items-center gap-2"><Mail className="h-3.5 w-3.5" /> {user?.email || "—"}</span>} />
-                                <KV label="Phone" value={<span className="inline-flex items-center gap-2"><Phone className="h-3.5 w-3.5" /> {user?.phone_number || "—"}</span>} />
-                                <KV label="Role" value={user?.role || "ADMIN"} />
-                                {typeof user?.is_superuser === "boolean" && <KV label="Superuser" value={user.is_superuser ? "Yes" : "No"} />}
-                                <KV label="Created at" value={n?.created_at ? new Date(n.created_at).toLocaleString() : "—"} />
-                            </div>
-
-                            <div className="pt-2 flex items-center justify-end gap-2">
-                                <Button variant="outline" onClick={() => onOpenChange?.(false)} className="glass-button">Close</Button>
-                                <Button
-                                    variant="destructive"
-                                    className="glass-button"
-                                    onClick={() => setConfirmDelete(true)}
-                                    disabled={!canDelete}
-                                    title={canDelete ? "Delete admin" : "Cannot delete superuser"}
-                                >
-                                    Delete
-                                </Button>
-                            </div>
-                        </>
+                            {/* RIGHT: Security / Meta */}
+                            <GlassCard>
+                                <div className="mb-1 flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-neutral-600 dark:text-neutral-400">
+                                    <ShieldCheck className="h-4 w-4" />
+                                    Security & Meta
+                                </div>
+                                <div className="mt-2 space-y-1">
+                                    <InfoRow
+                                        icon={Shield}
+                                        label="Role"
+                                        value={user?.role || "ADMIN"}
+                                        copyable
+                                    />
+                                    {typeof user?.is_superuser === "boolean" && (
+                                        <InfoRow
+                                            icon={Shield}
+                                            label="Superuser"
+                                            value={user.is_superuser ? "Yes" : "No"}
+                                        />
+                                    )}
+                                    <InfoRow
+                                        icon={Shield}
+                                        label="Status"
+                                        value={n?.status || "active"}
+                                    />
+                                    <InfoRow
+                                        icon={Shield}
+                                        label="Created at"
+                                        value={
+                                            n?.created_at
+                                                ? new Date(n.created_at).toLocaleString()
+                                                : user?.created_at
+                                                    ? new Date(user.created_at).toLocaleString()
+                                                    : "—"
+                                        }
+                                    />
+                                    {user?.last_login && (
+                                        <InfoRow
+                                            icon={Shield}
+                                            label="Last login"
+                                            value={new Date(user.last_login).toLocaleString()}
+                                        />
+                                    )}
+                                </div>
+                            </GlassCard>
+                        </div>
                     )}
                 </div>
 
+                {/* Delete dialog */}
                 <AdminDeleteDialog
-                    admin={row}
+                    admin={payload}
                     open={confirmDelete}
                     onOpenChange={setConfirmDelete}
                     onDone={() => {
