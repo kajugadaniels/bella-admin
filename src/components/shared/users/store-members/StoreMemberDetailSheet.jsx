@@ -9,8 +9,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 
-import StoreMemberDeleteDialog from "./StoreMemberDeleteDialog";
-
 /* ----------------------------- utils ----------------------------- */
 function initials(text = "") {
     const n = (text || "").trim();
@@ -39,7 +37,7 @@ const InfoRow = ({ icon: Icon, label, value, href, copyable }) => {
             {value ?? "—"}
         </div>
     );
-    const copy = async () => {
+    const doCopy = async () => {
         try {
             await navigator.clipboard.writeText(String(value ?? ""));
             toast.success(`${label} copied`);
@@ -64,7 +62,7 @@ const InfoRow = ({ icon: Icon, label, value, href, copyable }) => {
                 content
             )}
             {copyable && value ? (
-                <Button size="icon" variant="ghost" onClick={copy} className="h-8 w-8 text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-100">
+                <Button size="icon" variant="ghost" onClick={doCopy} className="h-8 w-8 text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-100">
                     <Copy className="h-4 w-4" />
                 </Button>
             ) : null}
@@ -93,8 +91,22 @@ export default function StoreMemberDetailSheet({ membershipId, open, onOpenChang
         setLoading(true);
         try {
             const res = await superadmin.getStoreMember(membershipId);
+            // API shape: {status:"success", data:{...}}
             const data = res?.data?.data || res?.data;
-            setRow(data || null);
+            // normalize for UI
+            const n = {
+                id: data?.membership_id || membershipId,
+                membership_id: data?.membership_id || membershipId,
+                status: data?.status || "active",
+                is_admin: !!data?.is_admin,
+                permissions: Array.isArray(data?.permissions) ? data.permissions : [],
+                is_active: typeof data?.is_active === "boolean" ? data.is_active : undefined,
+                role: data?.role || data?.user?.role,
+                created_at: data?.created_at,
+                user: data?.user || {},
+                store: data?.store || {},
+            };
+            setRow(n);
         } catch (err) {
             const msg =
                 err?.response?.data?.message ||
@@ -120,7 +132,7 @@ export default function StoreMemberDetailSheet({ membershipId, open, onOpenChang
     }, [open, membershipId, fetchDetail]);
 
     const m = row || {};
-    const id = m.id || m.membership_id || membershipId;
+    const id = m.id || membershipId;
     const u = m.user || {};
     const s = m.store || {};
     const title = u.email || u.username || "Member";
@@ -190,6 +202,11 @@ export default function StoreMemberDetailSheet({ membershipId, open, onOpenChang
                                         <Badge variant={m?.status === "pending" ? "secondary" : "default"} className="glass-badge">
                                             {m?.status || "active"}
                                         </Badge>
+                                        {typeof m?.is_active === "boolean" && (
+                                            <Badge variant={m.is_active ? "default" : "secondary"} className="glass-badge">
+                                                {m.is_active ? "Active" : "Inactive"}
+                                            </Badge>
+                                        )}
 
                                         <Button variant="outline" onClick={copyId} className="cursor-pointer px-6 py-4 rounded-4xl">
                                             <ClipboardCopy className="mr-2 h-4 w-4" />
@@ -222,9 +239,9 @@ export default function StoreMemberDetailSheet({ membershipId, open, onOpenChang
                     ) : !id ? (
                         <div className="text-sm text-neutral-500">Member not found.</div>
                     ) : (
-                        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
                             {/* LEFT: User */}
-                            <GlassCard>
+                            <GlassCard className="lg:col-span-1">
                                 <div className="mb-1 flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-neutral-600 dark:text-neutral-400">
                                     <Shield className="h-4 w-4" />
                                     User
@@ -233,34 +250,50 @@ export default function StoreMemberDetailSheet({ membershipId, open, onOpenChang
                                     <InfoRow icon={Mail} label="Email" value={u?.email} href={u?.email ? `mailto:${u.email}` : undefined} copyable />
                                     <InfoRow icon={Phone} label="Phone" value={u?.phone_number} href={u?.phone_number ? `tel:${u.phone_number}` : undefined} copyable />
                                     <InfoRow icon={Shield} label="Username" value={u?.username} copyable />
+                                    <InfoRow icon={Shield} label="User role" value={u?.role || "—"} />
+                                    <InfoRow icon={Shield} label="Created at" value={m?.created_at ? new Date(m.created_at).toLocaleString() : "—"} />
                                 </div>
                             </GlassCard>
 
-                            {/* RIGHT: Store */}
-                            <GlassCard>
-                                <div className="mb-1 flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-neutral-600 dark:text-neutral-400">
-                                    <Store className="h-4 w-4" />
-                                    Store
-                                </div>
-                                <div className="mt-2 space-y-1">
-                                    <InfoRow icon={Store} label="Name" value={s?.name} copyable />
-                                    <InfoRow icon={Store} label="Store ID" value={s?.id} copyable />
-                                    <InfoRow
-                                        icon={Shield}
-                                        label="Created at"
-                                        value={m?.created_at ? new Date(m.created_at).toLocaleString() : "—"}
-                                    />
-                                </div>
-                            </GlassCard>
+                            {/* RIGHT: Store + Permissions */}
+                            <div className="lg:col-span-2 grid gap-4">
+                                <GlassCard>
+                                    <div className="mb-1 flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-neutral-600 dark:text-neutral-400">
+                                        <Store className="h-4 w-4" />
+                                        Store
+                                    </div>
+                                    <div className="mt-2 space-y-1">
+                                        <InfoRow icon={Store} label="Name" value={s?.name} copyable />
+                                        <InfoRow icon={Store} label="Store ID" value={s?.id} copyable />
+                                    </div>
+                                </GlassCard>
+
+                                <GlassCard>
+                                    <div className="mb-1 text-xs font-medium uppercase tracking-wide text-neutral-600 dark:text-neutral-400">
+                                        Permissions
+                                    </div>
+                                    <div className="mt-2 flex flex-wrap gap-2">
+                                        {(m.permissions || []).length === 0 ? (
+                                            <span className="text-sm text-neutral-500">—</span>
+                                        ) : (
+                                            m.permissions.map((p) => (
+                                                <Badge key={p} variant="secondary" className="glass-badge capitalize">
+                                                    {p}
+                                                </Badge>
+                                            ))
+                                        )}
+                                    </div>
+                                </GlassCard>
+                            </div>
                         </div>
                     )}
                 </div>
 
-                {/* Delete dialog */}
-                <StoreMemberDeleteDialog
-                    member={row}
+                {/* Delete (re-using dialog for last-admin control) */}
+                <StoreMemberDeleteDialogShim
                     open={confirmDelete}
                     onOpenChange={setConfirmDelete}
+                    member={row}
                     onDone={() => {
                         setConfirmDelete(false);
                         onOpenChange?.(false);
@@ -270,4 +303,18 @@ export default function StoreMemberDetailSheet({ membershipId, open, onOpenChang
             </SheetContent>
         </Sheet>
     );
+}
+
+/**
+ * Lightweight inline shim to avoid an extra import hop; mirrors StoreMemberDeleteDialog API.
+ * If you already have StoreMemberDeleteDialog in a separate file, replace with that import.
+ */
+function StoreMemberDeleteDialogShim({ open, onOpenChange, member, onDone }) {
+    // Lazy import the actual dialog to keep this file self-contained if needed.
+    const [C, setC] = useState(null);
+    useEffect(() => {
+        import("./StoreMemberDeleteDialog").then((m) => setC(() => m.default));
+    }, []);
+    if (!C) return null;
+    return <C open={open} onOpenChange={onOpenChange} member={member} onDone={onDone} />;
 }
