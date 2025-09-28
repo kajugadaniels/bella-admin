@@ -22,6 +22,11 @@ import StoreMemberDetailSheet from "./StoreMemberDetailSheet";
 import StoreMemberDeleteDialog from "./StoreMemberDeleteDialog";
 
 /* -------------------------- helpers -------------------------- */
+const PAGE_SIZE = 10;
+const DEFAULT_STATUS = "all";
+const DEFAULT_ROLE = "all";
+const DEFAULT_ORDERING = "-created_at";
+
 function extractToastError(err, fallback = "Failed to load store members") {
     try {
         return (
@@ -44,12 +49,24 @@ function useDebounceLocal(value, delay = 500) {
     return v;
 }
 
-/* -------------------------- constants -------------------------- */
-const DEFAULT_ORDERING = "-created_at";
-const DEFAULT_STATUS = "all";
-const DEFAULT_ROLE = "all"; // all | admin | staff
-const PAGE_SIZE = 10;
+// normalize API rows so UI can rely on consistent keys
+function normalizeMember(r = {}) {
+    const id = r.membership_id || r.id;
+    return {
+        id, // membership id
+        membership_id: r.membership_id || r.id,
+        status: r.status || "active",
+        store: r.store || {},
+        user: r.user || {},
+        is_admin: !!r.is_admin,
+        permissions: Array.isArray(r.permissions) ? r.permissions : [],
+        is_active: typeof r.is_active === "boolean" ? r.is_active : undefined,
+        role: r.role || r.user?.role,
+        created_at: r.created_at,
+    };
+}
 
+/* -------------------------- constants -------------------------- */
 const statuses = [
     { value: "all", label: "All" },
     { value: "active", label: "Active" },
@@ -65,12 +82,12 @@ const roles = [
 const orderings = [
     { value: "-created_at", label: "Newest" },
     { value: "created_at", label: "Oldest" },
-    { value: "store_name", label: "Store name (A–Z)" },
-    { value: "-store_name", label: "Store name (Z–A)" },
-    { value: "email", label: "Email (A–Z)" },
-    { value: "-email", label: "Email (Z–A)" },
-    { value: "username", label: "Username (A–Z)" },
-    { value: "-username", label: "Username (Z–A)" },
+    { value: "store__name", label: "Store name (A–Z)" },
+    { value: "-store__name", label: "Store name (Z–A)" },
+    { value: "user__email", label: "Email (A–Z)" },
+    { value: "-user__email", label: "Email (Z–A)" },
+    { value: "user__username", label: "Username (A–Z)" },
+    { value: "-user__username", label: "Username (Z–A)" },
 ];
 
 /* --------------------------- component --------------------------- */
@@ -95,11 +112,10 @@ export default function StoreMemberList() {
     const params = useMemo(() => {
         const p = { status, ordering, page };
         if (dq.trim()) {
-            p.q = dq.trim();       // allow both
-            p.search = dq.trim();  // server can ignore one
+            p.search = dq.trim();
+            p.q = dq.trim(); // tolerate either
         }
         if (role !== "all") {
-            // server may accept: is_admin=true|false
             p.is_admin = role === "admin";
         }
         return p;
@@ -110,29 +126,24 @@ export default function StoreMemberList() {
         try {
             const res = await superadmin.listStoreMembers(params);
 
-            // Prefer DRF pagination {count,results}
-            const payload = res?.data;
+            // DRF pagination: {count, results}
+            const payload = res?.data || {};
             let list = Array.isArray(payload?.results) ? payload.results : [];
             let total = typeof payload?.count === "number" ? payload.count : 0;
 
-            // tolerate wrapped responses: {status,data:{count,results}} or {data:[...]}
-            if (!list.length) {
-                const w = payload?.data;
-                if (Array.isArray(w?.results)) {
-                    list = w.results;
-                    total = typeof (payload?.count ?? w?.count) === "number"
-                        ? (payload?.count ?? w?.count)
-                        : total;
-                } else if (Array.isArray(w)) {
-                    list = w;
-                    total = w.length;
-                }
+            // tolerate a wrapped shape {status, data:{count,results}}
+            if (!list.length && payload?.data) {
+                const d = payload.data;
+                list = Array.isArray(d?.results) ? d.results : Array.isArray(d) ? d : [];
+                total = typeof (payload.count ?? d?.count) === "number" ? (payload.count ?? d?.count) : total;
             }
 
-            setRows(list || []);
+            setRows((list || []).map(normalizeMember));
             setCount(Number(total || 0));
         } catch (err) {
             toast.error(extractToastError(err));
+            setRows([]);
+            setCount(0);
         } finally {
             setLoading(false);
         }
@@ -165,7 +176,7 @@ export default function StoreMemberList() {
                             </span>
                         </h1>
                         <p className="text-sm text-neutral-500">
-                            Review store memberships across all stores.
+                            Review and manage store memberships.
                         </p>
                     </div>
                     <div className="flex items-center gap-2">
@@ -291,7 +302,7 @@ export default function StoreMemberList() {
                     <StoreMemberTable
                         rows={rows}
                         loading={loading}
-                        onView={(row) => setDetailId(row?.id || row?.membership_id)}
+                        onView={(row) => setDetailId(row?.id)}
                         onDelete={(row) => setDeleteRow(row)}
                     />
 
