@@ -320,6 +320,21 @@ export const endpoints = {
     saProductPublishSingle: (productId) => `/superadmin/product/${productId}/publish/`,
     saProductsPublish: "/superadmin/products/publish/",
     saProductCategories: "/superadmin/product-categories/",
+
+    // Store members (unified: active + pending)
+    saStoreMembersList: "/superadmin/store-members/",
+    saStoreMemberDetail: (membershipId) => `/superadmin/store-member/${membershipId}/`,
+    saStoreMemberDelete: (membershipId) => `/superadmin/store-member/${membershipId}/delete/`,
+
+    // Clients (role = CLIENT)
+    saClientsList: "/superadmin/clients/",
+    saClientDetail: (clientId) => `/superadmin/client/${clientId}/`,
+    saClientDelete: (clientId) => `/superadmin/client/${clientId}/delete/`,
+
+    // Admins (role = ADMIN)
+    saAdminsList: "/superadmin/admins/",
+    saAdminDetail: (adminId) => `/superadmin/admin/${adminId}/`,
+    saAdminDelete: (adminId) => `/superadmin/admin/${adminId}/delete/`,
 };
 
 /** ------------------------------------------------------------------------
@@ -510,6 +525,95 @@ export const superadmin = {
     /** Get all product categories (enum values from backend) */
     getProductCategories() {
         return GET(endpoints.saProductCategories, { auth: true });
+    },
+
+    // ----------------------------
+    // Store members
+    // ----------------------------
+
+    /**
+     * List store members (active + pending) with filters/order/pagination.
+     * Mirrors: GET /superadmin/store-members/
+     * @param {Object} params e.g. { q, store, status, role, is_admin, is_active, created_at_from, created_at_to, perm, ordering, page }
+     */
+    listStoreMembers(params = {}) {
+        return GET(`${endpoints.saStoreMembersList}${toQuery(params)}`, { auth: true });
+    },
+
+    /**
+     * Get a single store member (active or pending).
+     * Mirrors: GET /superadmin/store-member/:membership_id/?status=active|pending|all
+     */
+    getStoreMember(membershipId, params = {}) {
+        return GET(`${endpoints.saStoreMemberDetail(membershipId)}${toQuery(params)}`, { auth: true });
+    },
+
+    /**
+     * Delete a store member membership (active or pending).
+     * Mirrors: DELETE /superadmin/store-member/:membership_id/delete/?allow_last_admin=true|false
+     * @param {string} membershipId
+     * @param {{ allow_last_admin?: boolean }} [opts]
+     */
+    deleteStoreMember(membershipId, opts = {}) {
+        const q = toQuery({ allow_last_admin: !!opts.allow_last_admin });
+        return DELETE(`${endpoints.saStoreMemberDelete(membershipId)}${q}`, { auth: true });
+    },
+
+    // ----------------------------
+    // Clients (role = CLIENT)
+    // ----------------------------
+
+    /**
+     * List clients with filters/order/pagination.
+     * Mirrors: GET /superadmin/clients/
+     */
+    listClients(params = {}) {
+        return GET(`${endpoints.saClientsList}${toQuery(params)}`, { auth: true });
+    },
+
+    /**
+     * Get a specific client (active or pending).
+     * Mirrors: GET /superadmin/client/:client_id/?status=active|pending|all
+     * @param {string} clientId  UUID (active user) or PendingRegistration id (pending)
+     */
+    getClient(clientId, params = {}) {
+        return GET(`${endpoints.saClientDetail(clientId)}${toQuery(params)}`, { auth: true });
+    },
+
+    /**
+     * Delete a client (active or pending).
+     * Mirrors: DELETE /superadmin/client/:client_id/delete/
+     */
+    deleteClient(clientId) {
+        return DELETE(endpoints.saClientDelete(clientId), { auth: true });
+    },
+
+    // ----------------------------
+    // Admins (role = ADMIN)
+    // ----------------------------
+
+    /**
+     * List admins with filters/order/pagination.
+     * Mirrors: GET /superadmin/admins/
+     */
+    listAdmins(params = {}) {
+        return GET(`${endpoints.saAdminsList}${toQuery(params)}`, { auth: true });
+    },
+
+    /**
+     * Get a specific admin (active or pending).
+     * Mirrors: GET /superadmin/admin/:admin_id/?status=active|pending|all
+     */
+    getAdmin(adminId, params = {}) {
+        return GET(`${endpoints.saAdminDetail(adminId)}${toQuery(params)}`, { auth: true });
+    },
+
+    /**
+     * Delete an admin (guarded server-side: cannot delete superuser or yourself).
+     * Mirrors: DELETE /superadmin/admin/:admin_id/delete/
+     */
+    deleteAdmin(adminId) {
+        return DELETE(endpoints.saAdminDelete(adminId), { auth: true });
     },
 };
 
