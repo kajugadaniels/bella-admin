@@ -1,197 +1,235 @@
-import React from "react";
-import { useEffect, useMemo, useState, useCallback } from "react";
-import { superadmin } from "@/api";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { motion } from "framer-motion";
+import { RefreshCw } from "lucide-react";
 import { toast } from "sonner";
-import { Input } from "@/components/ui/input";
+
+import { superadmin } from "@/api";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { Loader2, RefreshCw, Search } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+
+import AdminFilters from "./AdminFilters";
 import AdminTable from "./AdminTable";
 import AdminDetailSheet from "./AdminDetailSheet";
 import AdminDeleteDialog from "./AdminDeleteDialog";
 
-function extractToastError(err, fallback = "Something went wrong") {
-    try {
-        const msg =
-            err?.response?.data?.message ||
-            err?.response?.data?.detail ||
-            err?.message ||
-            fallback;
-        return typeof msg === "string" ? msg : fallback;
-    } catch {
-        return fallback;
-    }
+// Fallback debounce if "@/hooks/useDebounce" isn't present
+function useDebounceLocal(value, delay = 500) {
+    const [v, setV] = useState(value);
+    useEffect(() => {
+        const id = setTimeout(() => setV(value), delay);
+        return () => clearTimeout(id);
+    }, [value, delay]);
+    return v;
 }
 
-const statuses = [
-    { value: "all", label: "All" },
-    { value: "active", label: "Active" },
-    { value: "pending", label: "Pending" },
-];
+const DEFAULT_ORDERING = "-created_at";
 
-const orderings = [
-    { value: "-created_at", label: "Newest" },
-    { value: "created_at", label: "Oldest" },
-    { value: "email", label: "Email (A–Z)" },
-    { value: "-email", label: "Email (Z–A)" },
-    { value: "username", label: "Username (A–Z)" },
-    { value: "-username", label: "Username (Z–A)" },
-];
+const AdminList = () => {
+    const [query, setQuery] = useState("");
+    const debouncedQuery = useDebounceLocal(query, 500);
 
-export default function AdminList() {
-    const [rows, setRows] = useState([]);
-    const [count, setCount] = useState(0);
-    const [next, setNext] = useState(null);
-    const [prev, setPrev] = useState(null);
-
-    const [loading, setLoading] = useState(false);
-    const [q, setQ] = useState("");
-    const [status, setStatus] = useState("all");
-    const [ordering, setOrdering] = useState("-created_at");
+    const [filters, setFilters] = useState({
+        status: "all",
+        created_after: "",
+        created_before: "",
+    });
+    const [ordering, setOrdering] = useState(DEFAULT_ORDERING);
     const [page, setPage] = useState(1);
 
-    const [detailId, setDetailId] = useState(null);
-    const [deleteRow, setDeleteRow] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [rows, setRows] = useState([]);
+    const [count, setCount] = useState(0);
+    const pageSize = 10;
+    const totalPages = Math.max(1, Math.ceil(count / pageSize));
 
-    const params = useMemo(
-        () => ({ q, status, ordering, page }),
-        [q, status, ordering, page]
-    );
+    // detail / delete
+    const [detailId, setDetailId] = useState(null);
+    const [deleteTarget, setDeleteTarget] = useState(null);
 
     const fetchAdmins = useCallback(async () => {
         setLoading(true);
         try {
-            const res = await superadmin.listAdmins(params);
-            /**
-             * Backends: we support either DRF native pagination OR your wrapped {status, data, count, next, previous}.
-             */
-            const payload = res?.data;
-            const wrapped = payload?.data && (Array.isArray(payload?.data) || payload?.data?.results);
-            const list = wrapped
-                ? (payload?.data?.results || payload?.data || [])
-                : (Array.isArray(payload) ? payload : payload?.results || []);
-            const total = wrapped
-                ? (payload?.count ?? payload?.data?.count ?? 0)
-                : (payload?.count ?? 0);
+            const params = {};
+            // top search bar (like StoreList)
+            if (debouncedQuery.trim()) params.search = debouncedQuery.trim();
 
-            setRows(list || []);
-            setCount(total);
-            setNext((wrapped ? payload?.next ?? payload?.data?.next : payload?.next) || null);
-            setPrev((wrapped ? payload?.previous ?? payload?.data?.previous : payload?.previous) || null);
+            // push filters
+            Object.entries(filters).forEach(([k, v]) => {
+                if (v !== "" && v !== null && v !== undefined) params[k] = v;
+            });
+
+            // ordering + page
+            if (ordering) params.ordering = ordering;
+            params.page = page;
+
+            const { data } = await superadmin.listAdmins(params);
+            // Expecting DRF pagination shape (like stores)
+            setRows(data?.results || []);
+            setCount(Number(data?.count || 0));
         } catch (err) {
-            toast.error(extractToastError(err, "Failed to load admins"));
+            toast.error(err?.message || "Failed to load admins.");
         } finally {
             setLoading(false);
         }
-    }, [params]);
+    }, [debouncedQuery, filters, ordering, page]);
+
+    useEffect(() => {
+        setPage(1);
+    }, [debouncedQuery, filters, ordering]);
 
     useEffect(() => {
         fetchAdmins();
     }, [fetchAdmins]);
 
-    const onSearchSubmit = (e) => {
-        e.preventDefault();
-        setPage(1);
+    const refresh = useCallback(() => {
         fetchAdmins();
-    };
+    }, [fetchAdmins]);
 
-    const onOpenDetail = (row) => setDetailId(row?.id || row?.user_id || null);
-    const onCloseDetail = (changed) => {
-        setDetailId(null);
-        if (changed) fetchAdmins();
-    };
-
-    const onOpenDelete = (row) => setDeleteRow(row);
-    const onCloseDelete = (changed) => {
-        setDeleteRow(null);
-        if (changed) fetchAdmins();
-    };
+    const headerRight = useMemo(
+        () => (
+            <div className="flex items-center gap-2">
+                <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={refresh}
+                    className="glass-button rounded-4xl px-4 py-5"
+                >
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                    Refresh
+                </Button>
+            </div>
+        ),
+        [refresh]
+    );
 
     return (
-        <div className="space-y-4">
-            {/* Header & Filters */}
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
-                <div className="flex items-center gap-2">
-                    <h1 className="text-xl font-semibold">Admins</h1>
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={fetchAdmins}
-                        className="glass-button"
-                        disabled={loading}
-                    >
-                        {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-                        <span className="ml-2">Refresh</span>
-                    </Button>
+        <>
+            <motion.div
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.28 }}
+                className="mx-auto px-4 sm:px-6"
+            >
+                {/* Page header */}
+                <div className="mb-4 mt-4 flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                        <h1 className="text-xl font-semibold tracking-tight">
+                            <span className="bg-gradient-to-r from-[var(--primary-color)] to-emerald-600 bg-clip-text text-transparent">
+                                Admins
+                            </span>
+                        </h1>
+                        <p className="text-sm text-neutral-500">
+                            Manage admin records and invitations.
+                        </p>
+                    </div>
+                    {headerRight}
                 </div>
 
-                <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
-                    <form onSubmit={onSearchSubmit} className="flex gap-2">
-                        <div className="relative">
-                            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                {/* Card */}
+                <div className="glass-card flex flex-col gap-4 p-4">
+                    {/* Top controls */}
+                    <div className="grid gap-3 md:grid-cols-3">
+                        <div className="col-span-2">
+                            <Label htmlFor="q" className="sr-only">
+                                Search
+                            </Label>
                             <Input
-                                value={q}
-                                onChange={(e) => setQ(e.target.value)}
-                                placeholder="Search email / username / phone…"
-                                className="pl-8 w-[260px]"
+                                id="q"
+                                placeholder="Search by email, username, or phone…"
+                                value={query}
+                                onChange={(e) => setQuery(e.target.value)}
+                                className="glass-input"
                             />
                         </div>
-                        <Button type="submit" className="glass-cta">Search</Button>
-                    </form>
+                        <div className="flex items-center">
+                            <Badge variant="secondary" className="ml-auto glass-badge">
+                                {count} total
+                            </Badge>
+                        </div>
+                    </div>
 
-                    <Select value={status} onValueChange={(v) => { setStatus(v); setPage(1); }}>
-                        <SelectTrigger className="w-[150px]">
-                            <SelectValue placeholder="Status" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {statuses.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
-                        </SelectContent>
-                    </Select>
+                    <AdminFilters
+                        value={{ ...filters, ordering }}
+                        onChange={(next) => {
+                            const { ordering: ord, ...rest } = next;
+                            setFilters(rest);
+                            setOrdering(ord || DEFAULT_ORDERING);
+                        }}
+                    />
 
-                    <Select value={ordering} onValueChange={(v) => { setOrdering(v); setPage(1); }}>
-                        <SelectTrigger className="w-[180px]">
-                            <SelectValue placeholder="Ordering" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {orderings.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
-                        </SelectContent>
-                    </Select>
+                    <Separator className="soft-divider" />
+
+                    <AdminTable
+                        rows={rows}
+                        loading={loading}
+                        ordering={ordering}
+                        onView={(id) => setDetailId(id)}
+                        onDelete={(row) => setDeleteTarget(row)}
+                    />
+
+                    {/* Pagination */}
+                    <div className="mt-1 flex items-center justify-between">
+                        <div className="text-xs text-neutral-500">
+                            Page {page} of {totalPages}
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                disabled={page <= 1 || loading}
+                                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                                className="glass-button"
+                            >
+                                Previous
+                            </Button>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                disabled={page >= totalPages || loading}
+                                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                                className="glass-button"
+                            >
+                                Next
+                            </Button>
+                        </div>
+                    </div>
                 </div>
-            </div>
+            </motion.div>
 
-            <Separator />
+            {/* Detail */}
+            {detailId && (
+                <AdminDetailSheet
+                    adminId={detailId}
+                    open={!!detailId}
+                    onOpenChange={(o) => {
+                        if (!o) setDetailId(null);
+                    }}
+                    onDeleted={() => {
+                        setDetailId(null);
+                        refresh();
+                    }}
+                />
+            )}
 
-            {/* Table/List */}
-            <AdminTable
-                rows={rows}
-                loading={loading}
-                onView={onOpenDetail}
-                onDelete={onOpenDelete}
-                pagination={{
-                    count,
-                    page,
-                    setPage,
-                    hasNext: !!next,
-                    hasPrev: !!prev,
-                }}
-            />
-
-            {/* Detail sheet */}
-            <AdminDetailSheet
-                adminId={detailId}
-                open={!!detailId}
-                onOpenChange={(open) => !open && onCloseDetail(false)}
-                onDeleted={() => onCloseDetail(true)}
-            />
-
-            {/* Delete dialog */}
-            <AdminDeleteDialog
-                admin={deleteRow}
-                open={!!deleteRow}
-                onOpenChange={(open) => !open && onCloseDelete(false)}
-                onDone={() => onCloseDelete(true)}
-            />
-        </div>
+            {/* Delete */}
+            {deleteTarget && (
+                <AdminDeleteDialog
+                    admin={deleteTarget}
+                    open={!!deleteTarget}
+                    onOpenChange={(o) => {
+                        if (!o) setDeleteTarget(null);
+                    }}
+                    onDone={() => {
+                        setDeleteTarget(null);
+                        refresh();
+                    }}
+                />
+            )}
+        </>
     );
-}
+};
+
+export default AdminList;
