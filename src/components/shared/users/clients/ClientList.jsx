@@ -15,7 +15,36 @@ import ClientTable from "./ClientTable";
 import ClientDetailSheet from "./ClientDetailSheet";
 import ClientDeleteDialog from "./ClientDeleteDialog";
 
-function extractToastError(err, fallback = "Failed to load clients") {
+/* -------------------------- local debounce fallback -------------------------- */
+function useDebounceLocal(value, delay = 500) {
+    const [v, setV] = useState(value);
+    useEffect(() => {
+        const id = setTimeout(() => setV(value), delay);
+        return () => clearTimeout(id);
+    }, [value, delay]);
+    return v;
+}
+
+const DEFAULT_ORDERING = "-created_at";
+const DEFAULT_STATUS = "all";
+const PAGE_SIZE = 10;
+
+const statuses = [
+    { value: "all", label: "All" },
+    { value: "active", label: "Active" },
+    { value: "pending", label: "Pending" },
+];
+
+const orderings = [
+    { value: "-created_at", label: "Newest" },
+    { value: "created_at", label: "Oldest" },
+    { value: "email", label: "Email (A–Z)" },
+    { value: "-email", label: "Email (Z–A)" },
+    { value: "username", label: "Username (A–Z)" },
+    { value: "-username", label: "Username (Z–A)" },
+];
+
+function extractToastError(err, fallback = "Failed to load clients.") {
     try {
         return (
             err?.response?.data?.message ||
@@ -28,60 +57,53 @@ function extractToastError(err, fallback = "Failed to load clients") {
     }
 }
 
-const DEFAULT_ORDERING = "-created_at";
-const statuses = [
-    { value: "all", label: "All" },
-    { value: "active", label: "Active" },
-    { value: "pending", label: "Pending" },
-];
-const orderings = [
-    { value: "-created_at", label: "Newest" },
-    { value: "created_at", label: "Oldest" },
-    { value: "email", label: "Email (A–Z)" },
-    { value: "-email", label: "Email (Z–A)" },
-    { value: "username", label: "Username (A–Z)" },
-    { value: "-username", label: "Username (Z–A)" },
-];
-
 const ClientList = () => {
-    const [q, setQ] = useState("");
-    const [status, setStatus] = useState("all");
+    const [query, setQuery] = useState("");
+    const debouncedQuery = useDebounceLocal(query, 500);
+
+    const [status, setStatus] = useState(DEFAULT_STATUS);
     const [ordering, setOrdering] = useState(DEFAULT_ORDERING);
     const [page, setPage] = useState(1);
 
     const [loading, setLoading] = useState(true);
     const [rows, setRows] = useState([]);
     const [count, setCount] = useState(0);
-    const [next, setNext] = useState(null);
-    const [prev, setPrev] = useState(null);
+    const totalPages = Math.max(1, Math.ceil(count / PAGE_SIZE));
 
+    // Detail / delete
     const [detailId, setDetailId] = useState(null);
-    const [deleteRow, setDeleteRow] = useState(null);
+    const [deleteTarget, setDeleteTarget] = useState(null);
 
-    const params = useMemo(
-        () => ({ q, status, ordering, page }),
-        [q, status, ordering, page]
-    );
+    const params = useMemo(() => {
+        const p = { status, ordering, page };
+        if (debouncedQuery.trim()) {
+            // Support both 'q' and 'search' styles
+            p.q = debouncedQuery.trim();
+            p.search = debouncedQuery.trim();
+        }
+        return p;
+    }, [debouncedQuery, status, ordering, page]);
 
     const fetchClients = useCallback(async () => {
         setLoading(true);
         try {
             const res = await superadmin.listClients(params);
 
-            // Support both: wrapped {status,data,count,next,prev} and DRF {results,count,next,previous}
+            // Support wrapped/flat DRF responses
             const payload = res?.data;
-            const wrapped = payload?.data && (Array.isArray(payload?.data) || payload?.data?.results);
+            const wrapped =
+                payload?.data && (Array.isArray(payload?.data) || payload?.data?.results);
+
             const list = wrapped
                 ? (payload?.data?.results || payload?.data || [])
                 : (Array.isArray(payload) ? payload : payload?.results || []);
+
             const total = wrapped
                 ? (payload?.count ?? payload?.data?.count ?? 0)
                 : (payload?.count ?? 0);
 
-            setRows(list || []);
+            setRows(Array.isArray(list) ? list : []);
             setCount(Number(total || 0));
-            setNext((wrapped ? payload?.next ?? payload?.data?.next : payload?.next) || null);
-            setPrev((wrapped ? payload?.previous ?? payload?.data?.previous : payload?.previous) || null);
         } catch (err) {
             toast.error(extractToastError(err));
         } finally {
@@ -89,11 +111,36 @@ const ClientList = () => {
         }
     }, [params]);
 
+    // reset page when filters change
+    useEffect(() => {
+        setPage(1);
+    }, [debouncedQuery, status, ordering]);
+
     useEffect(() => {
         fetchClients();
     }, [fetchClients]);
 
-    const totalPages = Math.max(1, Math.ceil((count || 0) / 10)); // if your backend uses page_size=10
+    const refresh = useCallback(() => {
+        fetchClients();
+    }, [fetchClients]);
+
+    const headerRight = useMemo(
+        () => (
+            <div className="flex items-center gap-2">
+                <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={refresh}
+                    className="glass-button rounded-4xl px-4 py-5"
+                    disabled={loading}
+                >
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                    Refresh
+                </Button>
+            </div>
+        ),
+        [refresh, loading]
+    );
 
     return (
         <>
@@ -112,21 +159,10 @@ const ClientList = () => {
                             </span>
                         </h1>
                         <p className="text-sm text-neutral-500">
-                            Browse and manage client accounts (active & pending).
+                            Manage client records and invitations.
                         </p>
                     </div>
-                    <div className="flex items-center gap-2">
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={fetchClients}
-                            className="glass-button rounded-4xl px-4 py-5"
-                            disabled={loading}
-                        >
-                            <RefreshCw className="mr-2 h-4 w-4" />
-                            Refresh
-                        </Button>
-                    </div>
+                    {headerRight}
                 </div>
 
                 {/* Card */}
@@ -141,13 +177,10 @@ const ClientList = () => {
                                 <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
                                 <Input
                                     id="q"
-                                    placeholder="Search by email, username, phone…"
-                                    value={q}
-                                    onChange={(e) => {
-                                        setQ(e.target.value);
-                                        setPage(1);
-                                    }}
-                                    className="pl-9 glass-input"
+                                    placeholder="Search by email, username, or phone…"
+                                    value={query}
+                                    onChange={(e) => setQuery(e.target.value)}
+                                    className="glass-input pl-9"
                                 />
                             </div>
                         </div>
@@ -158,7 +191,7 @@ const ClientList = () => {
                         </div>
                     </div>
 
-                    {/* Filters line (status + ordering) */}
+                    {/* Filters row (status + ordering) */}
                     <div
                         className="
               hidden md:flex items-end gap-3
@@ -166,17 +199,11 @@ const ClientList = () => {
               dark:border-neutral-800 dark:bg-neutral-900/60
             "
                     >
-                        <div className="min-w-[160px] flex-1">
+                        <div className="min-w-[150px] flex-1">
                             <Label className="text-[12px]">Status</Label>
-                            <Select
-                                value={status}
-                                onValueChange={(v) => {
-                                    setStatus(v);
-                                    setPage(1);
-                                }}
-                            >
+                            <Select value={status} onValueChange={(v) => setStatus(v)}>
                                 <SelectTrigger className="bg-white/85 backdrop-blur-sm border-neutral-200 dark:bg-neutral-900/70 dark:border-neutral-800">
-                                    <SelectValue placeholder="All" />
+                                    <SelectValue placeholder="Status" />
                                 </SelectTrigger>
                                 <SelectContent className="bg-white/95 backdrop-blur-md dark:bg-neutral-900/90">
                                     {statuses.map((s) => (
@@ -188,15 +215,9 @@ const ClientList = () => {
                             </Select>
                         </div>
 
-                        <div className="min-w-[200px]">
+                        <div className="min-w-[180px]">
                             <Label className="text-[12px]">Ordering</Label>
-                            <Select
-                                value={ordering}
-                                onValueChange={(v) => {
-                                    setOrdering(v);
-                                    setPage(1);
-                                }}
-                            >
+                            <Select value={ordering} onValueChange={(v) => setOrdering(v)}>
                                 <SelectTrigger className="bg-white/85 backdrop-blur-sm border-neutral-200 dark:bg-neutral-900/70 dark:border-neutral-800">
                                     <SelectValue placeholder="Sort by…" />
                                 </SelectTrigger>
@@ -215,10 +236,9 @@ const ClientList = () => {
                                 type="button"
                                 variant="ghost"
                                 onClick={() => {
-                                    setQ("");
-                                    setStatus("all");
+                                    setQuery("");
+                                    setStatus(DEFAULT_STATUS);
                                     setOrdering(DEFAULT_ORDERING);
-                                    setPage(1);
                                 }}
                                 className="cursor-pointer text-neutral-700 hover:text-neutral-900 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800"
                             >
@@ -229,31 +249,24 @@ const ClientList = () => {
 
                     <Separator className="soft-divider" />
 
-                    {/* Table/List */}
+                    {/* Table */}
                     <ClientTable
                         rows={rows}
                         loading={loading}
                         onView={(row) => setDetailId(row?.id || row?.user_id || row?.client_id)}
-                        onDelete={(row) => setDeleteRow(row)}
-                        pagination={{
-                            count,
-                            page,
-                            setPage,
-                            hasNext: !!next,
-                            hasPrev: !!prev,
-                        }}
+                        onDelete={(row) => setDeleteTarget(row)}
                     />
 
                     {/* Pagination */}
                     <div className="mt-1 flex items-center justify-between">
                         <div className="text-xs text-neutral-500">
-                            Page {page} {Number.isFinite(totalPages) ? `of ${totalPages}` : ""}
+                            Page {page} of {totalPages}
                         </div>
                         <div className="flex items-center gap-2">
                             <Button
                                 variant="outline"
                                 size="sm"
-                                disabled={!prev || loading || page <= 1}
+                                disabled={page <= 1 || loading}
                                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                                 className="glass-button"
                             >
@@ -262,8 +275,8 @@ const ClientList = () => {
                             <Button
                                 variant="outline"
                                 size="sm"
-                                disabled={!next || loading}
-                                onClick={() => setPage((p) => p + 1)}
+                                disabled={page >= totalPages || loading}
+                                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                                 className="glass-button"
                             >
                                 Next
@@ -282,18 +295,20 @@ const ClientList = () => {
                 }}
                 onDeleted={() => {
                     setDetailId(null);
-                    fetchClients();
+                    refresh();
                 }}
             />
 
-            {/* Delete dialog */}
+            {/* Delete */}
             <ClientDeleteDialog
-                client={deleteRow}
-                open={!!deleteRow}
-                onOpenChange={(o) => !o && setDeleteRow(null)}
+                client={deleteTarget}
+                open={!!deleteTarget}
+                onOpenChange={(o) => {
+                    if (!o) setDeleteTarget(null);
+                }}
                 onDone={() => {
-                    setDeleteRow(null);
-                    fetchClients();
+                    setDeleteTarget(null);
+                    refresh();
                 }}
             />
         </>
