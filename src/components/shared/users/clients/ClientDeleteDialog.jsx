@@ -36,10 +36,10 @@ const InfoPill = ({ label, value }) => (
 export default function ClientDeleteDialog({ client, open, onOpenChange, onDone }) {
     const [submitting, setSubmitting] = useState(false);
 
-    const id = client?.id || client?.user_id || client?.client_id;
-    const email = client?.email || client?.user?.email || "";
-    const username = client?.username || client?.user?.username || "";
-    const role = client?.role || client?.user?.role || "CLIENT";
+    const id = client?.client_id || client?.id;
+    const email = client?.user?.email || "";
+    const username = client?.user?.username || "";
+    const role = client?.user?.role || client?.role || "CLIENT";
 
     const [reason, setReason] = useState("left");
     const [otherReason, setOtherReason] = useState("");
@@ -184,12 +184,7 @@ export default function ClientDeleteDialog({ client, open, onOpenChange, onDone 
                         }}
                     >
                         <div className="flex items-start gap-2">
-                            <Checkbox
-                                id="ack"
-                                checked={ack}
-                                onCheckedChange={(v) => setAck(Boolean(v))}
-                                className="mt-0.5"
-                            />
+                            <Checkbox id="ack" checked={ack} onCheckedChange={(v) => setAck(Boolean(v))} className="mt-0.5" />
                             <Label htmlFor="ack" className="text-sm leading-relaxed text-neutral-800 dark:text-neutral-200">
                                 I understand this operation is <span className="font-semibold">irreversible</span> and related data
                                 may be removed per backend policy.
@@ -200,7 +195,7 @@ export default function ClientDeleteDialog({ client, open, onOpenChange, onDone 
                             <Label htmlFor="confirm" className="text-xs text-neutral-600 dark:text-neutral-300">
                                 Type the client’s identifier exactly to confirm:
                                 <span className="ml-1 rounded bg-neutral-100 px-1.5 py-0.5 text-[11px] font-semibold text-neutral-700 dark:bg-neutral-800 dark:text-neutral-200">
-                                    {matchText || "—"}
+                                    {(email || username) || "—"}
                                 </span>
                             </Label>
                             <Input
@@ -220,18 +215,10 @@ export default function ClientDeleteDialog({ client, open, onOpenChange, onDone 
                             <p
                                 className={
                                     "text-xs " +
-                                    (confirmText
-                                        ? isMatch
-                                            ? "text-green-600"
-                                            : "text-red-600"
-                                        : "text-neutral-500")
+                                    (confirmText ? (isMatch ? "text-green-600" : "text-red-600") : "text-neutral-500")
                                 }
                             >
-                                {confirmText
-                                    ? isMatch
-                                        ? "Identifier matches."
-                                        : "Identifier must match exactly."
-                                    : "Enter the exact identifier."}
+                                {confirmText ? (isMatch ? "Identifier matches." : "Identifier must match exactly.") : "Enter the exact identifier."}
                             </p>
                         </div>
                     </div>
