@@ -88,21 +88,27 @@ const ClientList = () => {
         setLoading(true);
         try {
             const res = await superadmin.listClients(params);
-
-            // Support wrapped/flat DRF responses
             const payload = res?.data;
-            const wrapped =
-                payload?.data && (Array.isArray(payload?.data) || payload?.data?.results);
 
-            const list = wrapped
-                ? (payload?.data?.results || payload?.data || [])
-                : (Array.isArray(payload) ? payload : payload?.results || []);
+            // Prefer DRF pagination shape shown in Postman: {count,next,previous,results:[{ client_id, status, user:{...}, created_at }]}
+            let list = Array.isArray(payload?.results) ? payload.results : [];
+            let total = typeof payload?.count === "number" ? payload.count : 0;
 
-            const total = wrapped
-                ? (payload?.count ?? payload?.data?.count ?? 0)
-                : (payload?.count ?? 0);
+            // Fallbacks for wrapped/legacy
+            if (!list.length) {
+                const maybeWrapped = payload?.data;
+                if (Array.isArray(maybeWrapped?.results)) {
+                    list = maybeWrapped.results;
+                    total = typeof (payload?.count ?? maybeWrapped?.count) === "number"
+                        ? (payload?.count ?? maybeWrapped?.count)
+                        : total;
+                } else if (Array.isArray(maybeWrapped)) {
+                    list = maybeWrapped;
+                    total = maybeWrapped.length;
+                }
+            }
 
-            setRows(Array.isArray(list) ? list : []);
+            setRows(list);
             setCount(Number(total || 0));
         } catch (err) {
             toast.error(extractToastError(err));
@@ -124,24 +130,6 @@ const ClientList = () => {
         fetchClients();
     }, [fetchClients]);
 
-    const headerRight = useMemo(
-        () => (
-            <div className="flex items-center gap-2">
-                <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={refresh}
-                    className="glass-button rounded-4xl px-4 py-5"
-                    disabled={loading}
-                >
-                    <RefreshCw className="mr-2 h-4 w-4" />
-                    Refresh
-                </Button>
-            </div>
-        ),
-        [refresh, loading]
-    );
-
     return (
         <>
             <motion.div
@@ -162,7 +150,18 @@ const ClientList = () => {
                             Manage client records and invitations.
                         </p>
                     </div>
-                    {headerRight}
+                    <div className="flex items-center gap-2">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={refresh}
+                            className="glass-button rounded-4xl px-4 py-5"
+                            disabled={loading}
+                        >
+                            <RefreshCw className="mr-2 h-4 w-4" />
+                            Refresh
+                        </Button>
+                    </div>
                 </div>
 
                 {/* Card */}
@@ -253,7 +252,7 @@ const ClientList = () => {
                     <ClientTable
                         rows={rows}
                         loading={loading}
-                        onView={(row) => setDetailId(row?.id || row?.user_id || row?.client_id)}
+                        onView={(row) => setDetailId(row?.client_id || row?.id)}
                         onDelete={(row) => setDeleteTarget(row)}
                     />
 
