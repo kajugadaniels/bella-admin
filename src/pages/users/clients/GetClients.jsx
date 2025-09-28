@@ -1,8 +1,11 @@
+import ClientList from '@/components/shared/users/clients/ClientList'
 import React from 'react'
 
 const GetClients = () => {
     return (
-        <div>GetClients</div>
+        <div className="space-y-5">
+            <ClientList />
+        </div>
     )
 }
 
