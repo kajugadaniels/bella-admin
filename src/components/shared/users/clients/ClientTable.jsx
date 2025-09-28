@@ -1,5 +1,5 @@
 import React from "react";
-import { Eye, MoreHorizontal, Trash2, Shield } from "lucide-react";
+import { Eye, MoreHorizontal, Trash2 } from "lucide-react";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -21,14 +21,14 @@ function initials(text = "") {
 }
 
 const ClientCard = ({ r, onView, onDelete }) => {
-    const title = r?.email || r?.username || "Client";
+    const title = r?.user?.email || r?.user?.username || "Client";
     const inits = initials(title);
     return (
         <div className="rounded-2xl border border-black/5 bg-white/70 p-3 backdrop-blur dark:border-white/10 dark:bg-neutral-900/50">
             <div className="flex items-start gap-3">
-                {r.image_url ? (
+                {r?.user?.image_url ? (
                     <img
-                        src={r.image_url}
+                        src={r.user.image_url}
                         alt={title}
                         className="h-10 w-10 shrink-0 rounded-lg object-cover ring-1 ring-black/5 dark:ring-white/10"
                     />
@@ -47,11 +47,11 @@ const ClientCard = ({ r, onView, onDelete }) => {
                             {r?.status || "active"}
                         </Badge>
                     </div>
-                    <div className="truncate text-xs text-neutral-500">{r?.id}</div>
+                    <div className="truncate text-xs text-neutral-500">{r?.client_id}</div>
 
                     <div className="mt-2 grid gap-1">
-                        <div className="text-sm">{r?.email || "—"}</div>
-                        <div className="text-xs text-neutral-500">{r?.phone_number || "—"}</div>
+                        <div className="text-sm">{r?.user?.email || "—"}</div>
+                        <div className="text-xs text-neutral-500">{r?.user?.phone_number || "—"}</div>
                     </div>
 
                     <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -99,7 +99,7 @@ const ClientTable = ({ rows = [], loading = false, onView, onDelete }) => {
                 )}
                 {!loading &&
                     rows?.map((r) => (
-                        <div key={r.id || r.client_id} className="mb-3">
+                        <div key={r.client_id} className="mb-3">
                             <ClientCard r={r} onView={onView} onDelete={onDelete} />
                         </div>
                     ))}
@@ -134,18 +134,18 @@ const ClientTable = ({ rows = [], loading = false, onView, onDelete }) => {
                         )}
                         {!loading &&
                             rows?.map((r) => {
-                                const title = r?.email || r?.username || "Client";
+                                const title = r?.user?.email || r?.user?.username || "Client";
                                 const inits = initials(title);
                                 return (
                                     <TableRow
-                                        key={r.id || r.client_id}
+                                        key={r.client_id}
                                         className="row-soft last:border-0 hover:bg-black/[0.025] dark:hover:bg-white/5 transition-colors"
                                     >
                                         <TableCell>
                                             <div className="flex items-center gap-3">
-                                                {r.image_url ? (
+                                                {r?.user?.image_url ? (
                                                     <img
-                                                        src={r.image_url}
+                                                        src={r.user.image_url}
                                                         alt={title}
                                                         className="h-9 w-9 shrink-0 rounded-lg object-cover ring-1 ring-black/5 dark:ring-white/10"
                                                     />
@@ -160,14 +160,14 @@ const ClientTable = ({ rows = [], loading = false, onView, onDelete }) => {
                                                 )}
                                                 <div className="min-w-0">
                                                     <div className="truncate text-sm font-medium">{title}</div>
-                                                    <div className="truncate text-xs text-neutral-500">{r.id}</div>
+                                                    <div className="truncate text-xs text-neutral-500">{r.client_id}</div>
                                                 </div>
                                             </div>
                                         </TableCell>
 
                                         <TableCell>
-                                            <div className="text-sm">{r.email || "—"}</div>
-                                            <div className="text-xs text-neutral-500">{r.phone_number || "—"}</div>
+                                            <div className="text-sm">{r?.user?.email || "—"}</div>
+                                            <div className="text-xs text-neutral-500">{r?.user?.phone_number || "—"}</div>
                                         </TableCell>
 
                                         <TableCell className="text-right">
@@ -178,10 +178,10 @@ const ClientTable = ({ rows = [], loading = false, onView, onDelete }) => {
 
                                         <TableCell className="text-right">
                                             <div className="text-sm">
-                                                {r.created_at ? new Date(r.created_at).toISOString().slice(0, 10) : "—"}
+                                                {r?.created_at ? new Date(r.created_at).toISOString().slice(0, 10) : "—"}
                                             </div>
                                             <div className="text-xs text-neutral-500">
-                                                {r.created_at ? new Date(r.created_at).toISOString().slice(11, 16) : ""}
+                                                {r?.created_at ? new Date(r.created_at).toISOString().slice(11, 16) : ""}
                                             </div>
                                         </TableCell>
 
