@@ -116,7 +116,7 @@ const Sidebar = () => {
         () => [
             { to: "/dashboard", icon: Home, label: "Dashboard", end: true },
             { to: "/admins", icon: User2, label: "Admins", end: true },
-            { to: "/users", icon: UserCheck, label: "Users", end: true },
+            { to: "/clients", icon: UserCheck, label: "Clients", end: true },
             { to: "/store-members", icon: UserCog, label: "Store Members", end: true },
             { to: "/stores", icon: Building2, label: "Stores" },
             { to: "/products", icon: Package, label: "Products" },

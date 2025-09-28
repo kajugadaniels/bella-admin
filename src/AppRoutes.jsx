@@ -2,7 +2,7 @@ import React from 'react'
 import { Route, Routes } from 'react-router-dom'
 import ProtectedRoute from './hooks/ProtectedRoute'
 import AppLayout from './layout/AppLayout'
-import { Dashboard, ForgetPassword, GetProducts, GetStockIn, GetStockOut, GetStores, Login, NotFound, ResetPassword, Verify } from './pages'
+import { Dashboard, ForgetPassword, GetAdmins, GetClients, GetProducts, GetStockIn, GetStockOut, GetStoreMembers, GetStores, Login, NotFound, ResetPassword, Verify } from './pages'
 import AccountLayout from './layout/AccountLayout'
 
 const AppRoutes = () => {
@@ -18,6 +18,12 @@ const AppRoutes = () => {
             <Route element={<ProtectedRoute />}>
                 <Route element={<AppLayout />}>
                     <Route path="/dashboard" element={<Dashboard />} />
+
+                    <Route path="/admins" element={<GetAdmins />} />
+
+                    <Route path="/clients" element={<GetClients />} />
+
+                    <Route path="/store-members" element={<GetStoreMembers />} />
 
                     <Route path="/stores" element={<GetStores />} />
 
