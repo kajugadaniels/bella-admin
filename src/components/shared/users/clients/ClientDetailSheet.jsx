@@ -1,23 +1,9 @@
 import React, { useEffect, useMemo, useState, useCallback } from "react";
-import {
-    ClipboardCopy,
-    Copy,
-    ExternalLink,
-    Mail,
-    Phone,
-    Shield,
-    UserCircle2,
-} from "lucide-react";
+import { ClipboardCopy, Copy, ExternalLink, Mail, Phone, Shield, UserCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { superadmin } from "@/api";
 
-import {
-    Sheet,
-    SheetContent,
-    SheetDescription,
-    SheetHeader,
-    SheetTitle,
-} from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -55,7 +41,6 @@ const InfoRow = ({ icon: Icon, label, value, href, copyable }) => {
             {value ?? "—"}
         </div>
     );
-
     const copy = async () => {
         try {
             await navigator.clipboard.writeText(String(value ?? ""));
@@ -64,22 +49,14 @@ const InfoRow = ({ icon: Icon, label, value, href, copyable }) => {
             toast.error("Could not copy");
         }
     };
-
     return (
         <div className="flex items-center gap-3 rounded-xl px-3 py-2 transition-colors hover:bg-black/[0.03] dark:hover:bg-white/5">
             <div className="h-8 w-8 grid place-items-center rounded-lg border border-neutral-200/80 bg-white/70 text-neutral-600 backdrop-blur-sm dark:border-neutral-800 dark:bg-neutral-900/60 dark:text-neutral-300">
                 <Icon className="h-4 w-4" />
             </div>
-            <div className="w-28 shrink-0 text-xs font-medium uppercase tracking-wide text-neutral-500">
-                {label}
-            </div>
+            <div className="w-28 shrink-0 text-xs font-medium uppercase tracking-wide text-neutral-500">{label}</div>
             {href ? (
-                <a
-                    href={href}
-                    target={href.startsWith("http") ? "_blank" : undefined}
-                    rel="noreferrer"
-                    className="flex-1 min-w-0"
-                >
+                <a href={href} target={href.startsWith("http") ? "_blank" : undefined} rel="noreferrer" className="flex-1 min-w-0">
                     <div className="group flex items-center gap-2">
                         {content}
                         <ExternalLink className="h-3.5 w-3.5 opacity-60 group-hover:opacity-100" />
@@ -89,12 +66,7 @@ const InfoRow = ({ icon: Icon, label, value, href, copyable }) => {
                 content
             )}
             {copyable && value ? (
-                <Button
-                    size="icon"
-                    variant="ghost"
-                    onClick={copy}
-                    className="h-8 w-8 text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-100"
-                >
+                <Button size="icon" variant="ghost" onClick={copy} className="h-8 w-8 text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-100">
                     <Copy className="h-4 w-4" />
                 </Button>
             ) : null}
@@ -124,7 +96,7 @@ export default function ClientDetailSheet({ clientId, open, onOpenChange, onDele
         setLoading(true);
         try {
             const res = await superadmin.getClient(clientId); // server auto-detects status
-            const data = res?.data?.data || res?.data;
+            const data = res?.data?.data || res?.data; // tolerate both
             setPayload(data || null);
         } catch (err) {
             const msg =
@@ -150,17 +122,18 @@ export default function ClientDetailSheet({ clientId, open, onOpenChange, onDele
         };
     }, [open, clientId, fetchClient]);
 
-    // tolerate both shapes: { user, status } OR the user directly
+    // Preferred shape from Postman
     const n = payload || {};
-    const user = n.user || n;
+    const id = n.client_id || n.id || clientId;
+    const user = n.user || {};
+    const title = user.email || user.username || "Client";
 
     const avatar = useMemo(() => {
-        const text = user?.email || user?.username || "Client";
-        if (user?.image_url || user?.image) {
+        if (user?.image_url) {
             return (
                 <img
-                    src={user.image_url || user.image}
-                    alt={text}
+                    src={user.image_url}
+                    alt={title}
                     className="h-14 w-14 rounded-xl object-cover ring-1 ring-black/5 dark:ring-white/10"
                 />
             );
@@ -170,21 +143,19 @@ export default function ClientDetailSheet({ clientId, open, onOpenChange, onDele
                 className="grid h-14 w-14 place-items-center rounded-xl text-sm font-semibold text-white ring-1 ring-black/5 dark:ring-white/10"
                 style={{ background: "linear-gradient(135deg, var(--primary-color), #059669)" }}
             >
-                {initials(text)}
+                {initials(title)}
             </div>
         );
-    }, [user]);
+    }, [user, title]);
 
     const copyId = async () => {
         try {
-            await navigator.clipboard.writeText(String(user?.id || n?.id || clientId || ""));
+            await navigator.clipboard.writeText(String(id || ""));
+            toast.success("Client ID copied");
         } catch {
-            // no-op visual; keep silent here to avoid toast spam
+            toast.error("Could not copy ID");
         }
-        toast.success("Client ID copied");
     };
-
-    const canDelete = true; // backend enforces any further restrictions
 
     return (
         <Sheet open={open} onOpenChange={onOpenChange}>
@@ -199,10 +170,7 @@ export default function ClientDetailSheet({ clientId, open, onOpenChange, onDele
         "
             >
                 {/* Top banner */}
-                <div
-                    className="h-20 w-full"
-                    style={{ background: "linear-gradient(90deg, var(--primary-color), #059669)" }}
-                />
+                <div className="h-20 w-full" style={{ background: "linear-gradient(90deg, var(--primary-color), #059669)" }} />
                 {/* Header */}
                 <div className="-mt-10 px-5 sm:px-6">
                     <GlassCard className="p-4">
@@ -214,19 +182,12 @@ export default function ClientDetailSheet({ clientId, open, onOpenChange, onDele
                                 <div className="flex flex-wrap items-center gap-3">
                                     {avatar}
                                     <div className="min-w-0 flex-1">
-                                        <div className="truncate text-xl font-semibold">
-                                            {user?.email || user?.username || "Client details"}
-                                        </div>
-                                        <SheetDescription className="truncate text-xs">
-                                            {user?.id || n?.id || clientId || ""}
-                                        </SheetDescription>
+                                        <div className="truncate text-xl font-semibold">{title}</div>
+                                        <SheetDescription className="truncate text-xs">{id || ""}</SheetDescription>
                                     </div>
 
                                     <div className="flex flex-wrap items-center gap-2">
-                                        <Badge
-                                            variant={(n?.status || "active") === "pending" ? "secondary" : "default"}
-                                            className="glass-badge"
-                                        >
+                                        <Badge variant={(n?.status || "active") === "pending" ? "secondary" : "default"} className="glass-badge">
                                             {n?.status || "active"}
                                         </Badge>
 
@@ -254,9 +215,8 @@ export default function ClientDetailSheet({ clientId, open, onOpenChange, onDele
 
                                         <Button
                                             variant="destructive"
-                                            className="glass-button px-6 py-4 rounded-4xl"
+                                            className="glass-cta-danger px-6 py-4 rounded-4xl"
                                             onClick={() => setConfirmDelete(true)}
-                                            disabled={!canDelete}
                                         >
                                             Delete
                                         </Button>
@@ -276,7 +236,7 @@ export default function ClientDetailSheet({ clientId, open, onOpenChange, onDele
                             <Skeleton className="h-28 w-full rounded-xl" />
                             <Skeleton className="h-28 w-full rounded-xl" />
                         </div>
-                    ) : !user?.id && !n?.id ? (
+                    ) : !id ? (
                         <div className="text-sm text-neutral-500">Client not found.</div>
                     ) : (
                         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -287,26 +247,9 @@ export default function ClientDetailSheet({ clientId, open, onOpenChange, onDele
                                     Profile & Contact
                                 </div>
                                 <div className="mt-2 space-y-1">
-                                    <InfoRow
-                                        icon={Mail}
-                                        label="Email"
-                                        value={user?.email}
-                                        href={user?.email ? `mailto:${user.email}` : undefined}
-                                        copyable
-                                    />
-                                    <InfoRow
-                                        icon={UserCircle2}
-                                        label="Username"
-                                        value={user?.username}
-                                        copyable
-                                    />
-                                    <InfoRow
-                                        icon={Phone}
-                                        label="Phone"
-                                        value={user?.phone_number}
-                                        href={user?.phone_number ? `tel:${user.phone_number}` : undefined}
-                                        copyable
-                                    />
+                                    <InfoRow icon={Mail} label="Email" value={user?.email} href={user?.email ? `mailto:${user.email}` : undefined} copyable />
+                                    <InfoRow icon={UserCircle2} label="Username" value={user?.username} copyable />
+                                    <InfoRow icon={Phone} label="Phone" value={user?.phone_number} href={user?.phone_number ? `tel:${user.phone_number}` : undefined} copyable />
                                 </div>
                             </GlassCard>
 
@@ -317,7 +260,7 @@ export default function ClientDetailSheet({ clientId, open, onOpenChange, onDele
                                     Status & Meta
                                 </div>
                                 <div className="mt-2 space-y-1">
-                                    <InfoRow icon={Shield} label="Role" value={user?.role || "CLIENT"} copyable />
+                                    <InfoRow icon={Shield} label="Role" value={user?.role || n?.role || "CLIENT"} copyable />
                                     <InfoRow icon={Shield} label="Status" value={n?.status || "active"} />
                                     <InfoRow
                                         icon={Shield}
@@ -330,13 +273,6 @@ export default function ClientDetailSheet({ clientId, open, onOpenChange, onDele
                                                     : "—"
                                         }
                                     />
-                                    {user?.last_login && (
-                                        <InfoRow
-                                            icon={Shield}
-                                            label="Last login"
-                                            value={new Date(user.last_login).toLocaleString()}
-                                        />
-                                    )}
                                 </div>
                             </GlassCard>
                         </div>
