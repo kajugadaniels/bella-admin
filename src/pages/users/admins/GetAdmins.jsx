@@ -1,9 +1,12 @@
-import React from 'react'
+import AdminList from "@/components/shared/users/admins/AdminList";
+import React from "react";
 
 const GetAdmins = () => {
     return (
-        <div>GetAdmins</div>
-    )
-}
+        <div className="space-y-5">
+            <AdminList />
+        </div>
+    );
+};
 
-export default GetAdmins
+export default GetAdmins;
