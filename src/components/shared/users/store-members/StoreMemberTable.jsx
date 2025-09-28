@@ -20,6 +20,12 @@ function initials(text = "") {
     return (a + b).toUpperCase();
 }
 
+function renderPerms(perms = []) {
+    if (!Array.isArray(perms) || perms.length === 0) return "—";
+    if (perms.length <= 2) return perms.join(", ");
+    return `${perms.slice(0, 2).join(", ")} +${perms.length - 2}`;
+}
+
 const MemberCard = ({ r, onView, onDelete }) => {
     const u = r?.user || {};
     const s = r?.store || {};
@@ -55,7 +61,7 @@ const MemberCard = ({ r, onView, onDelete }) => {
                             {roleBadge}
                         </Badge>
                     </div>
-                    <div className="truncate text-xs text-neutral-500">{r?.id || r?.membership_id}</div>
+                    <div className="truncate text-xs text-neutral-500">{r?.id}</div>
 
                     <div className="mt-2 grid gap-1">
                         <div className="text-sm">{u?.email || "—"}</div>
@@ -63,6 +69,9 @@ const MemberCard = ({ r, onView, onDelete }) => {
                         <div className="text-sm inline-flex items-center gap-2">
                             <Store className="h-3.5 w-3.5 opacity-70" />
                             <span className="truncate">{s?.name || "—"}</span>
+                        </div>
+                        <div className="text-xs text-neutral-500">
+                            Permissions: {renderPerms(r?.permissions)}
                         </div>
                     </div>
 
@@ -106,7 +115,7 @@ export default function StoreMemberTable({ rows = [], loading = false, onView, o
                 )}
                 {!loading &&
                     rows?.map((r) => (
-                        <div key={r.id || r.membership_id} className="mb-3">
+                        <div key={r.id} className="mb-3">
                             <MemberCard r={r} onView={onView} onDelete={onDelete} />
                         </div>
                     ))}
@@ -121,6 +130,7 @@ export default function StoreMemberTable({ rows = [], loading = false, onView, o
                             <TableHead>Store</TableHead>
                             <TableHead className="text-right">Role</TableHead>
                             <TableHead className="text-right">Status</TableHead>
+                            <TableHead className="text-right">Perms</TableHead>
                             <TableHead className="text-right">Created</TableHead>
                             <TableHead className="w-12" />
                         </TableRow>
@@ -128,14 +138,14 @@ export default function StoreMemberTable({ rows = [], loading = false, onView, o
                     <TableBody>
                         {loading && (
                             <TableRow className="border-0">
-                                <TableCell colSpan={6} className="py-10 text-center text-sm text-neutral-500">
+                                <TableCell colSpan={7} className="py-10 text-center text-sm text-neutral-500">
                                     Loading members…
                                 </TableCell>
                             </TableRow>
                         )}
                         {empty && (
                             <TableRow className="border-0">
-                                <TableCell colSpan={6} className="py-10 text-center text-sm text-neutral-500">
+                                <TableCell colSpan={7} className="py-10 text-center text-sm text-neutral-500">
                                     No store members found.
                                 </TableCell>
                             </TableRow>
@@ -148,7 +158,7 @@ export default function StoreMemberTable({ rows = [], loading = false, onView, o
                                 const inits = initials(title);
                                 return (
                                     <TableRow
-                                        key={r.id || r.membership_id}
+                                        key={r.id}
                                         className="row-soft last:border-0 hover:bg-black/[0.025] dark:hover:bg-white/5 transition-colors"
                                     >
                                         <TableCell>
@@ -170,7 +180,7 @@ export default function StoreMemberTable({ rows = [], loading = false, onView, o
                                                 )}
                                                 <div className="min-w-0">
                                                     <div className="truncate text-sm font-medium">{title}</div>
-                                                    <div className="truncate text-xs text-neutral-500">{r.id || r.membership_id}</div>
+                                                    <div className="truncate text-xs text-neutral-500">{r.id}</div>
                                                 </div>
                                             </div>
                                         </TableCell>
@@ -190,6 +200,12 @@ export default function StoreMemberTable({ rows = [], loading = false, onView, o
                                             <Badge variant={r?.status === "pending" ? "secondary" : "default"} className="glass-badge">
                                                 {r?.status || "active"}
                                             </Badge>
+                                        </TableCell>
+
+                                        <TableCell className="text-right">
+                                            <span className="text-xs text-neutral-600 dark:text-neutral-300">
+                                                {renderPerms(r?.permissions)}
+                                            </span>
                                         </TableCell>
 
                                         <TableCell className="text-right">
