@@ -31,14 +31,9 @@ export default function StoreMemberDeleteDialog({ member, open, onOpenChange, on
     const email = member?.user?.email || member?.user_email || "this member";
     const isAdmin = !!member?.is_admin;
 
-    const canDelete = useMemo(() => {
-        // allow toggling extra checkbox only for admins
-        return true;
-    }, []);
+    const canDelete = useMemo(() => true, []);
 
-    const resetState = () => {
-        setAllowLastAdmin(false);
-    };
+    const resetState = () => setAllowLastAdmin(false);
 
     const remove = async () => {
         if (!id) return;
