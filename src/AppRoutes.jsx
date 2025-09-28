@@ -26,10 +26,10 @@ const AppRoutes = () => {
                     <Route path="/stockin" element={<GetStockIn />} />
 
                     <Route path="/stockout" element={<GetStockOut />} />
+
+                    <Route path='*' element={<NotFound />} />
                 </Route>
             </Route>
-
-            <Route path='*' element={<NotFound />} />
         </Routes>
     )
 }
