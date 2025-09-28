@@ -261,7 +261,7 @@ export default function AdminDetailSheet({ adminId, open, onOpenChange, onDelete
 
                                         <Button
                                             variant="destructive"
-                                            className="glass-button px-6 py-4 rounded-4xl"
+                                            className="glass-cta-danger px-6 py-4 rounded-4xl"
                                             onClick={() => setConfirmDelete(true)}
                                             disabled={!canDelete}
                                             title={canDelete ? "Delete admin" : "Cannot delete superuser"}
