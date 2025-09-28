@@ -1,9 +1,8 @@
-import React from 'react'
+import React from "react";
+import StoreMemberList from "@/components/shared/users/store-members/StoreMemberList";
 
 const GetStoreMembers = () => {
-    return (
-        <div>GetStoreMembers</div>
-    )
-}
+    return <StoreMemberList />;
+};
 
-export default GetStoreMembers
+export default GetStoreMembers;
