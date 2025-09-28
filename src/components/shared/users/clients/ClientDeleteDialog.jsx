@@ -1,0 +1,260 @@
+import React, { useMemo, useState } from "react";
+import { toast } from "sonner";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { superadmin } from "@/api";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Separator } from "@/components/ui/separator";
+import { ShieldAlert, User as UserIcon } from "lucide-react";
+
+function extractToastError(err, fallback = "Failed to delete client") {
+    try {
+        return err?.response?.data?.message || err?.message || fallback;
+    } catch {
+        return fallback;
+    }
+}
+
+const InfoPill = ({ label, value }) => (
+    <div className="inline-flex items-center gap-1 rounded-full border border-neutral-200 bg-white/80 px-2.5 py-1 text-xs font-medium text-neutral-700 dark:border-neutral-800 dark:bg-neutral-900/60 dark:text-neutral-200">
+        <span className="opacity-70">{label}:</span>
+        <span>{value ?? "—"}</span>
+    </div>
+);
+
+export default function ClientDeleteDialog({ client, open, onOpenChange, onDone }) {
+    const [submitting, setSubmitting] = useState(false);
+
+    const id = client?.id || client?.user_id || client?.client_id;
+    const email = client?.email || client?.user?.email || "";
+    const username = client?.username || client?.user?.username || "";
+    const role = client?.role || client?.user?.role || "CLIENT";
+
+    const [reason, setReason] = useState("left");
+    const [otherReason, setOtherReason] = useState("");
+    const [ack, setAck] = useState(false);
+    const [confirmText, setConfirmText] = useState("");
+
+    const matchText = (email || username || "").trim();
+    const isMatch = confirmText.trim() === matchText && !!matchText;
+
+    const canDelete = useMemo(() => {
+        if (!ack) return false;
+        if (!isMatch) return false;
+        if (reason === "other" && !otherReason.trim()) return false;
+        return true;
+    }, [ack, isMatch, reason, otherReason]);
+
+    const resetState = () => {
+        setReason("left");
+        setOtherReason("");
+        setAck(false);
+        setConfirmText("");
+    };
+
+    const remove = async () => {
+        if (!id) return;
+        setSubmitting(true);
+        try {
+            await superadmin.deleteClient(id);
+            toast.success("Client deleted.");
+            onDone?.();
+            resetState();
+        } catch (err) {
+            toast.error(extractToastError(err));
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    const titleName = email || username || "this client";
+
+    return (
+        <AlertDialog
+            open={open}
+            onOpenChange={(o) => {
+                if (!o) resetState();
+                onOpenChange?.(o);
+            }}
+        >
+            <AlertDialogContent
+                className="
+          fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2
+          w-[92vw] max-w-[600px]
+          bg-white/90 dark:bg-neutral-900/85
+          backdrop-blur-xl
+          border border-neutral-200/70 dark:border-neutral-800
+          shadow-2xl rounded-2xl p-0
+          focus:outline-none
+        "
+            >
+                <div className="p-6">
+                    <AlertDialogHeader className="space-y-3">
+                        <div
+                            className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl"
+                            style={{
+                                background: "color-mix(in oklab, var(--primary-color) 12%, white)",
+                                color: "var(--primary-color)",
+                                boxShadow: "0 8px 24px rgba(31,79,61,0.10)",
+                            }}
+                        >
+                            <ShieldAlert className="h-6 w-6" />
+                        </div>
+                        <AlertDialogTitle className="text-center text-[18px] font-semibold tracking-tight">
+                            Delete client?
+                        </AlertDialogTitle>
+                        <AlertDialogDescription className="mx-auto max-w-[48ch] text-center text-sm text-neutral-600 dark:text-neutral-300">
+                            This action is permanent and may remove related client data according to backend policy.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+
+                    <div className="mt-6 rounded-xl border border-neutral-200 bg-white/80 p-4 shadow-sm dark:border-neutral-800 dark:bg-neutral-900/60">
+                        <div className="flex items-start gap-3">
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-neutral-100 dark:bg-neutral-800">
+                                <UserIcon className="h-5 w-5 text-neutral-600 dark:text-neutral-300" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                                <div className="truncate text-[15px] font-semibold text-neutral-900 dark:text-neutral-100">
+                                    {titleName}
+                                </div>
+                                <div className="truncate text-xs text-neutral-500">{id}</div>
+                                <div className="mt-3 flex flex-wrap gap-2">
+                                    <InfoPill label="Role" value={role} />
+                                    <InfoPill label="Status" value={client?.status || "active"} />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <Separator className="my-6" />
+
+                    <div className="space-y-3">
+                        <Label className="text-sm font-medium">Why are you deleting this client?</Label>
+                        <RadioGroup value={reason} onValueChange={setReason} className="grid gap-2">
+                            {[
+                                { id: "left", label: "Left company / no longer needed" },
+                                { id: "mistake", label: "Created by mistake" },
+                                { id: "duplicate", label: "Duplicate record" },
+                                { id: "other", label: "Other" },
+                            ].map((opt) => (
+                                <label
+                                    key={opt.id}
+                                    htmlFor={`reason-${opt.id}`}
+                                    className="group flex cursor-pointer items-center justify-between gap-3 rounded-lg border border-neutral-200 bg-white/85 px-3 py-2.5 text-sm transition hover:border-[var(--primary-color)]/40 hover:bg-white dark:border-neutral-800 dark:bg-neutral-900/60 dark:hover:bg-neutral-900"
+                                >
+                                    <div className="flex items-center gap-2">
+                                        <RadioGroupItem id={`reason-${opt.id}`} value={opt.id} />
+                                        <span>{opt.label}</span>
+                                    </div>
+                                </label>
+                            ))}
+                        </RadioGroup>
+
+                        {reason === "other" && (
+                            <div className="grid gap-1.5">
+                                <Label htmlFor="other-reason" className="text-xs text-neutral-600 dark:text-neutral-300">
+                                    Please describe (required)
+                                </Label>
+                                <Input
+                                    id="other-reason"
+                                    placeholder="Brief reason…"
+                                    value={otherReason}
+                                    onChange={(e) => setOtherReason(e.target.value)}
+                                />
+                            </div>
+                        )}
+                    </div>
+
+                    <div
+                        className="mt-6 space-y-3 rounded-xl border p-4"
+                        style={{
+                            background: "color-mix(in oklab, var(--primary-color) 5%, white)",
+                            borderColor: "color-mix(in oklab, var(--primary-color) 25%, white)",
+                        }}
+                    >
+                        <div className="flex items-start gap-2">
+                            <Checkbox
+                                id="ack"
+                                checked={ack}
+                                onCheckedChange={(v) => setAck(Boolean(v))}
+                                className="mt-0.5"
+                            />
+                            <Label htmlFor="ack" className="text-sm leading-relaxed text-neutral-800 dark:text-neutral-200">
+                                I understand this operation is <span className="font-semibold">irreversible</span> and related data
+                                may be removed per backend policy.
+                            </Label>
+                        </div>
+
+                        <div className="grid gap-1.5">
+                            <Label htmlFor="confirm" className="text-xs text-neutral-600 dark:text-neutral-300">
+                                Type the client’s identifier exactly to confirm:
+                                <span className="ml-1 rounded bg-neutral-100 px-1.5 py-0.5 text-[11px] font-semibold text-neutral-700 dark:bg-neutral-800 dark:text-neutral-200">
+                                    {matchText || "—"}
+                                </span>
+                            </Label>
+                            <Input
+                                id="confirm"
+                                placeholder="Type the email/username to enable Delete"
+                                value={confirmText}
+                                onChange={(e) => setConfirmText(e.target.value)}
+                                className={
+                                    "transition " +
+                                    (confirmText
+                                        ? isMatch
+                                            ? "border-green-500/60 focus-visible:ring-0"
+                                            : "border-red-500/60 focus-visible:ring-0"
+                                        : "")
+                                }
+                            />
+                            <p
+                                className={
+                                    "text-xs " +
+                                    (confirmText
+                                        ? isMatch
+                                            ? "text-green-600"
+                                            : "text-red-600"
+                                        : "text-neutral-500")
+                                }
+                            >
+                                {confirmText
+                                    ? isMatch
+                                        ? "Identifier matches."
+                                        : "Identifier must match exactly."
+                                    : "Enter the exact identifier."}
+                            </p>
+                        </div>
+                    </div>
+
+                    <AlertDialogFooter className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                        <AlertDialogCancel disabled={submitting} className="cursor-pointer px-6 py-4 rounded-4xl">
+                            Cancel
+                        </AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={remove}
+                            disabled={!canDelete || submitting}
+                            className="px-6 py-4 rounded-4xl glass-cta-danger disabled:opacity-60 text-white cursor-pointer"
+                            style={{ boxShadow: "0 10px 24px rgba(220, 38, 38, 0.22)" }}
+                        >
+                            {submitting ? "Deleting…" : `Delete "${titleName}"`}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+
+                    <p className="mt-3 text-center text-[11px] text-neutral-500">
+                        Not sure? You can close and review details again.
+                    </p>
+                </div>
+            </AlertDialogContent>
+        </AlertDialog>
+    );
+}
