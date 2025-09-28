@@ -1,190 +1,237 @@
 import React from "react";
-import { Button } from "@/components/ui/button";
+import { Eye, MoreHorizontal, Trash2, Shield, UserCircle2 } from "lucide-react";
+import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Card } from "@/components/ui/card";
-import { MoreHorizontal, Eye, Trash2, Shield, UserCircle2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
-function getInitials(nameOrEmail) {
-    const s = String(nameOrEmail || "").trim();
+function initials(name = "") {
+    const s = (name || "").trim();
     if (!s) return "A";
     if (s.includes("@")) return s.slice(0, 1).toUpperCase();
     const parts = s.split(/\s+/);
-    return (parts[0]?.[0] || "A").toUpperCase() + (parts[1]?.[0] || "");
+    return ((parts[0]?.[0] || "A") + (parts[1]?.[0] || s[1] || "")).toUpperCase();
 }
 
-function AdminAvatar({ image, label }) {
-    if (image) {
-        return (
-            <img
-                src={image}
-                alt={label || "Admin"}
-                className="h-9 w-9 rounded-full object-cover ring-1 ring-black/5 dark:ring-white/10"
-            />
-        );
-    }
+function normalize(row) {
+    const id = row?.id || row?.user_id || row?.admin_id;
+    const email = row?.email || row?.user?.email || "";
+    const username = row?.username || row?.user?.username || "";
+    const phone = row?.phone_number || row?.user?.phone_number || "";
+    const created_at = row?.created_at || row?.user?.created_at;
+    const status = row?.status || "active";
+    const role = row?.role || row?.user?.role || "ADMIN";
+    const image = row?.image || row?.user?.image_url || row?.user?.image;
+    const is_superuser = !!(row?.is_superuser ?? row?.user?.is_superuser);
+    return { id, email, username, phone, created_at, status, role, image, is_superuser };
+}
+
+const AdminCard = ({ r, onView, onDelete }) => {
+    const inits = initials(r.email || r.username);
     return (
-        <div className="h-9 w-9 rounded-full bg-muted flex items-center justify-center ring-1 ring-black/5 dark:ring-white/10">
-            <span className="text-xs font-semibold">{getInitials(label)}</span>
+        <div className="rounded-2xl border border-black/5 bg-white/70 p-3 backdrop-blur dark:border-white/10 dark:bg-neutral-900/50">
+            <div className="flex items-start gap-3">
+                {r.image ? (
+                    <img
+                        src={r.image}
+                        alt={r.email || r.username}
+                        className="h-10 w-10 shrink-0 rounded-lg object-cover ring-1 ring-black/5 dark:ring-white/10"
+                    />
+                ) : (
+                    <div
+                        className="h-8 w-8 shrink-0 rounded-full grid place-items-center text-[12px] font-semibold text-white ring-1 ring-black/5 dark:ring-white/10"
+                        style={{ background: "linear-gradient(135deg, var(--primary-color), #059669)" }}
+                    >
+                        {inits}
+                    </div>
+                )}
+                <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                        <div className="truncate text-sm font-semibold">{r.email || "—"}</div>
+                        <Badge variant={r.status === "pending" ? "secondary" : "default"} className="glass-badge">
+                            {r.status}
+                        </Badge>
+                    </div>
+                    <div className="truncate text-xs text-neutral-500">{r.id}</div>
+
+                    <div className="mt-2 grid gap-1">
+                        <div className="text-sm">{r.username || "—"}</div>
+                        <div className="text-xs text-neutral-500">{r.phone || "—"}</div>
+                        <div className="text-xs text-neutral-500 uppercase flex items-center gap-1">
+                            {r.is_superuser ? <Shield className="h-3.5 w-3.5 text-emerald-600" /> : <UserCircle2 className="h-3.5 w-3.5 opacity-60" />}
+                            {r.role || "ADMIN"}
+                        </div>
+                    </div>
+
+                    <div className="mt-3 flex flex-wrap items-center gap-2">
+                        <Button variant="outline" size="sm" onClick={() => onView?.(r.id)} className="glass-button px-6 py-4 rounded-4xl">
+                            <Eye className="mr-2 h-4 w-4" />
+                            View
+                        </Button>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => onDelete?.(r)}
+                            className="glass-cta-danger px-6 py-4 rounded-4xl hover:bg-red-50 dark:hover:bg-red-950/20"
+                            disabled={r.is_superuser}
+                            title={r.is_superuser ? "Cannot delete superuser" : "Delete admin"}
+                        >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Delete
+                        </Button>
+                    </div>
+                </div>
+            </div>
         </div>
     );
-}
+};
 
-function normalizeRow(row) {
-    // Supports both active & pending shapes defensively
-    return {
-        id: row?.id || row?.user_id || row?.admin_id || null,
-        email: row?.email || row?.user?.email || "",
-        username: row?.username || row?.user?.username || "",
-        phone: row?.phone_number || row?.user?.phone_number || "",
-        status: row?.status || "active",
-        role: row?.role || row?.user?.role || "ADMIN",
-        created_at: row?.created_at,
-        image: row?.image || row?.user?.image_url || row?.user?.image || null,
-        is_superuser: !!(row?.is_superuser ?? row?.user?.is_superuser),
-    };
-}
-
-export default function AdminTable({ rows = [], loading, onView, onDelete, pagination }) {
-    const items = Array.isArray(rows) ? rows.map(normalizeRow) : [];
+const AdminTable = ({ rows = [], loading = false, onDelete, onView }) => {
+    const items = Array.isArray(rows) ? rows.map(normalize) : [];
+    const empty = !loading && items.length === 0;
 
     return (
-        <div className="space-y-3">
-            {/* Desktop table */}
-            <div className="hidden lg:block rounded-3xl overflow-hidden ring-1 ring-black/5 dark:ring-white/10 bg-background/50 backdrop-blur">
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead className="w-[56px]"></TableHead>
-                            <TableHead>Email</TableHead>
-                            <TableHead>Username</TableHead>
-                            <TableHead>Phone</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead>Role</TableHead>
-                            <TableHead className="text-right">Actions</TableHead>
+        <>
+            {/* Mobile: Card list */}
+            <div className="md:hidden">
+                {loading && (
+                    <div className="rounded-xl border border-black/5 bg-white/70 p-4 text-center text-sm text-neutral-500 dark:border-white/10 dark:bg-neutral-900/50">
+                        Loading admins…
+                    </div>
+                )}
+                {empty && (
+                    <div className="rounded-xl border border-black/5 bg-white/70 p-4 text-center text-sm text-neutral-500 dark:border-white/10 dark:bg-neutral-900/50">
+                        No admins found.
+                    </div>
+                )}
+                {!loading &&
+                    items.map((r) => (
+                        <div key={r.id} className="mb-3">
+                            <AdminCard r={r} onView={onView} onDelete={onDelete} />
+                        </div>
+                    ))}
+            </div>
+
+            {/* Desktop: Table */}
+            <div className="hidden md:block overflow-x-auto rounded-xl ring-1 ring-black/5 dark:ring-white/10">
+                <Table className="table-glassy">
+                    <TableHeader className="sticky top-0 z-10 bg-white/70 backdrop-blur supports-[backdrop-filter]:bg-white/50 dark:bg-neutral-900/50">
+                        <TableRow className="border-0">
+                            <TableHead className="min-w-[280px]">Admin</TableHead>
+                            <TableHead>Contact</TableHead>
+                            <TableHead>Role / Status</TableHead>
+                            <TableHead className="text-right">Created</TableHead>
+                            <TableHead className="w-12" />
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {loading ? (
-                            <TableRow>
-                                <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
-                                    Loading…
+                        {loading && (
+                            <TableRow className="border-0">
+                                <TableCell colSpan={5} className="py-10 text-center text-sm text-neutral-500">
+                                    Loading admins…
                                 </TableCell>
                             </TableRow>
-                        ) : items.length === 0 ? (
-                            <TableRow>
-                                <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
-                                    No admins found
+                        )}
+                        {empty && (
+                            <TableRow className="border-0">
+                                <TableCell colSpan={5} className="py-10 text-center text-sm text-neutral-500">
+                                    No admins found.
                                 </TableCell>
                             </TableRow>
-                        ) : (
-                            items.map((row) => (
-                                <TableRow key={row.id}>
+                        )}
+                        {!loading &&
+                            items.map((r) => (
+                                <TableRow
+                                    key={r.id}
+                                    className="row-soft last:border-0 hover:bg-black/[0.025] dark:hover:bg-white/5 transition-colors"
+                                >
                                     <TableCell>
-                                        <AdminAvatar image={row.image} label={row.email || row.username} />
-                                    </TableCell>
-                                    <TableCell className="font-medium">{row.email}</TableCell>
-                                    <TableCell>{row.username}</TableCell>
-                                    <TableCell>{row.phone}</TableCell>
-                                    <TableCell>
-                                        <Badge variant={row.status === "pending" ? "secondary" : "default"}>
-                                            {row.status}
-                                        </Badge>
-                                    </TableCell>
-                                    <TableCell className="flex items-center gap-1">
-                                        {row.is_superuser ? <Shield className="h-4 w-4 text-emerald-600" /> : <UserCircle2 className="h-4 w-4 text-muted-foreground" />}
-                                        <span className="uppercase text-xs tracking-wide">{row.role}</span>
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                        <div className="inline-flex gap-2">
-                                            <Button size="sm" variant="outline" className="glass-button" onClick={() => onView(row)}>
-                                                <Eye className="h-4 w-4" />
-                                                <span className="ml-2">View</span>
-                                            </Button>
-                                            <Button
-                                                size="sm"
-                                                variant="destructive"
-                                                className="glass-button"
-                                                onClick={() => onDelete(row)}
-                                                disabled={row.is_superuser}
-                                                title={row.is_superuser ? "Cannot delete superuser" : "Delete admin"}
-                                            >
-                                                <Trash2 className="h-4 w-4" />
-                                                <span className="ml-2">Delete</span>
-                                            </Button>
+                                        <div className="flex items-center gap-3">
+                                            {r.image ? (
+                                                <img
+                                                    src={r.image}
+                                                    alt={r.email || r.username}
+                                                    className="h-9 w-9 shrink-0 rounded-lg object-cover ring-1 ring-black/5 dark:ring-white/10"
+                                                />
+                                            ) : (
+                                                <div
+                                                    className="h-7 w-7 shrink-0 rounded-full grid place-items-center text-[12px] font-semibold text-white bg-gradient-to-br from-[var(--primary-color)] to-emerald-600 ring-1 ring-black/5 dark:ring-white/10"
+                                                    aria-hidden
+                                                    title={r.email || r.username}
+                                                >
+                                                    {initials(r.email || r.username)}
+                                                </div>
+                                            )}
+                                            <div className="min-w-0">
+                                                <div className="truncate text-sm font-medium">{r.email || "—"}</div>
+                                                <div className="truncate text-xs text-neutral-500">{r.id}</div>
+                                            </div>
                                         </div>
                                     </TableCell>
+
+                                    <TableCell>
+                                        <div className="text-sm">{r.username || "—"}</div>
+                                        <div className="text-xs text-neutral-500">{r.phone || "—"}</div>
+                                    </TableCell>
+
+                                    <TableCell>
+                                        <div className="flex items-center gap-2">
+                                            {r.is_superuser ? (
+                                                <Shield className="h-4 w-4 text-emerald-600" />
+                                            ) : (
+                                                <UserCircle2 className="h-4 w-4 text-neutral-400" />
+                                            )}
+                                            <span className="text-xs uppercase tracking-wide">{r.role}</span>
+                                            <Badge variant={r.status === "pending" ? "secondary" : "default"} className="glass-badge">
+                                                {r.status}
+                                            </Badge>
+                                        </div>
+                                    </TableCell>
+
+                                    <TableCell className="text-right">
+                                        <div className="text-sm">
+                                            {r.created_at ? new Date(r.created_at).toISOString().slice(0, 10) : "—"}
+                                        </div>
+                                        <div className="text-xs text-neutral-500">
+                                            {r.created_at ? new Date(r.created_at).toISOString().slice(11, 16) : ""}
+                                        </div>
+                                    </TableCell>
+
+                                    <TableCell className="text-right">
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <Button variant="ghost" size="icon" className="h-8 w-8 cursor-pointer">
+                                                    <MoreHorizontal className="h-4 w-4" />
+                                                </Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="end" className="glass-menu">
+                                                <DropdownMenuItem className="cursor-pointer" onClick={() => onView?.(r.id)}>
+                                                    <Eye className="mr-2 h-4 w-4" />
+                                                    View details
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem
+                                                    className="cursor-pointer text-red-600 focus:text-red-700"
+                                                    onClick={() => onDelete?.(r)}
+                                                    disabled={r.is_superuser}
+                                                >
+                                                    <Trash2 className="mr-2 h-4 w-4" />
+                                                    Delete
+                                                </DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                    </TableCell>
                                 </TableRow>
-                            ))
-                        )}
+                            ))}
                     </TableBody>
                 </Table>
             </div>
-
-            {/* Mobile cards */}
-            <div className="grid gap-3 lg:hidden">
-                {loading ? (
-                    <Card className="p-4 text-sm text-muted-foreground">Loading…</Card>
-                ) : items.length === 0 ? (
-                    <Card className="p-4 text-sm text-muted-foreground">No admins found</Card>
-                ) : (
-                    items.map((row) => (
-                        <Card key={row.id} className="p-4 glass-card ring-1 ring-black/5 dark:ring-white/10">
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-3">
-                                    <AdminAvatar image={row.image} label={row.email || row.username} />
-                                    <div>
-                                        <div className="font-medium">{row.email}</div>
-                                        <div className="text-xs text-muted-foreground">{row.username}</div>
-                                    </div>
-                                </div>
-                                <Badge>{row.status}</Badge>
-                            </div>
-                            <div className="mt-3 flex items-center justify-between">
-                                <div className="text-xs text-muted-foreground">{row.phone || "—"}</div>
-                                <div className="inline-flex gap-2">
-                                    <Button size="sm" variant="outline" onClick={() => onView(row)} className="glass-button">
-                                        <MoreHorizontal className="h-4 w-4" />
-                                    </Button>
-                                    <Button
-                                        size="sm"
-                                        variant="destructive"
-                                        onClick={() => onDelete(row)}
-                                        className="glass-button"
-                                        disabled={row.is_superuser}
-                                        title={row.is_superuser ? "Cannot delete superuser" : "Delete admin"}
-                                    >
-                                        <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                </div>
-                            </div>
-                        </Card>
-                    ))
-                )}
-            </div>
-
-            {/* Paginator */}
-            <div className="flex items-center justify-end gap-2 pt-2">
-                <span className="text-xs text-muted-foreground">Total: {pagination?.count ?? 0}</span>
-                <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => pagination?.setPage?.((p) => Math.max(1, p - 1))}
-                    disabled={!pagination?.hasPrev}
-                    className="glass-button"
-                >
-                    Prev
-                </Button>
-                <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => pagination?.setPage?.((p) => p + 1)}
-                    disabled={!pagination?.hasNext}
-                    className="glass-button"
-                >
-                    Next
-                </Button>
-            </div>
-        </div>
+        </>
     );
-}
+};
+
+export default AdminTable;
