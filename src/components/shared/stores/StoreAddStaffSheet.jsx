@@ -19,7 +19,7 @@ import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { UserPlus, ShieldCheck } from "lucide-react";
+import { UserPlus, ShieldCheck, Mail } from "lucide-react";
 
 const PERMS = ["read", "write", "edit", "delete"];
 
@@ -30,21 +30,15 @@ const existingUserSchema = z.object({
     is_active: z.boolean().default(true),
 });
 
-const inviteSchema = z
-    .object({
-        email: z.string().email(),
-        username: z.string().min(3),
-        phone_number: z.string().optional().or(z.literal("")),
-        password: z.string().min(8),
-        confirm_password: z.string().min(8),
-        is_admin: z.boolean().default(false),
-        permissions: z.array(z.enum(PERMS)).optional().default([]),
-        is_active: z.boolean().default(true),
-    })
-    .refine((vals) => vals.password === vals.confirm_password, {
-        message: "Passwords do not match",
-        path: ["confirm_password"],
-    });
+// Invite flow: NO password fields now (backend generates & emails a 24h temp password)
+const inviteSchema = z.object({
+    email: z.string().email(),
+    username: z.string().min(3),
+    phone_number: z.string().optional().or(z.literal("")),
+    is_admin: z.boolean().default(false),
+    permissions: z.array(z.enum(PERMS)).optional().default([]),
+    is_active: z.boolean().default(true),
+});
 
 function PermissionPicker({ value = [], onChange, disabled }) {
     return (
@@ -107,8 +101,6 @@ export default function StoreAddStaffSheet({ store, open, onOpenChange, onDone }
             email: "",
             username: "",
             phone_number: "",
-            password: "",
-            confirm_password: "",
             is_admin: true,
             permissions: ["read", "write"],
             is_active: true,
@@ -125,7 +117,12 @@ export default function StoreAddStaffSheet({ store, open, onOpenChange, onDone }
         try {
             setSubmitting(true);
             const payload = tab === "existing" ? existingForm.getValues() : inviteForm.getValues();
-            const body = payload.is_admin ? { ...payload, permissions: [] } : payload;
+
+            // When admin, permissions are ignored server-side; send an empty list for clarity
+            const body =
+                payload.is_admin
+                    ? { ...payload, permissions: [] }
+                    : payload;
 
             const { message } = await superadmin.addStoreStaff(storeId, body);
             toast.success(message || "Staff added successfully.");
@@ -283,23 +280,6 @@ export default function StoreAddStaffSheet({ store, open, onOpenChange, onDone }
                                             <span className="text-sm">Active</span>
                                         </div>
                                     </div>
-
-                                    <div className="grid gap-1.5">
-                                        <Label>Password</Label>
-                                        <Input
-                                            type="password"
-                                            placeholder="At least 8 characters"
-                                            {...inviteForm.register("password")}
-                                        />
-                                    </div>
-                                    <div className="grid gap-1.5">
-                                        <Label>Confirm password</Label>
-                                        <Input
-                                            type="password"
-                                            placeholder="Repeat password"
-                                            {...inviteForm.register("confirm_password")}
-                                        />
-                                    </div>
                                 </div>
 
                                 {!inviteForm.watch("is_admin") && (
@@ -314,6 +294,16 @@ export default function StoreAddStaffSheet({ store, open, onOpenChange, onDone }
                                         />
                                     </div>
                                 )}
+
+                                {/* Info note about email + temp password */}
+                                <div className="mt-2 rounded-xl border border-emerald-200/60 bg-emerald-50 px-3 py-2 text-xs text-emerald-900 dark:border-emerald-900/30 dark:bg-emerald-900/20 dark:text-emerald-100">
+                                    <div className="flex items-center gap-2">
+                                        <Mail className="h-4 w-4" />
+                                        <span>
+                                            The invitee will receive an email with their temporary password. It’s valid for 24 hours.
+                                        </span>
+                                    </div>
+                                </div>
                             </Section>
                         </TabsContent>
                     </Tabs>
