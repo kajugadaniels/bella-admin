@@ -1,3 +1,4 @@
+// src/components/shared/orders/OrderList.jsx
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Badge } from '@/components/ui/badge';
@@ -8,7 +9,6 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { RefreshCw, Search } from 'lucide-react';
-
 import { superadmin } from '@/api';
 import OrderTable from './OrderTable';
 import OrderDetailSheet from './OrderDetailSheet';
@@ -24,9 +24,11 @@ function useDebounceLocal(value, delay = 500) {
 
 const PAGE_SIZE = 10;
 const DEFAULT_ORDERING = '-created_at';
+const ANY = '__any__'; // sentinel to represent "no filter"
 
+// Use sentinel values instead of empty string
 const statusOptions = [
-	{ value: '', label: 'Any status' },
+	{ value: ANY, label: 'Any status' },
 	{ value: 'DRAFT', label: 'Draft' },
 	{ value: 'PENDING', label: 'Pending' },
 	{ value: 'CONFIRMED', label: 'Confirmed' },
@@ -37,7 +39,7 @@ const statusOptions = [
 ];
 
 const pStatusOptions = [
-	{ value: '', label: 'Any payment' },
+	{ value: ANY, label: 'Any payment' },
 	{ value: 'PENDING', label: 'Payment Pending' },
 	{ value: 'PAID', label: 'Payment Paid' },
 	{ value: 'FAILED', label: 'Payment Failed' },
@@ -45,7 +47,7 @@ const pStatusOptions = [
 ];
 
 const pMethodOptions = [
-	{ value: '', label: 'Any method' },
+	{ value: ANY, label: 'Any method' },
 	{ value: 'CASH', label: 'Cash' },
 	{ value: 'MOMO', label: 'Mobile Money' },
 	{ value: 'CARD', label: 'Card' },
@@ -69,39 +71,33 @@ const OrderList = () => {
 	const [q, setQ] = useState('');
 	const dq = useDebounceLocal(q, 500);
 
-	const [status, setStatus] = useState('');
-	const [paymentStatus, setPaymentStatus] = useState('');
-	const [paymentMethod, setPaymentMethod] = useState('');
+	// FIX: initialize with sentinel
+	const [status, setStatus] = useState(ANY);
+	const [paymentStatus, setPaymentStatus] = useState(ANY);
+	const [paymentMethod, setPaymentMethod] = useState(ANY);
 	const [ordering, setOrdering] = useState(DEFAULT_ORDERING);
 
 	const [page, setPage] = useState(1);
-
 	const [loading, setLoading] = useState(true);
 	const [rows, setRows] = useState([]);
 	const [count, setCount] = useState(0);
 	const totalPages = Math.max(1, Math.ceil((count || 0) / PAGE_SIZE));
-
 	const [detailId, setDetailId] = useState(null);
 
 	const params = useMemo(() => {
-		// We don’t have a single backend "search" param;
-		// feed the same query to code + client_name + client_email to be helpful.
-		const par = {
-			page,
-			ordering,
-		};
-		if (status) par.status = status;
-		if (paymentStatus) par.payment_status = paymentStatus;
-		if (paymentMethod) par.payment_method = paymentMethod;
+		const par = { page, ordering };
+
+		// Only include filter params if not the ANY sentinel
+		if (status !== ANY) par.status = status;
+		if (paymentStatus !== ANY) par.payment_status = paymentStatus;
+		if (paymentMethod !== ANY) par.payment_method = paymentMethod;
 
 		const s = dq.trim();
 		if (s) {
-			// heuristics: if looks like a code, just code; if contains '@', email; else name
 			if (/^PO-\d{8}-[A-F0-9]{6}$/i.test(s)) par.code = s;
 			else if (s.includes('@')) par.client_email = s;
 			else {
 				par.client_name = s;
-				// also try code fragment
 				if (s.length >= 4) par.code = s;
 			}
 		}
@@ -116,7 +112,6 @@ const OrderList = () => {
 			const list = Array.isArray(payload?.results) ? payload.results : [];
 			const total = typeof payload?.count === 'number' ? payload.count : list.length;
 
-			// Prepare display-only merged fields (no backend duplication)
 			const normalized = list.map((o) => {
 				const client = o?.client || {};
 				return {
@@ -212,7 +207,7 @@ const OrderList = () => {
 							<Label className="text-[12px]">Order status</Label>
 							<Select value={status} onValueChange={setStatus}>
 								<SelectTrigger className="bg-white/85 backdrop-blur-sm border-neutral-200 dark:bg-neutral-900/70 dark:border-neutral-800">
-									<SelectValue placeholder="Any status" />
+									<SelectValue />
 								</SelectTrigger>
 								<SelectContent className="bg-white/95 backdrop-blur-md dark:bg-neutral-900/90">
 									{statusOptions.map((o) => (
@@ -228,7 +223,7 @@ const OrderList = () => {
 							<Label className="text-[12px]">Payment status</Label>
 							<Select value={paymentStatus} onValueChange={setPaymentStatus}>
 								<SelectTrigger className="bg-white/85 backdrop-blur-sm border-neutral-200 dark:bg-neutral-900/70 dark:border-neutral-800">
-									<SelectValue placeholder="Any payment" />
+									<SelectValue />
 								</SelectTrigger>
 								<SelectContent className="bg-white/95 backdrop-blur-md dark:bg-neutral-900/90">
 									{pStatusOptions.map((o) => (
@@ -244,7 +239,7 @@ const OrderList = () => {
 							<Label className="text-[12px]">Payment method</Label>
 							<Select value={paymentMethod} onValueChange={setPaymentMethod}>
 								<SelectTrigger className="bg-white/85 backdrop-blur-sm border-neutral-200 dark:bg-neutral-900/70 dark:border-neutral-800">
-									<SelectValue placeholder="Any method" />
+									<SelectValue />
 								</SelectTrigger>
 								<SelectContent className="bg-white/95 backdrop-blur-md dark:bg-neutral-900/90">
 									{pMethodOptions.map((o) => (

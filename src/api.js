@@ -237,7 +237,7 @@ export const endpoints = {
 
 	// Orders (NEW)
 	saOrdersList: '/superadmin/orders/',
-	saOrderDetail: (orderId) => `/superadmin/orders/${orderId}/`,
+	saOrderDetail: (orderId) => `/superadmin/order/${orderId}/`,
 };
 
 export const auth = {
