@@ -1,4 +1,3 @@
-// src/components/shared/orders/OrderTable.jsx
 import React from 'react';
 import { Eye, MoreHorizontal } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';

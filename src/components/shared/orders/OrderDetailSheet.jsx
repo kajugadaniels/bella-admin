@@ -1,12 +1,9 @@
-// src/components/shared/orders/OrderDetailSheet.jsx
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { superadmin } from '@/api';
 import { toast } from 'sonner';
 import {
 	ClipboardCopy,
 	ExternalLink,
-	Mail,
-	Phone,
 	ShoppingBasket,
 	BadgeCheck,
 	CreditCard,
