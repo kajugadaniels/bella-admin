@@ -1,3 +1,4 @@
+// src/components/shared/orders/OrderDetailSheet.jsx
 import React, { useCallback, useEffect, useState } from 'react';
 import { superadmin } from '@/api';
 import { toast } from 'sonner';
@@ -25,12 +26,13 @@ function currency(amount, ccy) {
 	return `${n.toLocaleString()}${ccy ? ` ${ccy}` : ''}`;
 }
 
+/** Glass card: deeper radius, subtle shadow & ring for a premium look */
 const GlassCard = ({ className = '', children }) => (
 	<div
 		className={[
-			'rounded-2xl border p-3',
-			'border-neutral-200/80 bg-white/70 backdrop-blur-md',
-			'dark:border-neutral-800 dark:bg-neutral-900/60',
+			'rounded-3xl border p-4 md:p-5',
+			'border-neutral-200/70 bg-white/70 shadow-[0_8px_30px_rgb(0,0,0,0.05)] ring-1 ring-black/5 backdrop-blur',
+			'dark:border-neutral-800 dark:bg-neutral-900/60 dark:ring-white/10',
 			className,
 		].join(' ')}
 	>
@@ -38,46 +40,57 @@ const GlassCard = ({ className = '', children }) => (
 	</div>
 );
 
+/** Section header with icon chip */
+const SectionHeader = ({ icon: Icon, title, count }) => (
+	<div className="mb-2 flex items-center justify-between gap-2">
+		<div className="flex items-center gap-3">
+			<div className="grid h-9 w-9 place-items-center rounded-2xl bg-gradient-to-br from-[var(--primary-color)]/15 to-emerald-600/15 ring-1 ring-black/5 dark:ring-white/10">
+				<Icon className="h-4.5 w-4.5 text-emerald-700 dark:text-emerald-300" />
+			</div>
+			<div className="text-[13px] font-semibold tracking-wide text-neutral-700 dark:text-neutral-200 uppercase">
+				{title}
+			</div>
+		</div>
+		{typeof count === 'number' ? <Badge className="glass-badge">{count}</Badge> : null}
+	</div>
+);
+
+/** Consistent label/value alignment using CSS grid */
 const Row = ({ label, value, href }) => {
 	const content = (
-		<div className="min-w-0 flex-1 truncate text-sm text-neutral-800 dark:text-neutral-200">{value ?? '—'}</div>
+		<div className="min-w-0 truncate text-sm text-neutral-800 dark:text-neutral-200">{value ?? '—'}</div>
 	);
+	const body = href ? (
+		<a href={href} target={href.startsWith('http') ? '_blank' : undefined} rel="noreferrer" className="min-w-0">
+			<div className="group flex items-center gap-2">
+				{content}
+				<ExternalLink className="h-3.5 w-3.5 opacity-60 group-hover:opacity-100" />
+			</div>
+		</a>
+	) : (
+		content
+	);
+
 	return (
-		<div className="flex items-center gap-3 rounded-xl px-3 py-2 transition-colors hover:bg-black/[0.03] dark:hover:bg-white/5">
-			<div className="w-28 shrink-0 text-xs font-medium uppercase tracking-wide text-neutral-500">{label}</div>
-			{href ? (
-				<a
-					href={href}
-					target={href.startsWith('http') ? '_blank' : undefined}
-					rel="noreferrer"
-					className="flex-1 min-w-0"
-				>
-					<div className="group flex items-center gap-2">
-						{content}
-						<ExternalLink className="h-3.5 w-3.5 opacity-60 group-hover:opacity-100" />
-					</div>
-				</a>
-			) : (
-				content
-			)}
+		<div className="grid grid-cols-[140px_1fr] items-center rounded-xl px-3 py-2 transition-colors hover:bg-black/[0.03] dark:hover:bg-white/5">
+			<div className="truncate pr-3 text-xs font-medium uppercase tracking-wide text-neutral-500">{label}</div>
+			{body}
 		</div>
 	);
 };
 
-const ItemRow = ({ it, ccy }) => {
-	return (
-		<div className="flex items-center justify-between gap-3 rounded-xl px-3 py-2 hover:bg-black/[0.03] dark:hover:bg-white/5">
-			<div className="min-w-0">
-				<div className="truncate text-sm font-medium">{it?.name_snapshot || 'Product'}</div>
-				<div className="truncate text-xs text-neutral-500">{it?.product_id}</div>
-				<div className="mt-1 text-xs text-neutral-500">
-					Qty {it?.quantity ?? '—'} • Unit {currency(it?.unit_price_snapshot, ccy)}
-				</div>
+const ItemRow = ({ it, ccy }) => (
+	<div className="grid grid-cols-[1fr_auto] items-center gap-3 rounded-xl px-3 py-2 hover:bg-black/[0.03] dark:hover:bg-white/5">
+		<div className="min-w-0">
+			<div className="truncate text-sm font-medium">{it?.name_snapshot || 'Product'}</div>
+			<div className="truncate text-xs text-neutral-500">{it?.product_id}</div>
+			<div className="mt-1 text-xs text-neutral-500">
+				Qty {it?.quantity ?? '—'} • Unit {currency(it?.unit_price_snapshot, ccy)}
 			</div>
-			<div className="text-right text-sm font-medium">{currency(it?.value_gross, ccy)}</div>
 		</div>
-	);
-};
+		<div className="text-right text-sm font-semibold">{currency(it?.value_gross, ccy)}</div>
+	</div>
+);
 
 const statusBadgeVariant = (s) => {
 	switch ((s || '').toUpperCase()) {
@@ -97,7 +110,7 @@ const statusBadgeVariant = (s) => {
 
 const HeaderSkeleton = () => (
 	<div className="flex items-center gap-3">
-		<Skeleton className="h-14 w-14 rounded-xl" />
+		<Skeleton className="h-16 w-16 rounded-2xl" />
 		<div className="min-w-0 flex-1 space-y-2">
 			<Skeleton className="h-5 w-1/2" />
 			<Skeleton className="h-3 w-1/3" />
@@ -142,7 +155,6 @@ export default function OrderDetailSheet({ orderId, open, onOpenChange }) {
 	const items = Array.isArray(o?.items) ? o.items : [];
 	const title = o?.code || 'Order';
 	const code = o?.code || o?.id || orderId;
-
 	const created = o?.created_at ? new Date(o.created_at) : null;
 
 	const copyCode = async () => {
@@ -158,32 +170,40 @@ export default function OrderDetailSheet({ orderId, open, onOpenChange }) {
 		<Sheet open={open} onOpenChange={onOpenChange}>
 			<SheetContent
 				side="right"
-				className="p-0 w-[min(1024px,100vw)] sm:max-w-[1024px] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:slide-in-from-right data-[state=closed]:slide-out-to-right border-l border-neutral-200 bg-white/90 backdrop-blur-xl dark:border-neutral-800 dark:bg-neutral-950/85"
+				className="
+          p-0 w-[min(1120px,100vw)] sm:max-w-[1120px]
+          data-[state=open]:animate-in data-[state=closed]:animate-out
+          data-[state=open]:slide-in-from-right data-[state=closed]:slide-out-to-right
+          border-l border-neutral-200 bg-white/90 backdrop-blur-xl
+          dark:border-neutral-800 dark:bg-neutral-950/85
+        "
 			>
-				{/* Top gradient */}
+				{/* Banner */}
 				<div
-					className="h-20 w-full"
+					className="h-24 w-full"
 					style={{ background: 'linear-gradient(90deg, var(--primary-color), #059669)' }}
 				/>
 
 				{/* Header */}
-				<div className="-mt-10 px-5 sm:px-6">
-					<GlassCard className="p-4">
+				<div className="-mt-12 px-5 sm:px-6">
+					<GlassCard className="p-5">
 						<SheetHeader className="mb-1">
 							<SheetTitle className="sr-only">Order details</SheetTitle>
 							{loading ? (
 								<HeaderSkeleton />
 							) : (
-								<div className="flex flex-wrap items-center gap-3">
+								<div className="flex flex-wrap items-center gap-4">
 									<div
-										className="grid h-14 w-14 place-items-center rounded-xl text-sm font-semibold text-white ring-1 ring-black/5 dark:ring-white/10"
+										className="grid h-10 w-10 place-items-center rounded-4xl text-base font-semibold text-white ring-1 ring-black/5 dark:ring-white/10"
 										style={{ background: 'linear-gradient(135deg, var(--primary-color), #059669)' }}
 									>
 										PO
 									</div>
 									<div className="min-w-0 flex-1">
-										<div className="truncate text-xl font-semibold">{title}</div>
-										<SheetDescription className="truncate text-xs">{o?.id || ''}</SheetDescription>
+										<div className="truncate text-lg font-semibold leading-6">{title}</div>
+										<SheetDescription className="truncate text-xs opacity-80">
+											{o?.id || ''}
+										</SheetDescription>
 									</div>
 									<div className="flex flex-wrap items-center gap-2">
 										<Badge variant={statusBadgeVariant(o?.status)} className="glass-badge">
@@ -195,7 +215,7 @@ export default function OrderDetailSheet({ orderId, open, onOpenChange }) {
 										<Button
 											variant="outline"
 											onClick={copyCode}
-											className="cursor-pointer px-6 py-4 rounded-4xl"
+											className="cursor-pointer rounded-2xl px-6 py-4"
 										>
 											<ClipboardCopy className="mr-2 h-4 w-4" />
 											Copy
@@ -204,6 +224,34 @@ export default function OrderDetailSheet({ orderId, open, onOpenChange }) {
 								</div>
 							)}
 						</SheetHeader>
+
+						{/* Hero stats row */}
+						{!loading && o?.id ? (
+							<div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+								<div className="rounded-2xl border border-black/5 bg-white/70 p-3 text-center dark:border-white/10 dark:bg-neutral-900/60">
+									<div className="text-[11px] uppercase tracking-wide text-neutral-500">
+										Grand Total
+									</div>
+									<div className="mt-1 text-lg font-semibold">
+										{currency(o?.grand_total, o?.currency)}
+									</div>
+								</div>
+								<div className="rounded-2xl border border-black/5 bg-white/70 p-3 text-center dark:border-white/10 dark:bg-neutral-900/60">
+									<div className="text-[11px] uppercase tracking-wide text-neutral-500">Products</div>
+									<div className="mt-1 text-lg font-semibold">{items.length}</div>
+								</div>
+								<div className="rounded-2xl border border-black/5 bg-white/70 p-3 text-center dark:border-white/10 dark:bg-neutral-900/60">
+									<div className="text-[11px] uppercase tracking-wide text-neutral-500">Code</div>
+									<div className="mt-1 truncate text-lg font-semibold">{o?.code || '—'}</div>
+								</div>
+								<div className="rounded-2xl border border-black/5 bg-white/70 p-3 text-center dark:border-white/10 dark:bg-neutral-900/60">
+									<div className="text-[11px] uppercase tracking-wide text-neutral-500">Created</div>
+									<div className="mt-1 text-lg font-semibold">
+										{created ? created.toISOString().slice(0, 10) : '—'}
+									</div>
+								</div>
+							</div>
+						) : null}
 					</GlassCard>
 				</div>
 
@@ -213,22 +261,19 @@ export default function OrderDetailSheet({ orderId, open, onOpenChange }) {
 
 					{loading ? (
 						<div className="space-y-3">
-							<Skeleton className="h-28 w-full rounded-xl" />
-							<Skeleton className="h-28 w-full rounded-xl" />
-							<Skeleton className="h-64 w-full rounded-xl" />
+							<Skeleton className="h-28 w-full rounded-2xl" />
+							<Skeleton className="h-28 w-full rounded-2xl" />
+							<Skeleton className="h-64 w-full rounded-2xl" />
 						</div>
 					) : !o?.id ? (
 						<div className="text-sm text-neutral-500">Order not found.</div>
 					) : (
 						<div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
-							{/* Left column */}
+							{/* LEFT: details */}
 							<div className="space-y-4 xl:col-span-2">
 								{/* Items */}
 								<GlassCard>
-									<div className="mb-1 flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-neutral-600 dark:text-neutral-400">
-										<ShoppingBasket className="h-4 w-4" />
-										Items ({items.length})
-									</div>
+									<SectionHeader icon={ShoppingBasket} title="Items" count={items.length} />
 									<div className="mt-2 divide-y divide-neutral-100 dark:divide-neutral-800">
 										{items.length === 0 ? (
 											<div className="px-3 py-6 text-sm text-neutral-500">No items.</div>
@@ -238,13 +283,10 @@ export default function OrderDetailSheet({ orderId, open, onOpenChange }) {
 									</div>
 								</GlassCard>
 
-								{/* Shipping & Contact */}
+								{/* Customer & Shipping in a clean 2-up grid */}
 								<div className="grid grid-cols-1 gap-4 md:grid-cols-2">
 									<GlassCard>
-										<div className="mb-1 flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-neutral-600 dark:text-neutral-400">
-											<UserCircle2 className="h-4 w-4" />
-											Customer
-										</div>
+										<SectionHeader icon={UserCircle2} title="Customer" />
 										<div className="mt-2 space-y-1">
 											<Row label="Name" value={o?.contact_name || c?.name} />
 											<Row
@@ -265,10 +307,7 @@ export default function OrderDetailSheet({ orderId, open, onOpenChange }) {
 									</GlassCard>
 
 									<GlassCard>
-										<div className="mb-1 flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-neutral-600 dark:text-neutral-400">
-											<Truck className="h-4 w-4" />
-											Shipping
-										</div>
+										<SectionHeader icon={Truck} title="Shipping" />
 										<div className="mt-2 space-y-1">
 											<Row label="Method" value={o?.shipping_method} />
 											<Row label="Tracking" value={o?.shipping_tracking_code} />
@@ -296,17 +335,24 @@ export default function OrderDetailSheet({ orderId, open, onOpenChange }) {
 											/>
 										</div>
 									</GlassCard>
+
+									{/* Meta */}
+									<GlassCard>
+										<SectionHeader icon={BadgeCheck} title="Meta" />
+										<div className="mt-2 space-y-1">
+											<Row label="Code" value={o?.code} />
+											<Row label="Created" value={created ? created.toLocaleString() : '—'} />
+											<Row label="Notes" value={o?.notes || '—'} />
+										</div>
+									</GlassCard>
 								</div>
 							</div>
 
-							{/* Right column */}
-							<div className="space-y-4">
-								{/* Totals */}
+							{/* RIGHT: sticky summary column */}
+							<div className="space-y-4 xl:sticky xl:top-4">
+								{/* Amounts */}
 								<GlassCard>
-									<div className="mb-1 flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-neutral-600 dark:text-neutral-400">
-										<ReceiptText className="h-4 w-4" />
-										Amounts
-									</div>
+									<SectionHeader icon={ReceiptText} title="Amounts" />
 									<div className="mt-2 space-y-1">
 										<Row label="Currency" value={o?.currency} />
 										<Row label="Subtotal" value={currency(o?.subtotal, o?.currency)} />
@@ -319,10 +365,7 @@ export default function OrderDetailSheet({ orderId, open, onOpenChange }) {
 
 								{/* Payment & Status */}
 								<GlassCard>
-									<div className="mb-1 flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-neutral-600 dark:text-neutral-400">
-										<CreditCard className="h-4 w-4" />
-										Payment & Status
-									</div>
+									<SectionHeader icon={CreditCard} title="Payment & Status" />
 									<div className="mt-2 space-y-1">
 										<Row label="Order status" value={o?.status} />
 										<Row label="Payment status" value={o?.payment_status} />
@@ -349,19 +392,6 @@ export default function OrderDetailSheet({ orderId, open, onOpenChange }) {
 											label="Deducted at"
 											value={o?.deducted_at ? new Date(o.deducted_at).toLocaleString() : '—'}
 										/>
-									</div>
-								</GlassCard>
-
-								{/* Meta */}
-								<GlassCard>
-									<div className="mb-1 flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-neutral-600 dark:text-neutral-400">
-										<BadgeCheck className="h-4 w-4" />
-										Meta
-									</div>
-									<div className="mt-2 space-y-1">
-										<Row label="Code" value={o?.code} />
-										<Row label="Created" value={created ? created.toLocaleString() : '—'} />
-										<Row label="Notes" value={o?.notes || '—'} />
 									</div>
 								</GlassCard>
 							</div>
