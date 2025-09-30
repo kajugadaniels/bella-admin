@@ -143,13 +143,13 @@ export default function StoreMemberDetailSheet({ membershipId, open, onOpenChang
                 <img
                     src={u.image_url}
                     alt={title}
-                    className="h-14 w-14 rounded-xl object-cover ring-1 ring-black/5 dark:ring-white/10"
+                    className="h-10 w-10 rounded-xl object-cover ring-1 ring-black/5 dark:ring-white/10"
                 />
             );
         }
         return (
             <div
-                className="grid h-14 w-14 place-items-center rounded-xl text-sm font-semibold text-white ring-1 ring-black/5 dark:ring-white/10"
+                className="grid h-10 w-10 place-items-center rounded-4xl text-sm font-semibold text-white ring-1 ring-black/5 dark:ring-white/10"
                 style={{ background: "linear-gradient(135deg, var(--primary-color), #059669)" }}
             >
                 {initials(title)}
@@ -191,7 +191,7 @@ export default function StoreMemberDetailSheet({ membershipId, open, onOpenChang
                                 <div className="flex flex-wrap items-center gap-3">
                                     {avatar}
                                     <div className="min-w-0 flex-1">
-                                        <div className="truncate text-xl font-semibold">{title}</div>
+                                        <div className="truncate text-lg font-semibold">{title}</div>
                                         <SheetDescription className="truncate text-xs">{id || ""}</SheetDescription>
                                     </div>
 
