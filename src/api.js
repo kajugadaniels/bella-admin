@@ -236,8 +236,8 @@ export const endpoints = {
 	saAdminDelete: (adminId) => `/superadmin/admin/${adminId}/delete/`,
 
 	// Orders (NEW)
-	saOrdersList: '/superadmin/orders',
-	saOrderDetail: (orderId) => `/superadmin/orders/${orderId}`,
+	saOrdersList: '/superadmin/orders/',
+	saOrderDetail: (orderId) => `/superadmin/orders/${orderId}/`,
 };
 
 export const auth = {
