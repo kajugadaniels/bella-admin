@@ -9,6 +9,8 @@ export { default as GetStores } from './stores/GetStores'
 
 export { default as GetProducts } from './products/GetProducts'
 
+export { default as GetOrders } from './orders/GetOrders'
+
 export { default as GetStockIn } from './stock-in/GetStockIn'
 
 export { default as GetStockOut } from './stock-out/GetStockOut'

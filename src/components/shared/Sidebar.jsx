@@ -11,6 +11,7 @@ import {
     Package,
     Settings,
     Truck,
+    TruckIcon,
     User2,
     UserCheck,
     UserCog,
@@ -113,18 +114,19 @@ const Sidebar = () => {
     }, [toggleCollapsed]);
 
     const nav = useMemo(
-        () => [
-            { to: "/dashboard", icon: Home, label: "Dashboard", end: true },
-            { to: "/admins", icon: User2, label: "Admins", end: true },
-            { to: "/clients", icon: UserCheck, label: "Clients", end: true },
-            { to: "/store-members", icon: UserCog, label: "Store Members", end: true },
-            { to: "/stores", icon: Building2, label: "Stores" },
-            { to: "/products", icon: Package, label: "Products" },
-            { to: "/stockin", icon: Boxes, label: "Stock In" },
-            { to: "/stockout", icon: Truck, label: "Stock Out" },
-        ],
-        []
-    );
+		() => [
+			{ to: '/dashboard', icon: Home, label: 'Dashboard', end: true },
+			{ to: '/admins', icon: User2, label: 'Admins', end: true },
+			{ to: '/clients', icon: UserCheck, label: 'Clients', end: true },
+			{ to: '/store-members', icon: UserCog, label: 'Store Members', end: true },
+			{ to: '/stores', icon: Building2, label: 'Stores' },
+			{ to: '/products', icon: Package, label: 'Products' },
+			{ to: '/orders', icon: TruckIcon, label: 'Orders' },
+			// { to: "/stockin", icon: Boxes, label: "Stock In" },
+			// { to: "/stockout", icon: Truck, label: "Stock Out" },
+		],
+		[]
+	);
 
     const logout = useCallback(async () => {
         try {
