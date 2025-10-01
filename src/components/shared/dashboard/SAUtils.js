@@ -46,28 +46,44 @@ export function formatDateTime(input) {
 }
 
 /* ------------------------------ order helpers ----------------------------- */
+/** Accepts both full order and summary shapes */
 export function statusOfOrder(o) {
-    return (o?.status || o?.order_status || o?.payment_status || "PENDING").toUpperCase();
-}
-export function amountOfOrder(o) {
-    return safeNum(o?.grand_total ?? o?.total ?? o?.amount ?? 0);
+    return (
+        (o?.order_status ||
+            o?.status ||
+            o?.payment_status ||
+            "PENDING") + ""
+    ).toUpperCase();
 }
 
-/* --------------------------- key builders (NEW) --------------------------- */
-/** e.g. "2025-10-01" using local time */
+/** Accepts both full order and summary shapes */
+export function amountOfOrder(o) {
+    // supports summary: order_grand_total; canonical: grand_total; generic fallbacks
+    return safeNum(
+        o?.order_grand_total ??
+        o?.grand_total ??
+        o?.total ??
+        o?.amount ??
+        0
+    );
+}
+
+/** Normalized created_at for grouping (summary or canonical) */
+export function createdAtOfOrder(o) {
+    return o?.order_created_at || o?.created_at || o?.createdAt || o?.date || null;
+}
+
+/* --------------------------- key builders --------------------------------- */
 export function formatAsDayKey(input) {
     const d = new Date(input ?? Date.now());
     return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
 }
-
-/** e.g. "2025-10-01 14:00" using local time (hour-bucketed) */
 export function formatAsHourKey(input) {
     const d = new Date(input ?? Date.now());
     return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())} ${pad2(d.getHours())}:00`;
 }
 
-/* -------------------------- grouping helpers (kept) ----------------------- */
-/** Group an array into a Map keyed by YYYY-MM-DD, summing `valueOf(row)` and counting. */
+/* -------------------------- grouping helpers ------------------------------ */
 export function groupByDayKey(arr, valueOf, dateOf) {
     const m = new Map();
     for (const it of arr || []) {
@@ -80,8 +96,6 @@ export function groupByDayKey(arr, valueOf, dateOf) {
     }
     return m;
 }
-
-/** (Optional) Hourly grouping if you need it elsewhere */
 export function groupByHourKey(arr, valueOf, dateOf) {
     const m = new Map();
     for (const it of arr || []) {
