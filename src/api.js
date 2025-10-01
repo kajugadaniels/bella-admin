@@ -235,9 +235,12 @@ export const endpoints = {
 	saAdminDetail: (adminId) => `/superadmin/admin/${adminId}/`,
 	saAdminDelete: (adminId) => `/superadmin/admin/${adminId}/delete/`,
 
-	// Orders (NEW)
+	// Orders
 	saOrdersList: '/superadmin/orders/',
 	saOrderDetail: (orderId) => `/superadmin/order/${orderId}/`,
+
+	saStockOutsList: '/superadmin/stockouts/',
+	saStockOutDetail: (stockoutId) => `/superadmin/stockouts/${stockoutId}/`,
 };
 
 export const auth = {
@@ -367,12 +370,18 @@ export const superadmin = {
 		return DELETE(endpoints.saAdminDelete(adminId), { auth: true });
 	},
 
-	// Orders (NEW)
 	listOrders(params = {}) {
 		return GET(`${endpoints.saOrdersList}${toQuery(params)}`, { auth: true });
 	},
 	getOrderDetail(orderId) {
 		return GET(endpoints.saOrderDetail(orderId), { auth: true });
+	},
+
+	listStockOuts(params = {}) {
+		return GET(`${endpoints.saStockOutsList}${toQuery(params)}`, { auth: true });
+	},
+	getStockOutDetail(stockoutId) {
+		return GET(endpoints.saStockOutDetail(stockoutId), { auth: true });
 	},
 };
 
