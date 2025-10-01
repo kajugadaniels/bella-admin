@@ -17,149 +17,126 @@ import {
     startOfDayISO,
     endOfDayISO,
     amountOfOrder,
+    createdAtOfOrder,
     formatAsDayKey,
     formatAsHourKey,
+    groupByDayKey,
+    groupByHourKey,
+    currency as formatCurrency,
     safeNum,
 } from "./SAUtils";
 
-// Local fallback currency formatter
-function formatMoney(value, currency = "RWF") {
-    const n = Number(value || 0);
-    try {
-        return new Intl.NumberFormat(undefined, {
-            style: "currency",
-            currency: currency || "RWF",
-            maximumFractionDigits: 2,
-        }).format(n);
-    } catch {
-        // Fallback if Intl doesn't support the code
-        return `${n.toLocaleString()} ${currency || ""}`.trim();
-    }
+/** yyyy-mm-dd (local) for <input type="date" /> */
+function toDateInputValue(d) {
+    const dt = d instanceof Date ? d : new Date(d);
+    return dt.toISOString().slice(0, 10);
+}
+function fromDateInputValue(s) {
+    // treat input as local midnight
+    const [y, m, d] = (s || "").split("-").map((x) => parseInt(x, 10));
+    if (!y || !m || !d) return null;
+    return new Date(y, m - 1, d);
 }
 
-/** Internal helper: yyyy-mm-dd */
-function todayStr(d = new Date()) {
-    return d.toISOString().slice(0, 10);
-}
-function addDays(date, days) {
-    const d = new Date(date);
-    d.setDate(d.getDate() + days);
-    return d;
-}
-function clampTimeStr(v, def) {
-    // simple HH:MM guard
-    if (!v || typeof v !== "string" || !/^\d{2}:\d{2}$/.test(v)) return def;
-    return v;
-}
+/** Combined Orders (bars) & Revenue (area) over time (independent filters) */
+export default function RevenueTrend({ loading: _parentLoading }) {
+    // Own window: default last 30d
+    const now = new Date();
+    const defaultFrom = new Date(now); defaultFrom.setDate(now.getDate() - 29);
+    const [from, setFrom] = useState(defaultFrom);
+    const [to, setTo] = useState(now);
 
-/** Combined Orders (bars) & Spend (area) over time — independent component */
-export default function RevenueTrend({ loading: _loadingFromParent }) {
-    // --- Local date range (independent) ---
-    const defaultTo = todayStr(new Date());
-    const defaultFrom = todayStr(addDays(new Date(), -29)); // last 30 days inclusive
-
-    const [fromDate, setFromDate] = useState(defaultFrom);
-    const [toDate, setToDate] = useState(defaultTo);
-
-    // Hourly filter only applies when fromDate === toDate
-    const isSingleDay = fromDate && toDate && fromDate === toDate;
-    const [fromTime, setFromTime] = useState("00:00");
-    const [toTime, setToTime] = useState("23:59");
-
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false);
     const [orders, setOrders] = useState([]);
-    const [lastRefreshedAt, setLastRefreshedAt] = useState(null);
+    const [lastUpdated, setLastUpdated] = useState(null);
 
-    const createdAtFromISO = useMemo(() => {
-        const base = isSingleDay ? `${fromDate}T${clampTimeStr(fromTime, "00:00")}:00` : `${fromDate}T00:00:00`;
-        return startOfDayISO(new Date(base));
-    }, [fromDate, fromTime, isSingleDay]);
-
-    const createdAtToISO = useMemo(() => {
-        const base = isSingleDay ? `${toDate}T${clampTimeStr(toTime, "23:59")}:59` : `${toDate}T23:59:59`;
-        return endOfDayISO(new Date(base));
-    }, [toDate, toTime, isSingleDay]);
+    const sameDay = useMemo(() => {
+        const a = new Date(from), b = new Date(to);
+        return a.getFullYear() === b.getFullYear()
+            && a.getMonth() === b.getMonth()
+            && a.getDate() === b.getDate();
+    }, [from, to]);
 
     const fetchOrders = useCallback(async () => {
-        if (!fromDate || !toDate) return;
         setLoading(true);
         try {
-            const res = await superadmin.listOrders({
+            const params = {
                 ordering: "-created_at",
                 page: 1,
-                page_size: 500, // generous for charts
-                created_at_from: createdAtFromISO,
-                created_at_to: createdAtToISO,
-            });
-
+                page_size: 250, // grab enough for trends
+                created_after: startOfDayISO(from),
+                created_before: endOfDayISO(to),
+            };
+            const res = await superadmin.listOrders(params);
             const raw =
                 Array.isArray(res?.data?.results) ? res.data.results :
                     Array.isArray(res?.data?.data?.results) ? res.data.data.results :
                         Array.isArray(res?.data?.data) ? res.data.data :
                             Array.isArray(res?.data) ? res.data : [];
+
             setOrders(raw);
-            setLastRefreshedAt(new Date().toISOString());
+            setLastUpdated(new Date().toISOString());
         } catch (e) {
             // eslint-disable-next-line no-console
             console.error("RevenueTrend load error:", e);
-            toast.error("Couldn’t load orders for the selected range.");
+            toast.error("Couldn’t load trend data.");
             setOrders([]);
         } finally {
             setLoading(false);
         }
-    }, [createdAtFromISO, createdAtToISO, fromDate, toDate]);
+    }, [from, to]);
 
     useEffect(() => {
         fetchOrders();
     }, [fetchOrders]);
 
-    // Currency guess
-    const currency = useMemo(() => {
-        const first = orders?.[0];
-        return (first?.currency || "RWF").toUpperCase();
-    }, [orders]);
-
-    // Aggregate: hourly vs daily
+    // Build the trend series
     const data = useMemo(() => {
-        if (!Array.isArray(orders) || orders.length === 0) return [];
-        // Paid-ish revenue: use amountOfOrder; only count when paid/fulfilled/confirmed or payment_status=PAID
-        const isPaidish = (o) =>
-            String(o?.payment_status || "").toUpperCase() === "PAID" ||
-            ["PAID", "FULFILLED", "CONFIRMED"].includes(String(o?.status || "").toUpperCase());
+        if (!orders?.length) return [];
 
-        const byKey = new Map(); // key => { date, orders, spend }
-        for (const o of orders) {
-            const t = o?.created_at || o?.createdAt || o?.date;
-            const key = isSingleDay ? formatAsHourKey(t) : formatAsDayKey(t);
-            const row = byKey.get(key) || { date: key, orders: 0, spend: 0 };
-            row.orders += 1;
-            if (isPaidish(o)) row.spend += safeNum(amountOfOrder(o));
-            byKey.set(key, row);
+        if (sameDay) {
+            // hourly buckets
+            const map = groupByHourKey(
+                orders,
+                (o) => amountOfOrder(o),
+                (o) => createdAtOfOrder(o),
+            );
+            return Array.from(map.values()).sort((a, b) => a.date.localeCompare(b.date));
         }
-        // sort by date key
-        return Array.from(byKey.values()).sort((a, b) => (a.date < b.date ? -1 : 1));
-    }, [orders, isSingleDay]);
 
-    const headerRightLabel = isSingleDay ? "Hourly" : "Daily";
+        // daily buckets
+        const map = groupByDayKey(
+            orders,
+            (o) => amountOfOrder(o),
+            (o) => createdAtOfOrder(o),
+        );
 
-    const onQuick = (range) => {
-        const now = new Date();
-        if (range === "7d") {
-            const d = addDays(now, -6);
-            setFromDate(todayStr(d));
-            setToDate(todayStr(now));
-        } else if (range === "30d") {
-            const d = addDays(now, -29);
-            setFromDate(todayStr(d));
-            setToDate(todayStr(now));
-        } else if (range === "today") {
-            const d = todayStr(now);
-            setFromDate(d);
-            setToDate(d);
-            setFromTime("00:00");
-            setToTime("23:59");
-        }
+        // keep a continuous 30/7/whatever-day range so the chart looks good:
+        const list = Array.from(map.values());
+        return list.sort((a, b) => a.date.localeCompare(b.date));
+    }, [orders, sameDay]);
+
+    // Quick ranges
+    const setToday = () => {
+        const d = new Date();
+        setFrom(new Date(d.getFullYear(), d.getMonth(), d.getDate()));
+        setTo(new Date(d.getFullYear(), d.getMonth(), d.getDate()));
     };
+    const set7d = () => {
+        const d = new Date();
+        const f = new Date(d); f.setDate(d.getDate() - 6);
+        setFrom(f);
+        setTo(d);
+    };
+    const set30d = () => {
+        const d = new Date();
+        const f = new Date(d); f.setDate(d.getDate() - 29);
+        setFrom(f);
+        setTo(d);
+    };
+
+    const subTitle = sameDay ? "Hourly" : "Daily";
+    const updatedText = lastUpdated ? `Updated ${new Date(lastUpdated).toLocaleString()}` : "";
 
     return (
         <motion.div
@@ -170,90 +147,65 @@ export default function RevenueTrend({ loading: _loadingFromParent }) {
             className="rounded-2xl border border-neutral-200 bg-white/70 backdrop-blur p-4 sm:p-5"
             style={{ boxShadow: "0 10px 28px rgba(0,0,0,0.06)" }}
         >
-            {/* Header */}
-            <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-                <div>
-                    <h3 className="text-[15px] font-semibold text-neutral-900">Orders & spend over time</h3>
-                    <div className="text-xs text-neutral-500">
-                        {headerRightLabel}
-                        {lastRefreshedAt ? (
-                            <span className="ml-2 text-neutral-400">Updated {new Date(lastRefreshedAt).toLocaleString()}</span>
-                        ) : null}
-                    </div>
-                </div>
+            <div className="flex items-center justify-between mb-3">
+                <h3 className="text-[15px] font-semibold text-neutral-900">Orders & spend over time</h3>
+                <span className="text-xs text-neutral-500">{subTitle} <span className="ml-2">{updatedText}</span></span>
+            </div>
 
-                <div className="flex flex-wrap items-center gap-2">
-                    {/* Quick ranges */}
-                    <button
-                        onClick={() => onQuick("today")}
-                        className="h-8 rounded-lg border border-neutral-300 bg-white/80 px-2.5 text-xs hover:bg-neutral-50"
-                    >
-                        Today
-                    </button>
-                    <button
-                        onClick={() => onQuick("7d")}
-                        className="h-8 rounded-lg border border-neutral-300 bg-white/80 px-2.5 text-xs hover:bg-neutral-50"
-                    >
-                        Last 7d
-                    </button>
-                    <button
-                        onClick={() => onQuick("30d")}
-                        className="h-8 rounded-lg border border-neutral-300 bg-white/80 px-2.5 text-xs hover:bg-neutral-50"
-                    >
-                        Last 30d
-                    </button>
+            {/* Independent controls */}
+            <div className="mb-3 flex flex-wrap items-center gap-2">
+                <button
+                    onClick={setToday}
+                    className="h-8 rounded-lg border px-3 text-sm hover:bg-neutral-50"
+                    disabled={loading}
+                >
+                    Today
+                </button>
+                <button
+                    onClick={set7d}
+                    className="h-8 rounded-lg border px-3 text-sm hover:bg-neutral-50"
+                    disabled={loading}
+                >
+                    Last 7d
+                </button>
+                <button
+                    onClick={set30d}
+                    className="h-8 rounded-lg border px-3 text-sm hover:bg-neutral-50"
+                    disabled={loading}
+                >
+                    Last 30d
+                </button>
 
-                    {/* Date range */}
+                <div className="ml-auto flex items-center gap-2">
                     <input
                         type="date"
-                        value={fromDate}
-                        onChange={(e) => setFromDate(e.target.value)}
-                        className="h-8 rounded-lg border border-neutral-300 bg-white/80 px-2.5 text-xs"
-                        aria-label="From date"
+                        value={toDateInputValue(from)}
+                        onChange={(e) => {
+                            const d = fromDateInputValue(e.target.value);
+                            if (d) setFrom(d);
+                        }}
+                        className="h-8 rounded-lg border px-2 text-sm bg-white/90"
                     />
                     <span className="text-xs text-neutral-500">to</span>
                     <input
                         type="date"
-                        value={toDate}
-                        onChange={(e) => setToDate(e.target.value)}
-                        className="h-8 rounded-lg border border-neutral-300 bg-white/80 px-2.5 text-xs"
-                        aria-label="To date"
+                        value={toDateInputValue(to)}
+                        onChange={(e) => {
+                            const d = fromDateInputValue(e.target.value);
+                            if (d) setTo(d);
+                        }}
+                        className="h-8 rounded-lg border px-2 text-sm bg-white/90"
                     />
-
-                    {/* Hourly filter when single-day */}
-                    {isSingleDay && (
-                        <>
-                            <input
-                                type="time"
-                                value={fromTime}
-                                onChange={(e) => setFromTime(clampTimeStr(e.target.value, "00:00"))}
-                                className="h-8 rounded-lg border border-neutral-300 bg-white/80 px-2.5 text-xs"
-                                aria-label="From time"
-                            />
-                            <span className="text-xs text-neutral-500">to</span>
-                            <input
-                                type="time"
-                                value={toTime}
-                                onChange={(e) => setToTime(clampTimeStr(e.target.value, "23:59"))}
-                                className="h-8 rounded-lg border border-neutral-300 bg-white/80 px-2.5 text-xs"
-                                aria-label="To time"
-                            />
-                        </>
-                    )}
-
                     <button
                         onClick={fetchOrders}
+                        className="h-8 rounded-lg border px-3 text-sm hover:bg-neutral-50"
                         disabled={loading}
-                        className="h-8 rounded-lg border border-neutral-300 bg-white/80 px-2.5 text-xs hover:bg-neutral-50 disabled:opacity-60"
-                        aria-label="Refresh"
-                        title="Refresh"
                     >
                         Refresh
                     </button>
                 </div>
             </div>
 
-            {/* Chart */}
             <div className="h-64">
                 <ResponsiveContainer>
                     <AreaChart data={data}>
@@ -269,18 +221,23 @@ export default function RevenueTrend({ loading: _loadingFromParent }) {
                         <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 12 }} />
                         <Tooltip
                             formatter={(value, name) => {
-                                if (name === "spend") return [formatMoney(value, currency), "Spend"];
+                                if (name === "spend" || name === "value") {
+                                    // data uses { value, orders }. Show "spend" label for clarity.
+                                    return [formatCurrency(value), "Spend"];
+                                }
                                 return [value, "Orders"];
                             }}
                         />
+                        {/* Area: revenue */}
                         <Area
                             yAxisId="right"
                             type="monotone"
-                            dataKey="spend"
+                            dataKey="value"
                             stroke="#10b981"
                             fillOpacity={1}
                             fill="url(#spendGradient)"
                         />
+                        {/* Bars: order count */}
                         <BarChart data={data}>
                             <Bar yAxisId="left" dataKey="orders" fill="#0ea5e9" radius={[4, 4, 0, 0]} />
                         </BarChart>
