@@ -9,10 +9,17 @@ import StockMovementBar from "@/components/shared/dashboard/StockMovementBar";
 import TopProductsTable from "@/components/shared/dashboard/TopProductsTable";
 import RecentOrders5 from "@/components/shared/dashboard/RecentOrders5";
 import RecentStockouts5 from "@/components/shared/dashboard/RecentStockouts5";
-import { startOfDayISO, endOfDayISO, groupByDayKey, amountOfOrder, statusOfOrder, safeNum } from "@/components/shared/dashboard/SAUtils";
+import {
+    startOfDayISO,
+    endOfDayISO,
+    groupByDayKey,
+    amountOfOrder,
+    statusOfOrder,
+    safeNum,
+} from "@/components/shared/dashboard/SAUtils";
 
 export default function Dashboard() {
-    // default: TODAY range
+    // Default: TODAY
     const [from, setFrom] = useState(() => startOfDayISO(new Date()));
     const [to, setTo] = useState(() => endOfDayISO(new Date()));
     const [loading, setLoading] = useState(true);
@@ -28,11 +35,17 @@ export default function Dashboard() {
     const fetchAll = useCallback(async () => {
         setLoading(true);
         try {
-            const params = { ordering: "-created_at", page: 1, page_size: 100, created_after: from, created_before: to };
-            const todayParams = params; // same; defaults show "today"
+            // ✅ Use backend’s expected keys
+            const baseParams = {
+                ordering: "-created_at",
+                page: 1,
+                page_size: 100,
+                created_at_from: from,
+                created_at_to: to,
+            };
 
             // Orders (latest 100 in range)
-            const oRes = await superadmin.listOrders(todayParams);
+            const oRes = await superadmin.listOrders(baseParams);
             const oRaw =
                 Array.isArray(oRes?.data?.results) ? oRes.data.results :
                     Array.isArray(oRes?.data?.data?.results) ? oRes.data.data.results :
@@ -40,16 +53,16 @@ export default function Dashboard() {
                             Array.isArray(oRes?.data) ? oRes.data : [];
 
             // Stockouts (latest 100 in range)
-            const soRes = await superadmin.listStockOuts(todayParams);
+            const soRes = await superadmin.listStockOuts(baseParams);
             const soRaw =
                 Array.isArray(soRes?.data?.results) ? soRes.data.results :
                     Array.isArray(soRes?.data?.data?.results) ? soRes.data.data.results :
                         Array.isArray(soRes?.data?.data) ? soRes.data.data :
                             Array.isArray(soRes?.data) ? soRes.data : [];
 
-            // StockIns (batches) via products endpoint (we’ll aggregate quantities/values)
+            // StockIns (batches) via products endpoint (aggregate quantities/values)
             const siRes = await superadmin.listProductsViaStockIn({
-                ...todayParams,
+                ...baseParams,
                 has_store: undefined, // keep defaults
             });
             const siRaw =
@@ -59,20 +72,29 @@ export default function Dashboard() {
                             Array.isArray(siRes?.data) ? siRes.data : [];
 
             // Clients in range
-            const cRes = await superadmin.listClients(todayParams);
+            const cRes = await superadmin.listClients(baseParams);
             const cRaw =
                 Array.isArray(cRes?.data?.results) ? cRes.data.results :
                     Array.isArray(cRes?.data?.data?.results) ? cRes.data.data.results :
                         Array.isArray(cRes?.data?.data) ? cRes.data.data :
                             Array.isArray(cRes?.data) ? cRes.data : [];
 
-            // Products quick counts (published vs all) – do two cheap queries
+            // Products quick counts (published vs all) – two cheap queries
             const pAllRes = await superadmin.listProductsViaStockIn({ page: 1, page_size: 1, ordering: "-created_at" });
-            // We don’t get total from all backends—try to read from headers or payload fallbacks:
-            const pAllTotal = Number(pAllRes?.headers?.["x-total-count"] || pAllRes?.data?.count || pAllRes?.data?.data?.count || 0);
+            const pAllTotal = Number(
+                pAllRes?.headers?.["x-total-count"] ??
+                pAllRes?.data?.count ??
+                pAllRes?.data?.data?.count ?? 0
+            );
 
-            const pPubRes = await superadmin.listProductsViaStockIn({ page: 1, page_size: 1, ordering: "-created_at", "product__publish": true });
-            const pPubTotal = Number(pPubRes?.headers?.["x-total-count"] || pPubRes?.data?.count || pPubRes?.data?.data?.count || 0);
+            const pPubRes = await superadmin.listProductsViaStockIn({
+                page: 1, page_size: 1, ordering: "-created_at", "product__publish": true
+            });
+            const pPubTotal = Number(
+                pPubRes?.headers?.["x-total-count"] ??
+                pPubRes?.data?.count ??
+                pPubRes?.data?.data?.count ?? 0
+            );
 
             setOrders(oRaw);
             setStockouts(soRaw);
@@ -105,7 +127,12 @@ export default function Dashboard() {
             ordersCount += 1;
             const status = statusOfOrder(o);
             const amount = amountOfOrder(o);
-            if ((o?.payment_status || "").toUpperCase() === "PAID" || status === "PAID") {
+
+            const paidish =
+                (o?.payment_status || "").toUpperCase() === "PAID" ||
+                ["PAID", "FULFILLED", "CONFIRMED"].includes(status);
+
+            if (paidish) {
                 revenue += amount;
                 paidCount += 1;
             } else if (status === "CANCELLED") {
@@ -147,13 +174,17 @@ export default function Dashboard() {
             stockValueGross,
             newClients,
             productsPublished: productsCount.published,
-            productsTotal: productsCount.total
+            productsTotal: productsCount.total,
         };
     }, [orders, stockouts, stockinBatches, clients, productsCount]);
 
-    // Trend: Revenue by day/hour (group by day)
+    // Trend: Revenue by day (grouped)
     const revenueTrend = useMemo(() => {
-        const map = groupByDayKey(orders, (o) => amountOfOrder(o), (o) => o?.created_at || o?.createdAt || o?.date);
+        const map = groupByDayKey(
+            orders,
+            (o) => amountOfOrder(o),
+            (o) => o?.created_at || o?.createdAt || o?.date
+        );
         return Array.from(map.values()); // [{ date: 'YYYY-MM-DD', value, orders }]
     }, [orders]);
 
@@ -170,8 +201,16 @@ export default function Dashboard() {
     // Stock movement bar: received vs issued per day
     const stockMovement = useMemo(() => {
         // group stock-ins by day (quantity), and stockouts by day (quantity)
-        const insMap = groupByDayKey(stockinBatches, (b) => safeNum(b?.quantity ?? b?.quantities?.received), (b) => b?.created_at);
-        const outsMap = groupByDayKey(stockouts, (s) => safeNum(s?.quantity), (s) => s?.created_at);
+        const insMap = groupByDayKey(
+            stockinBatches,
+            (b) => safeNum(b?.quantity ?? b?.quantities?.received),
+            (b) => b?.created_at
+        );
+        const outsMap = groupByDayKey(
+            stockouts,
+            (s) => safeNum(s?.quantity),
+            (s) => s?.created_at
+        );
         // unify keys
         const keys = Array.from(new Set([...insMap.keys(), ...outsMap.keys()])).sort();
         return keys.map((d) => ({
@@ -181,8 +220,7 @@ export default function Dashboard() {
         }));
     }, [stockinBatches, stockouts]);
 
-    // Top products by revenue proxy (sum of order totals per product is not available here);
-    // use stock-out quantity as a sales proxy within range
+    // Top products by sales proxy (stock-out quantity within range)
     const topProducts = useMemo(() => {
         const byProd = new Map();
         for (const s of stockouts) {
