@@ -1,3 +1,5 @@
+import React from "react";
+
 export function startOfDayISO(d) {
     const dt = new Date(d);
     dt.setHours(0, 0, 0, 0);
@@ -12,7 +14,10 @@ export function currency(n, ccy = "RWF") {
     if (n == null) return "—";
     const v = Number(n);
     if (Number.isNaN(v)) return `${n}`;
-    return new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 }).format(v) + (ccy ? ` ${ccy}` : "");
+    return (
+        new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 }).format(v) +
+        (ccy ? ` ${ccy}` : "")
+    );
 }
 export function GlassCard({ className = "", children }) {
     return (
@@ -29,7 +34,11 @@ export function GlassCard({ className = "", children }) {
     );
 }
 export function Tiny({ children, className = "" }) {
-    return <div className={["text-xs text-neutral-500", className].join(" ")}>{children}</div>;
+    return (
+        <div className={["text-xs text-neutral-500", className].join(" ")}>
+            {children}
+        </div>
+    );
 }
 export function SectionTitle({ icon: Icon, children }) {
     return (
