@@ -21,7 +21,21 @@ import {
     formatAsHourKey,
     safeNum,
 } from "./SAUtils";
-import { formatPrice } from "@/components/shared/checkout/utils";
+
+// Local fallback currency formatter
+function formatMoney(value, currency = "RWF") {
+    const n = Number(value || 0);
+    try {
+        return new Intl.NumberFormat(undefined, {
+            style: "currency",
+            currency: currency || "RWF",
+            maximumFractionDigits: 2,
+        }).format(n);
+    } catch {
+        // Fallback if Intl doesn't support the code
+        return `${n.toLocaleString()} ${currency || ""}`.trim();
+    }
+}
 
 /** Internal helper: yyyy-mm-dd */
 function todayStr(d = new Date()) {
@@ -255,7 +269,7 @@ export default function RevenueTrend({ loading: _loadingFromParent }) {
                         <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 12 }} />
                         <Tooltip
                             formatter={(value, name) => {
-                                if (name === "spend") return [formatPrice(value, currency), "Spend"];
+                                if (name === "spend") return [formatMoney(value, currency), "Spend"];
                                 return [value, "Orders"];
                             }}
                         />
