@@ -240,7 +240,7 @@ export const endpoints = {
 	saOrderDetail: (orderId) => `/superadmin/order/${orderId}/`,
 
 	saStockOutsList: '/superadmin/stockouts/',
-	saStockOutDetail: (stockoutId) => `/superadmin/stockouts/${stockoutId}/`,
+	saStockOutDetail: (stockoutId) => `/superadmin/stockout/${stockoutId}/`,
 };
 
 export const auth = {

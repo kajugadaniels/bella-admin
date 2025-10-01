@@ -29,11 +29,11 @@ const AppRoutes = () => {
 
 					<Route path="/products" element={<GetProducts />} />
 
-					{/* <Route path="/stockin" element={<GetStockIn />} />
-
-					<Route path="/stockout" element={<GetStockOut />} /> */}
-
 					<Route path="/orders" element={<GetOrders />} />
+
+					<Route path="/stockin" element={<GetStockIn />} />
+
+					<Route path="/stockout" element={<GetStockOut />} />
 
 					<Route path="*" element={<NotFound />} />
 				</Route>

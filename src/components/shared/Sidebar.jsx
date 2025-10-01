@@ -122,8 +122,8 @@ const Sidebar = () => {
 			{ to: '/stores', icon: Building2, label: 'Stores' },
 			{ to: '/products', icon: Package, label: 'Products' },
 			{ to: '/orders', icon: TruckIcon, label: 'Orders' },
-			// { to: "/stockin", icon: Boxes, label: "Stock In" },
-			// { to: "/stockout", icon: Truck, label: "Stock Out" },
+			{ to: "/stockin", icon: Boxes, label: "Stock In" },
+			{ to: "/stockout", icon: Truck, label: "Stock Out" },
 		],
 		[]
 	);
