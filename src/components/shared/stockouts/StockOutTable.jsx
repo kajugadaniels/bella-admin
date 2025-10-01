@@ -163,11 +163,11 @@ export default function StockOutTable({ rows = [], loading = false, onView }) {
                           <img
                             src={p.image}
                             alt={title}
-                            className="h-9 w-9 shrink-0 rounded-lg object-cover ring-1 ring-black/5 dark:ring-white/10"
+                            className="h-10 w-10 shrink-0 rounded-lg object-cover ring-1 ring-black/5 dark:ring-white/10"
                           />
                         ) : (
                           <div
-                            className="h-7 w-7 shrink-0 rounded-md grid place-items-center text-[12px] font-semibold text-white bg-gradient-to-br from-[var(--primary-color)] to-emerald-600 ring-1 ring-black/5 dark:ring-white/10"
+                            className="h-10 w-10 shrink-0 rounded-4xl grid place-items-center text-[12px] font-semibold text-white bg-gradient-to-br from-[var(--primary-color)] to-emerald-600 ring-1 ring-black/5 dark:ring-white/10"
                             aria-hidden
                             title={title}
                           >
