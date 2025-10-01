@@ -8,15 +8,20 @@ import RecentStockoutsTable from "@/components/shared/dashboard/RecentStockoutsT
 import InventorySnapshot from "@/components/shared/dashboard/InventorySnapshot";
 import DashboardSkeleton from "@/components/shared/dashboard/DashboardSkeleton";
 import { GlassCard } from "@/components/shared/dashboard/utils";
+import useDashboardData from "@/components/shared/dashboard/useDashboardData";
 
 const Dashboard = () => {
     const [selectedDate, setSelectedDate] = useState(new Date());
-    const useDashboardData = require("@/components/shared/dashboard/useDashboardData").default; // avoids circular in some bundlers
     const { loading, refreshing, data, refetch } = useDashboardData(selectedDate);
 
     return (
         <div className="space-y-4">
-            <DateControls date={selectedDate} onChange={setSelectedDate} refreshing={refreshing} onRefresh={refetch} />
+            <DateControls
+                date={selectedDate}
+                onChange={setSelectedDate}
+                refreshing={refreshing}
+                onRefresh={refetch}
+            />
             {loading ? (
                 <DashboardSkeleton />
             ) : (
@@ -35,7 +40,6 @@ const Dashboard = () => {
 
                     <InventorySnapshot rows={data?.inventoryTop} ccy={data?.ccy} />
 
-                    {/* subtle footer / notes */}
                     <GlassCard className="p-3">
                         <div className="text-xs text-neutral-500">
                             Daily filters limit queries to the selected date (00:00–23:59). Inventory snapshot shows current on-hand
