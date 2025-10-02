@@ -227,9 +227,7 @@ const ResetPassword = () => {
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                             placeholder="••••••••"
-                            className="px-10 py-6 rounded-lg border-neutral-300 text-[14px]
-                         focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:outline-none
-                         hover:border-neutral-400"
+                            className="px-10 py-6 rounded-lg border-neutral-300 text-sm placeholder:text-neutral-400 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:outline-none hover:border-neutral-400"
                         />
                         <button
                             type="button"
@@ -289,8 +287,7 @@ const ResetPassword = () => {
                         type="submit"
                         disabled={loading}
                         onClick={handleSubmit}
-                        className="w-full px-6 py-6 rounded-4xl glass-cta text-white 
-                       hover:opacity-95 active:opacity-90 outline-none focus-visible:outline-none"
+                        className="w-full px-6 py-6 rounded-4xl glass-cta text-white hover:opacity-95 active:opacity-90 outline-none focus-visible:outline-none cursor-pointer"
                     >
                         {loading ? (
                             <span className="inline-flex items-center gap-2">

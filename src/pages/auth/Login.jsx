@@ -213,9 +213,7 @@ const Login = () => {
                             value={form.emailOrPhone}
                             onChange={onChange}
                             placeholder="inezabella@gmail.com"
-                            className="px-10 py-6 rounded-lg border-neutral-300 text-sm placeholder:text-neutral-400 
-               focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:outline-none
-               hover:border-neutral-400"
+                            className="px-10 py-6 rounded-lg border-neutral-300 text-sm placeholder:text-neutral-400 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:outline-none hover:border-neutral-400"
                         />
                     </div>
                     {fieldErr.identifier ? (
@@ -237,9 +235,7 @@ const Login = () => {
                             value={form.password}
                             onChange={onChange}
                             placeholder="••••••••"
-                            className="px-10 py-6 rounded-lg border-neutral-300 text-sm placeholder:text-neutral-400
-               focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:outline-none
-               hover:border-neutral-400"
+                            className="px-10 py-6 rounded-lg border-neutral-300 text-sm placeholder:text-neutral-400 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:outline-none hover:border-neutral-400"
                         />
                         <button
                             type="button"
@@ -290,15 +286,13 @@ const Login = () => {
                     </Button>
                 </motion.div>
 
-                {/* Divider */}
-                <div className="relative text-center">
+                {/* <div className="relative text-center">
                     <div className="absolute inset-0 flex items-center">
                         <div className="w-full border-t border-neutral-200" />
                     </div>
                     <span className="relative bg-white px-4 text-xs text-neutral-500">OR</span>
                 </div>
 
-                {/* Google */}
                 <motion.div whileTap={{ scale: 0.98 }}>
                     <Button
                         type="button"
@@ -314,7 +308,7 @@ const Login = () => {
                         />
                         Continue with Google
                     </Button>
-                </motion.div>
+                </motion.div> */}
             </form>
         </div>
     );

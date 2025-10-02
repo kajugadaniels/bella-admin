@@ -99,9 +99,7 @@ const ForgetPassword = () => {
                                 setEmailErr("");
                             }}
                             placeholder="inezabella@gmail.com"
-                            className="px-10 py-6 rounded-lg border-neutral-300 text-[14px] placeholder:text-neutral-400 
-                         focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:outline-none
-                         hover:border-neutral-400"
+                            className="px-10 py-6 rounded-lg border-neutral-300 text-sm placeholder:text-neutral-400 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:outline-none hover:border-neutral-400"
                         />
                     </div>
                     {emailErr ? <p className="text-[12px] text-red-500">{emailErr}</p> : null}
@@ -112,12 +110,11 @@ const ForgetPassword = () => {
                     <Button
                         type="submit"
                         disabled={loading}
-                        className="w-full px-6 py-6 rounded-4xl glass-cta text-white 
-                       hover:opacity-95 active:opacity-90 outline-none focus-visible:outline-none"
+                        className="w-full px-6 py-6 rounded-4xl glass-cta text-white hover:opacity-95 active:opacity-90 outline-none focus-visible:outline-none cursor-pointer"
                     >
                         {loading ? (
                             <span className="inline-flex items-center gap-2">
-                                <Loader2 className="animate-spin" size={18} /> ending OTP…
+                                <Loader2 className="animate-spin" size={18} /> Sending OTP…
                             </span>
                         ) : (
                             "Send OTP"
