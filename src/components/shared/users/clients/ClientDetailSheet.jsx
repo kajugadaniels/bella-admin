@@ -1,37 +1,50 @@
-import React, { useEffect, useMemo, useState, useCallback } from "react";
-import { ClipboardCopy, Copy, ExternalLink, Mail, Phone, Shield, UserCircle2 } from "lucide-react";
-import { toast } from "sonner";
-import { superadmin } from "@/api";
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
+import { ClipboardCopy, Copy, ExternalLink, Mail, Phone, Shield, UserCircle2 } from 'lucide-react';
+import { toast } from 'sonner';
+import { superadmin } from '@/api';
 
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Separator } from '@/components/ui/separator';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 
-import ClientDeleteDialog from "./ClientDeleteDialog";
+import ClientDeleteDialog from './ClientDeleteDialog';
 
-function initials(text = "") {
-	const n = (text || "").trim();
-	if (!n) return "C";
-	if (n.includes("@")) return n[0].toUpperCase();
+function initials(text = '') {
+	const n = (text || '').trim();
+	if (!n) return 'C';
+	if (n.includes('@')) return n[0].toUpperCase();
 	const parts = n.split(/\s+/);
-	const a = parts[0]?.[0] || "C";
-	const b = (parts[1]?.[0] || n[1] || "").toUpperCase();
+	const a = parts[0]?.[0] || 'C';
+	const b = (parts[1]?.[0] || n[1] || '').toUpperCase();
 	return (a + b).toUpperCase();
 }
 
-const GlassCard = ({ className = "", children }) => (
-	<div className={["rounded-2xl border p-3", "border-neutral-200/80 bg-white/70 backdrop-blur-md", "dark:border-neutral-800 dark:bg-neutral-900/60", className].join(" ")}>
+const GlassCard = ({ className = '', children }) => (
+	<div
+		className={[
+			'rounded-2xl border p-3',
+			'border-neutral-200/80 bg-white/70 backdrop-blur-md',
+			'dark:border-neutral-800 dark:bg-neutral-900/60',
+			className,
+		].join(' ')}
+	>
 		{children}
 	</div>
 );
 
 const InfoRow = ({ icon: Icon, label, value, href, copyable }) => {
-	const content = <div className="min-w-0 flex-1 truncate text-sm text-neutral-800 dark:text-neutral-200">{value ?? "—"}</div>;
+	const content = (
+		<div className="min-w-0 flex-1 truncate text-sm text-neutral-800 dark:text-neutral-200">{value ?? '—'}</div>
+	);
 	const copy = async () => {
-		try { await navigator.clipboard.writeText(String(value ?? "")); toast.success(`${label} copied`); }
-		catch { toast.error("Could not copy"); }
+		try {
+			await navigator.clipboard.writeText(String(value ?? ''));
+			toast.success(`${label} copied`);
+		} catch {
+			toast.error('Could not copy');
+		}
 	};
 	return (
 		<div className="flex items-center gap-3 rounded-xl px-3 py-2 transition-colors hover:bg-black/[0.03] dark:hover:bg-white/5">
@@ -40,15 +53,27 @@ const InfoRow = ({ icon: Icon, label, value, href, copyable }) => {
 			</div>
 			<div className="w-28 shrink-0 text-xs font-medium uppercase tracking-wide text-neutral-500">{label}</div>
 			{href ? (
-				<a href={href} target={href.startsWith("http") ? "_blank" : undefined} rel="noreferrer" className="flex-1 min-w-0">
+				<a
+					href={href}
+					target={href.startsWith('http') ? '_blank' : undefined}
+					rel="noreferrer"
+					className="flex-1 min-w-0"
+				>
 					<div className="group flex items-center gap-2">
 						{content}
 						<ExternalLink className="h-3.5 w-3.5 opacity-60 group-hover:opacity-100" />
 					</div>
 				</a>
-			) : content}
+			) : (
+				content
+			)}
 			{copyable && value ? (
-				<Button size="icon" variant="ghost" onClick={copy} className="h-8 w-8 text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-100">
+				<Button
+					size="icon"
+					variant="ghost"
+					onClick={copy}
+					className="h-8 w-8 text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-100"
+				>
 					<Copy className="h-4 w-4" />
 				</Button>
 			) : null}
@@ -80,7 +105,8 @@ export default function ClientDetailSheet({ clientId, open, onOpenChange, onDele
 			const data = res?.data?.data || res?.data;
 			setPayload(data || null);
 		} catch (err) {
-			const msg = err?.response?.data?.message || err?.response?.data?.detail || err?.message || "Unable to load client";
+			const msg =
+				err?.response?.data?.message || err?.response?.data?.detail || err?.message || 'Unable to load client';
 			toast.error(msg);
 			setPayload(null);
 		} finally {
@@ -90,8 +116,13 @@ export default function ClientDetailSheet({ clientId, open, onOpenChange, onDele
 
 	useEffect(() => {
 		let ignore = false;
-		(async () => { if (!open || !clientId) return; if (!ignore) await fetchClient(); })();
-		return () => { ignore = true; };
+		(async () => {
+			if (!open || !clientId) return;
+			if (!ignore) await fetchClient();
+		})();
+		return () => {
+			ignore = true;
+		};
 	}, [open, clientId, fetchClient]);
 
 	// Prefer client values, fallback to user
@@ -99,7 +130,7 @@ export default function ClientDetailSheet({ clientId, open, onOpenChange, onDele
 	const user = n.user || {};
 	const client = n.client || null;
 
-	const displayName = client?.name || user?.username || user?.email || "Client";
+	const displayName = client?.name || user?.username || user?.email || 'Client';
 	const displayEmail = client?.email || user?.email || null;
 	const displayPhone = client?.phone_number || user?.phone_number || null;
 
@@ -108,18 +139,31 @@ export default function ClientDetailSheet({ clientId, open, onOpenChange, onDele
 
 	const avatar = useMemo(() => {
 		if (user?.image_url) {
-			return <img src={user.image_url} alt={title} className="h-14 w-14 rounded-xl object-cover ring-1 ring-black/5 dark:ring-white/10" />;
+			return (
+				<img
+					src={user.image_url}
+					alt={title}
+					className="h-10 w-10 rounded-xl object-cover ring-1 ring-black/5 dark:ring-white/10"
+				/>
+			);
 		}
 		return (
-			<div className="grid h-14 w-14 place-items-center rounded-xl text-sm font-semibold text-white ring-1 ring-black/5 dark:ring-white/10" style={{ background: "linear-gradient(135deg, var(--primary-color), #059669)" }}>
+			<div
+				className="grid h-10 w-10 place-items-center rounded-4xl text-sm font-semibold text-white ring-1 ring-black/5 dark:ring-white/10"
+				style={{ background: 'linear-gradient(135deg, var(--primary-color), #059669)' }}
+			>
 				{initials(title)}
 			</div>
 		);
 	}, [user, title]);
 
 	const copyId = async () => {
-		try { await navigator.clipboard.writeText(String(id || "")); toast.success("Client ID copied"); }
-		catch { toast.error("Could not copy ID"); }
+		try {
+			await navigator.clipboard.writeText(String(id || ''));
+			toast.success('Client ID copied');
+		} catch {
+			toast.error('Could not copy ID');
+		}
 	};
 
 	return (
@@ -128,7 +172,10 @@ export default function ClientDetailSheet({ clientId, open, onOpenChange, onDele
 				side="right"
 				className="p-0 w-[min(980px,100vw)] sm:max-w-[980px] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:slide-in-from-right data-[state=closed]:slide-out-to-right border-l border-neutral-200 bg-white/90 backdrop-blur-xl dark:border-neutral-800 dark:bg-neutral-950/85"
 			>
-				<div className="h-20 w-full" style={{ background: "linear-gradient(90deg, var(--primary-color), #059669)" }} />
+				<div
+					className="h-20 w-full"
+					style={{ background: 'linear-gradient(90deg, var(--primary-color), #059669)' }}
+				/>
 				<div className="-mt-10 px-5 sm:px-6">
 					<GlassCard className="p-4">
 						<SheetHeader className="mb-1">
@@ -139,23 +186,33 @@ export default function ClientDetailSheet({ clientId, open, onOpenChange, onDele
 								<div className="flex flex-wrap items-center gap-3">
 									{avatar}
 									<div className="min-w-0 flex-1">
-										<div className="truncate text-xl font-semibold">{title}</div>
-										<SheetDescription className="truncate text-xs">{id || ""}</SheetDescription>
+										<div className="truncate text-lg font-semibold">{title}</div>
+										<SheetDescription className="truncate text-xs">{id || ''}</SheetDescription>
 									</div>
 
 									<div className="flex flex-wrap items-center gap-2">
-										<Badge variant={(n?.status || "active") === "pending" ? "secondary" : "default"} className="glass-badge">
-											{n?.status || "active"}
+										<Badge
+											variant={(n?.status || 'active') === 'pending' ? 'secondary' : 'default'}
+											className="glass-badge"
+										>
+											{n?.status || 'active'}
 										</Badge>
 
-										<Button variant="outline" onClick={copyId} className="cursor-pointer px-6 py-4 rounded-4xl">
+										<Button
+											variant="outline"
+											onClick={copyId}
+											className="cursor-pointer px-6 py-4 rounded-4xl"
+										>
 											<ClipboardCopy className="mr-2 h-4 w-4" />
 											Copy ID
 										</Button>
 
 										{displayEmail && (
 											<a href={`mailto:${displayEmail}`} className="contents">
-												<Button variant="outline" className="cursor-pointer px-6 py-4 rounded-4xl">
+												<Button
+													variant="outline"
+													className="cursor-pointer px-6 py-4 rounded-4xl"
+												>
 													<Mail className="mr-2 h-4 w-4" />
 													Email
 												</Button>
@@ -163,7 +220,10 @@ export default function ClientDetailSheet({ clientId, open, onOpenChange, onDele
 										)}
 										{displayPhone && (
 											<a href={`tel:${displayPhone}`} className="contents">
-												<Button variant="outline" className="cursor-pointer px-6 py-4 rounded-4xl">
+												<Button
+													variant="outline"
+													className="cursor-pointer px-6 py-4 rounded-4xl"
+												>
 													<Phone className="mr-2 h-4 w-4" />
 													Call
 												</Button>
@@ -203,9 +263,21 @@ export default function ClientDetailSheet({ clientId, open, onOpenChange, onDele
 									Profile & Contact
 								</div>
 								<div className="mt-2 space-y-1">
-									<InfoRow icon={Mail} label="Email" value={displayEmail} href={displayEmail ? `mailto:${displayEmail}` : undefined} copyable />
+									<InfoRow
+										icon={Mail}
+										label="Email"
+										value={displayEmail}
+										href={displayEmail ? `mailto:${displayEmail}` : undefined}
+										copyable
+									/>
 									<InfoRow icon={UserCircle2} label="Username" value={user?.username} copyable />
-									<InfoRow icon={Phone} label="Phone" value={displayPhone} href={displayPhone ? `tel:${displayPhone}` : undefined} copyable />
+									<InfoRow
+										icon={Phone}
+										label="Phone"
+										value={displayPhone}
+										href={displayPhone ? `tel:${displayPhone}` : undefined}
+										copyable
+									/>
 								</div>
 							</GlassCard>
 
@@ -216,12 +288,18 @@ export default function ClientDetailSheet({ clientId, open, onOpenChange, onDele
 									Status & Meta
 								</div>
 								<div className="mt-2 space-y-1">
-									<InfoRow icon={Shield} label="Role" value={user?.role || "CLIENT"} copyable />
-									<InfoRow icon={Shield} label="Status" value={n?.status || "active"} />
+									<InfoRow icon={Shield} label="Role" value={user?.role || 'CLIENT'} copyable />
+									<InfoRow icon={Shield} label="Status" value={n?.status || 'active'} />
 									<InfoRow
 										icon={Shield}
 										label="Created at"
-										value={n?.created_at ? new Date(n.created_at).toLocaleString() : user?.created_at ? new Date(user.created_at).toLocaleString() : "—"}
+										value={
+											n?.created_at
+												? new Date(n.created_at).toLocaleString()
+												: user?.created_at
+												? new Date(user.created_at).toLocaleString()
+												: '—'
+										}
 									/>
 								</div>
 							</GlassCard>

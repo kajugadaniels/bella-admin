@@ -1,23 +1,28 @@
-import React from "react";
-import { Eye, MoreHorizontal, Trash2 } from "lucide-react";
-import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import React from 'react';
+import { Eye, MoreHorizontal, Trash2 } from 'lucide-react';
+import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
-function initials(text = "") {
-	const n = (text || "").trim();
-	if (!n) return "C";
-	if (n.includes("@")) return n[0].toUpperCase();
+function initials(text = '') {
+	const n = (text || '').trim();
+	if (!n) return 'C';
+	if (n.includes('@')) return n[0].toUpperCase();
 	const parts = n.split(/\s+/);
-	const a = parts[0]?.[0] || "C";
-	const b = (parts[1]?.[0] || n[1] || "").toUpperCase();
+	const a = parts[0]?.[0] || 'C';
+	const b = (parts[1]?.[0] || n[1] || '').toUpperCase();
 	return (a + b).toUpperCase();
 }
 
 const ClientCard = ({ r, onView, onDelete }) => {
 	const display = r?.__display || {};
-	const title = display.name || r?.user?.email || r?.user?.username || "Client";
+	const title = display.name || r?.user?.email || r?.user?.username || 'Client';
 	const inits = initials(title);
 	const email = display.email || r?.user?.email;
 	const phone = display.phone || r?.user?.phone_number;
@@ -34,7 +39,7 @@ const ClientCard = ({ r, onView, onDelete }) => {
 				) : (
 					<div
 						className="h-8 w-8 shrink-0 rounded-full grid place-items-center text-[12px] font-semibold text-white ring-1 ring-black/5 dark:ring-white/10"
-						style={{ background: "linear-gradient(135deg, var(--primary-color), #059669)" }}
+						style={{ background: 'linear-gradient(135deg, var(--primary-color), #059669)' }}
 					>
 						{inits}
 					</div>
@@ -42,19 +47,24 @@ const ClientCard = ({ r, onView, onDelete }) => {
 				<div className="min-w-0 flex-1">
 					<div className="flex flex-wrap items-center gap-2">
 						<div className="truncate text-sm font-semibold">{title}</div>
-						<Badge variant={r?.status === "pending" ? "secondary" : "default"} className="glass-badge">
-							{r?.status || "active"}
+						<Badge variant={r?.status === 'pending' ? 'secondary' : 'default'} className="glass-badge">
+							{r?.status || 'active'}
 						</Badge>
 					</div>
 					<div className="truncate text-xs text-neutral-500">{r?.client_id}</div>
 
 					<div className="mt-2 grid gap-1">
-						<div className="text-sm">{email || "—"}</div>
-						<div className="text-xs text-neutral-500">{phone || "—"}</div>
+						<div className="text-sm">{email || '—'}</div>
+						<div className="text-xs text-neutral-500">{phone || '—'}</div>
 					</div>
 
 					<div className="mt-3 flex flex-wrap items-center gap-2">
-						<Button variant="outline" size="sm" onClick={() => onView?.(r)} className="glass-button px-6 py-4 rounded-4xl">
+						<Button
+							variant="outline"
+							size="sm"
+							onClick={() => onView?.(r)}
+							className="glass-button px-6 py-4 rounded-4xl"
+						>
 							<Eye className="mr-2 h-4 w-4" />
 							View
 						</Button>
@@ -91,11 +101,12 @@ const ClientTable = ({ rows = [], loading = false, onView, onDelete }) => {
 						No clients found.
 					</div>
 				)}
-				{!loading && rows?.map((r) => (
-					<div key={r.client_id} className="mb-3">
-						<ClientCard r={r} onView={onView} onDelete={onDelete} />
-					</div>
-				))}
+				{!loading &&
+					rows?.map((r) => (
+						<div key={r.client_id} className="mb-3">
+							<ClientCard r={r} onView={onView} onDelete={onDelete} />
+						</div>
+					))}
 			</div>
 
 			{/* Desktop table */}
@@ -125,81 +136,104 @@ const ClientTable = ({ rows = [], loading = false, onView, onDelete }) => {
 								</TableCell>
 							</TableRow>
 						)}
-						{!loading && rows?.map((r) => {
-							const display = r?.__display || {};
-							const title = display.name || r?.user?.email || r?.user?.username || "Client";
-							const inits = initials(title);
-							const email = display.email || r?.user?.email;
-							const phone = display.phone || r?.user?.phone_number;
+						{!loading &&
+							rows?.map((r) => {
+								const display = r?.__display || {};
+								const title = display.name || r?.user?.email || r?.user?.username || 'Client';
+								const inits = initials(title);
+								const email = display.email || r?.user?.email;
+								const phone = display.phone || r?.user?.phone_number;
 
-							return (
-								<TableRow key={r.client_id} className="row-soft last:border-0 hover:bg-black/[0.025] dark:hover:bg-white/5 transition-colors">
-									<TableCell>
-										<div className="flex items-center gap-3">
-											{r?.user?.image_url ? (
-												<img
-													src={r.user.image_url}
-													alt={title}
-													className="h-9 w-9 shrink-0 rounded-lg object-cover ring-1 ring-black/5 dark:ring-white/10"
-												/>
-											) : (
-												<div
-													className="h-7 w-7 shrink-0 rounded-full grid place-items-center text-[12px] font-semibold text-white bg-gradient-to-br from-[var(--primary-color)] to-emerald-600 ring-1 ring-black/5 dark:ring-white/10"
-													aria-hidden
-													title={title}
-												>
-													{inits}
+								return (
+									<TableRow
+										key={r.client_id}
+										className="row-soft last:border-0 hover:bg-black/[0.025] dark:hover:bg-white/5 transition-colors"
+									>
+										<TableCell>
+											<div className="flex items-center gap-3">
+												{r?.user?.image_url ? (
+													<img
+														src={r.user.image_url}
+														alt={title}
+														className="h-9 w-9 shrink-0 rounded-lg object-cover ring-1 ring-black/5 dark:ring-white/10"
+													/>
+												) : (
+													<div
+														className="h-7 w-7 shrink-0 rounded-full grid place-items-center text-[12px] font-semibold text-white bg-gradient-to-br from-[var(--primary-color)] to-emerald-600 ring-1 ring-black/5 dark:ring-white/10"
+														aria-hidden
+														title={title}
+													>
+														{inits}
+													</div>
+												)}
+												<div className="min-w-0">
+													<div className="truncate text-sm font-medium">{title}</div>
+													<div className="truncate text-xs text-neutral-500">
+														{r.client_id}
+													</div>
 												</div>
-											)}
-											<div className="min-w-0">
-												<div className="truncate text-sm font-medium">{title}</div>
-												<div className="truncate text-xs text-neutral-500">{r.client_id}</div>
 											</div>
-										</div>
-									</TableCell>
+										</TableCell>
 
-									<TableCell>
-										<div className="text-sm">{email || "—"}</div>
-										<div className="text-xs text-neutral-500">{phone || "—"}</div>
-									</TableCell>
+										<TableCell>
+											<div className="text-sm">{email || '—'}</div>
+											<div className="text-xs text-neutral-500">{phone || '—'}</div>
+										</TableCell>
 
-									<TableCell className="text-right">
-										<Badge variant={r?.status === "pending" ? "secondary" : "default"} className="glass-badge">
-											{r?.status || "active"}
-										</Badge>
-									</TableCell>
+										<TableCell className="text-right">
+											<Badge
+												variant={r?.status === 'pending' ? 'secondary' : 'default'}
+												className="glass-badge"
+											>
+												{r?.status || 'active'}
+											</Badge>
+										</TableCell>
 
-									<TableCell className="text-right">
-										<div className="text-sm">
-											{r?.created_at ? new Date(r.created_at).toISOString().slice(0, 10) : "—"}
-										</div>
-										<div className="text-xs text-neutral-500">
-											{r?.created_at ? new Date(r.created_at).toISOString().slice(11, 16) : ""}
-										</div>
-									</TableCell>
+										<TableCell className="text-right">
+											<div className="text-sm">
+												{r?.created_at
+													? new Date(r.created_at).toISOString().slice(0, 10)
+													: '—'}
+											</div>
+											<div className="text-xs text-neutral-500">
+												{r?.created_at
+													? new Date(r.created_at).toISOString().slice(11, 16)
+													: ''}
+											</div>
+										</TableCell>
 
-									<TableCell className="text-right">
-										<DropdownMenu>
-											<DropdownMenuTrigger asChild>
-												<Button variant="ghost" size="icon" className="h-8 w-8 cursor-pointer">
-													<MoreHorizontal className="h-4 w-4" />
-												</Button>
-											</DropdownMenuTrigger>
-											<DropdownMenuContent align="end" className="glass-menu">
-												<DropdownMenuItem className="cursor-pointer" onClick={() => onView?.(r)}>
-													<Eye className="mr-2 h-4 w-4" />
-													View details
-												</DropdownMenuItem>
-												<DropdownMenuItem className="cursor-pointer text-red-600 focus:text-red-700" onClick={() => onDelete?.(r)}>
-													<Trash2 className="mr-2 h-4 w-4" />
-													Delete
-												</DropdownMenuItem>
-											</DropdownMenuContent>
-										</DropdownMenu>
-									</TableCell>
-								</TableRow>
-							);
-						})}
+										<TableCell className="text-right">
+											<DropdownMenu>
+												<DropdownMenuTrigger asChild>
+													<Button
+														variant="ghost"
+														size="icon"
+														className="h-8 w-8 cursor-pointer"
+													>
+														<MoreHorizontal className="h-4 w-4" />
+													</Button>
+												</DropdownMenuTrigger>
+												<DropdownMenuContent align="end" className="glass-menu">
+													<DropdownMenuItem
+														className="cursor-pointer"
+														onClick={() => onView?.(r)}
+													>
+														<Eye className="mr-2 h-4 w-4" />
+														View details
+													</DropdownMenuItem>
+													<DropdownMenuItem
+														className="cursor-pointer text-red-600 focus:text-red-700"
+														onClick={() => onDelete?.(r)}
+													>
+														<Trash2 className="mr-2 h-4 w-4" />
+														Delete
+													</DropdownMenuItem>
+												</DropdownMenuContent>
+											</DropdownMenu>
+										</TableCell>
+									</TableRow>
+								);
+							})}
 					</TableBody>
 				</Table>
 			</div>
