@@ -1,35 +1,70 @@
-/* Custom font from Google Fonts */
+/* Google font */
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
 
+/* Tailwind v4 base + animations */
 @import "tailwindcss";
 @import "tw-animate-css";
 
-/* Apply Outfit font globally */
+/* ============================================================================
+   GLOBAL: Light mode only (enforced)
+   - No dark media queries, no .dark overrides.
+   - Consistent form controls + scrollbars in light.
+============================================================================ */
+
+/* Typography */
 * {
     font-family: 'Outfit', sans-serif;
 }
 
-/* Color tokens */
+/* Design tokens (aligned with auth, with admin extras) */
 :root {
+    /* Brand */
     --primary-color: #1f4f3d;
     --secondary-color: #f5f5f5;
-    --black-color: #000000;
-    --white-color: #ffffff;
-    --success-color: #4caf50;
-    --danger-color: #f44336;
-    --warning-color: #ff9800;
-    --info-color: #2196f3;
+
+    /* Surface & text */
+    --bg: #ffffff;
+    --fg: #0a0a0a;
+
+    --muted: #fafafa;
+    --muted-fg: #6b7280;
+
+    --surface: #ffffff;
+    --surface-contrast: #111827;
+
+    /* Borders */
+    --border: #e5e7eb;
+    --border-strong: #d1d5db;
+
+    /* Feedback */
+    --success-color: #22c55e;
+    --danger-color: #ef4444;
+    --warning-color: #f59e0b;
+    --info-color: #3b82f6;
+
+    /* Misc */
     --font-size-sm: 14px;
+
+    /* Shadows */
+    --shadow-soft: 0 10px 30px rgba(2, 6, 23, 0.06);
+    --shadow-cta: 0 6px 18px rgba(5, 150, 105, 0.25);
+    --shadow-cta-hover: 0 8px 22px rgba(5, 150, 105, 0.35);
 }
 
-/* Light base */
-body {
-    background-color: var(--white-color);
-    color: var(--black-color);
-}
-
+/* Tell browsers to render light UI for form controls & scrollbars */
 html {
+    color-scheme: light;
     font-size: 14px;
+    background: #fff;
+}
+
+/* Base body */
+body {
+    background-color: var(--bg);
+    color: var(--fg);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
 }
 
 /* Helpers */
@@ -49,32 +84,23 @@ html {
     background-color: var(--secondary-color);
 }
 
-/* Dark scheme */
-@media (prefers-color-scheme: dark) {
-    body {
-        background-color: #121212;
-        color: #e0e0e0;
-    }
-
-    .text-primary {
-        color: var(--secondary-color);
-    }
-
-    .bg-primary {
-        background-color: var(--primary-color);
-    }
+/* Selection */
+::selection {
+    background: #d1fae5;
+    color: #065f46;
 }
 
-/* No scrollbar utility */
+/* Hide scrollbars utility */
 .no-scrollbar::-webkit-scrollbar {
     display: none;
 }
 
 .no-scrollbar {
     -ms-overflow-style: none;
+    scrollbar-width: none;
 }
 
-/* Reset outlines */
+/* Focus/outline reset */
 button,
 .btn,
 input,
@@ -92,23 +118,28 @@ textarea:focus {
     box-shadow: none !important;
 }
 
-/* ===== Custom glass / soft utilities (new) ===== */
+/* Keep autofill light */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+    -webkit-text-fill-color: var(--fg);
+    -webkit-box-shadow: 0 0 0px 1000px #fff inset;
+    transition: background-color 9999s ease-in-out 0s;
+}
+
+/* ============================================================================
+   Admin Glass / Soft UI (Light-only)
+============================================================================ */
 
 /* Card glass effect */
 .glass-card {
     background: rgba(255, 255, 255, 0.65);
     border: 1px solid rgba(0, 0, 0, 0.05);
     border-radius: 16px;
-    box-shadow: 0 10px 30px rgba(2, 6, 23, 0.06);
+    box-shadow: var(--shadow-soft);
     -webkit-backdrop-filter: saturate(150%) blur(12px);
     backdrop-filter: saturate(150%) blur(12px);
     cursor: pointer;
-}
-
-.dark .glass-card {
-    background: rgba(18, 18, 18, 0.55);
-    border-color: rgba(255, 255, 255, 0.08);
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
 }
 
 /* Inputs with subtle glass fill */
@@ -119,26 +150,14 @@ textarea:focus {
     backdrop-filter: blur(8px);
 }
 
-.dark .glass-input {
-    background: rgba(24, 24, 27, 0.5) !important;
-}
-
 /* Soft divider line */
 .soft-divider {
     background-color: rgba(3, 7, 18, 0.06) !important;
 }
 
-.dark .soft-divider {
-    background-color: rgba(255, 255, 255, 0.08) !important;
-}
-
 /* Table: lighter row separators */
 .table-glassy tr {
     border-bottom: 1px solid rgba(3, 7, 18, 0.05);
-}
-
-.dark .table-glassy tr {
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .table-glassy th {
@@ -150,19 +169,10 @@ textarea:focus {
     border-bottom-color: rgba(3, 7, 18, 0.05) !important;
 }
 
-.dark .row-soft {
-    border-bottom-color: rgba(255, 255, 255, 0.06) !important;
-}
-
 /* Glass badges/buttons/menus */
 .glass-badge {
     background: rgba(15, 118, 110, 0.08);
     border: 1px solid rgba(16, 185, 129, 0.15);
-}
-
-.dark .glass-badge {
-    background: rgba(16, 185, 129, 0.15);
-    border-color: rgba(16, 185, 129, 0.25);
 }
 
 .glass-button {
@@ -177,27 +187,18 @@ textarea:focus {
     background: rgba(255, 255, 255, 0.9);
 }
 
-.dark .glass-button {
-    background: rgba(24, 24, 27, 0.5);
-    border-color: rgba(255, 255, 255, 0.08);
-}
-
-.dark .glass-button:hover {
-    background: rgba(24, 24, 27, 0.65);
-}
-
-/* More prominent CTA */
+/* Prominent CTAs */
 .glass-cta {
     background: linear-gradient(135deg, var(--primary-color), #059669);
     color: #fff;
     border: 0 !important;
-    box-shadow: 0 6px 18px rgba(5, 150, 105, 0.25);
+    box-shadow: var(--shadow-cta);
     cursor: pointer;
 }
 
 .glass-cta:hover {
     filter: brightness(1.05);
-    box-shadow: 0 8px 22px rgba(5, 150, 105, 0.35);
+    box-shadow: var(--shadow-cta-hover);
 }
 
 .glass-cta-danger {
@@ -220,9 +221,4 @@ textarea:focus {
     backdrop-filter: blur(10px);
     border: 1px solid rgba(3, 7, 18, 0.06) !important;
     cursor: pointer;
-}
-
-.dark .glass-menu {
-    background: rgba(18, 18, 18, 0.6) !important;
-    border-color: rgba(255, 255, 255, 0.08) !important;
 }
