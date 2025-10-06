@@ -4,30 +4,7 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/logo.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-    <!-- Force light mode for UA widgets (form controls, etc.) -->
-    <meta name="color-scheme" content="light">
-    <!-- Browser UI color on mobile -->
-    <meta name="theme-color" content="#ffffff">
-
     <title>Bella - Admin</title>
-
-    <script>
-      // Hard-disable dark mode at the document level.
-      (function () {
-        // Remove any persisted or framework-applied "dark" class.
-        document.documentElement.classList.remove("dark");
-        try { localStorage.setItem("theme", "light"); } catch (e) {}
-
-        // If system theme flips while app is open, keep light.
-        var mq = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)");
-        if (mq && mq.addEventListener) {
-          mq.addEventListener("change", function () {
-            document.documentElement.classList.remove("dark");
-          });
-        }
-      })();
-    </script>
   </head>
   <body>
     <div id="root"></div>
