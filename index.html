@@ -3,32 +3,29 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/logo.svg" />
-
-    <!-- Viewport -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <!-- Force light UI for form controls / scrollbars across browsers -->
-    <meta name="color-scheme" content="light" />
-    <!-- Set browser UI color on mobile -->
-    <meta name="theme-color" content="#ffffff" />
-
-    <!-- Performance: preconnect Google Fonts (same as auth) -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!-- Force light mode for UA widgets (form controls, etc.) -->
+    <meta name="color-scheme" content="light">
+    <!-- Browser UI color on mobile -->
+    <meta name="theme-color" content="#ffffff">
 
     <title>Bella - Admin</title>
 
-    <!-- Hard set light mode before any paint -->
     <script>
+      // Hard-disable dark mode at the document level.
       (function () {
-        var d = document.documentElement;
-        // Ensure any `dark` class (from OS or extensions) is stripped
-        d.setAttribute("data-theme", "light");
-        d.classList.remove("dark");
-        // Prevent flash on Safari when it tries to honor prefers-color-scheme
-        var s = document.createElement("style");
-        s.innerHTML = "html{color-scheme:light;background:#fff}";
-        document.head.appendChild(s);
+        // Remove any persisted or framework-applied "dark" class.
+        document.documentElement.classList.remove("dark");
+        try { localStorage.setItem("theme", "light"); } catch (e) {}
+
+        // If system theme flips while app is open, keep light.
+        var mq = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)");
+        if (mq && mq.addEventListener) {
+          mq.addEventListener("change", function () {
+            document.documentElement.classList.remove("dark");
+          });
+        }
       })();
     </script>
   </head>

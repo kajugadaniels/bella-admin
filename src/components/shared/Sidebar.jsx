@@ -156,9 +156,8 @@ const Sidebar = () => {
                     animate={{ width: collapsed ? 76 : 264 }}
                     transition={{ type: "spring", damping: 24, stiffness: 260 }}
                     className={cn(
-                        "relative h-full rounded-2xl border border-neutral-200/80 bg-white/90 shadow-sm",
-                        "backdrop-blur supports-[backdrop-filter]:bg-white/70",
-                        "dark:border-neutral-800 dark:bg-neutral-900/70 dark:supports-[backdrop-filter]:bg-neutral-900/50"
+                        "relative h-full rounded-2xl border border-neutral-200 bg-white shadow-sm",
+                        "backdrop-blur supports-[backdrop-filter]:bg-white",
                     )}
                     style={{ overflow: "hidden" }}
                 >
