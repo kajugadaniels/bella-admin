@@ -5,11 +5,11 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-/* ============================================================================
+/* =============================================================================
    GLOBAL: Light mode only (enforced)
    - No dark media queries, no .dark overrides.
    - Consistent form controls + scrollbars in light.
-============================================================================ */
+============================================================================= */
 
 /* Typography */
 * {
@@ -51,17 +51,17 @@
     --shadow-cta-hover: 0 8px 22px rgba(5, 150, 105, 0.35);
 }
 
-/* Tell browsers to render light UI for form controls & scrollbars */
+/* Base html/body */
 html {
-    color-scheme: light;
+    color-scheme: light !important;
+    /* tell UA to render light widgets/scrollbars */
     font-size: 14px;
     background: #fff;
 }
 
-/* Base body */
 body {
-    background-color: var(--bg);
-    color: var(--fg);
+    background-color: var(--bg) !important;
+    color: var(--fg) !important;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
@@ -127,9 +127,9 @@ input:-webkit-autofill:focus {
     transition: background-color 9999s ease-in-out 0s;
 }
 
-/* ============================================================================
+/* =============================================================================
    Admin Glass / Soft UI (Light-only)
-============================================================================ */
+============================================================================= */
 
 /* Card glass effect */
 .glass-card {
@@ -214,11 +214,123 @@ input:-webkit-autofill:focus {
     box-shadow: 0 14px 32px rgba(150, 5, 5, 0.35);
 }
 
-/* Dropdown menu glass */
+/* Dropdown/menu glass */
 .glass-menu {
     background: rgba(255, 255, 255, 0.7) !important;
     -webkit-backdrop-filter: blur(10px);
     backdrop-filter: blur(10px);
     border: 1px solid rgba(3, 7, 18, 0.06) !important;
     cursor: pointer;
+}
+
+/* =============================================================================
+   FORCE LIGHT MODE (cross-browser)
+   - Ignore system dark mode and Tailwind/shadcn dark variants (both 'media' and 'class').
+============================================================================= */
+
+/* 1) Global guard: keep everything in light mode */
+:root,
+html,
+body,
+:where(.dark),
+:where([data-theme="dark"]) {
+    color-scheme: light !important;
+    background: #ffffff !important;
+    color: var(--fg) !important;
+}
+
+/* 2) If the browser is in dark mode (media), re-assert light tokens + neutralize surfaces */
+@media (prefers-color-scheme: dark) {
+
+    :root,
+    html,
+    body {
+        color-scheme: light !important;
+        --bg: #ffffff;
+        --fg: #0a0a0a;
+        --muted: #fafafa;
+        --muted-fg: #6b7280;
+        --surface: #ffffff;
+        --surface-contrast: #111827;
+        --border: #e5e7eb;
+        --border-strong: #d1d5db;
+        background-color: #ffffff !important;
+        color: #0a0a0a !important;
+    }
+
+    /* Cancel media-based Tailwind dark utilities by inheriting light values */
+    /* Targets any element whose class list includes "dark:" (media strategy compiles to selectors under this media block) */
+    [class*="dark:"] {
+        color: inherit !important;
+        background-color: inherit !important;
+        border-color: inherit !important;
+        box-shadow: inherit !important;
+        outline-color: inherit !important;
+    }
+
+    /* Common interactive surfaces that often get dark backgrounds in shadcn/tailwind */
+    .dropdown-menu,
+    .context-menu,
+    .dialog-content,
+    .popover-content,
+    .tooltip-content,
+    .sheet,
+    .sheet-content,
+    .menu,
+    .card,
+    .popover,
+    .tooltip,
+    .dialog,
+    .toast {
+        background-color: #ffffff !important;
+        color: #0a0a0a !important;
+        border-color: var(--border) !important;
+    }
+}
+
+/* 3) If a parent adds .dark or data-theme="dark" (class strategy), neutralize it */
+:where(.dark, [data-theme="dark"]) * {
+    background-color: initial !important;
+    color: inherit !important;
+    border-color: inherit !important;
+    box-shadow: inherit !important;
+    outline-color: inherit !important;
+}
+
+/* 4) Ensure shadcn primitives (menus/sheets) stay light even inside .dark scopes */
+:where(.dark, [data-theme="dark"]) .bg-white,
+:where(.dark, [data-theme="dark"]) .bg-neutral-50,
+:where(.dark, [data-theme="dark"]) .bg-neutral-100,
+:where(.dark, [data-theme="dark"]) .card,
+:where(.dark, [data-theme="dark"]) .menu,
+:where(.dark, [data-theme="dark"]) .sheet-content,
+:where(.dark, [data-theme="dark"]) .dropdown-menu {
+    background-color: #ffffff !important;
+    color: #0a0a0a !important;
+    border-color: var(--border) !important;
+}
+
+/* 5) Light scrollbars across engines */
+* {
+    scrollbar-color: #cbd5e1 #f8fafc;
+    /* Firefox: thumb, track */
+}
+
+*::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+*::-webkit-scrollbar-track {
+    background: #f8fafc;
+}
+
+*::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 8px;
+    border: 2px solid #f8fafc;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
 }
