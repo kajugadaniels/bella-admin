@@ -1,4 +1,3 @@
-// src/components/shared/orders/OrderList.jsx
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Badge } from '@/components/ui/badge';

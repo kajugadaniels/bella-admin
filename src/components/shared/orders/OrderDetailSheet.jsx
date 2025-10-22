@@ -1,4 +1,3 @@
-// src/components/shared/orders/OrderDetailSheet.jsx
 import React, { useCallback, useEffect, useState } from 'react';
 import { superadmin } from '@/api';
 import { toast } from 'sonner';
