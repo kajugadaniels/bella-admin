@@ -224,17 +224,16 @@ export default function StoreMemberList() {
                         className="
               hidden md:flex items-end gap-3
               rounded-2xl border border-neutral-200 bg-white/70 p-3 backdrop-blur-sm
-              dark:border-neutral-800 dark:bg-neutral-900/60
             "
                     >
                         {/* Status */}
                         <div className="min-w-[150px] flex-1">
                             <Label className="text-[12px]">Status</Label>
                             <Select value={status} onValueChange={(v) => setStatus(v)}>
-                                <SelectTrigger className="bg-white/85 backdrop-blur-sm border-neutral-200 dark:bg-neutral-900/70 dark:border-neutral-800">
+                                <SelectTrigger className="bg-white/85 backdrop-blur-sm border-neutral-200">
                                     <SelectValue placeholder="Status" />
                                 </SelectTrigger>
-                                <SelectContent className="bg-white/95 backdrop-blur-md dark:bg-neutral-900/90">
+                                <SelectContent className="bg-white/95 backdrop-blur-md">
                                     {statuses.map((s) => (
                                         <SelectItem key={s.value} value={s.value}>
                                             {s.label}
@@ -248,10 +247,10 @@ export default function StoreMemberList() {
                         <div className="min-w-[170px] flex-1">
                             <Label className="text-[12px]">Role</Label>
                             <Select value={role} onValueChange={(v) => setRole(v)}>
-                                <SelectTrigger className="bg-white/85 backdrop-blur-sm border-neutral-200 dark:bg-neutral-900/70 dark:border-neutral-800">
+                                <SelectTrigger className="bg-white/85 backdrop-blur-sm border-neutral-200">
                                     <SelectValue placeholder="All roles" />
                                 </SelectTrigger>
-                                <SelectContent className="bg-white/95 backdrop-blur-md dark:bg-neutral-900/90">
+                                <SelectContent className="bg-white/95 backdrop-blur-md">
                                     {roles.map((r) => (
                                         <SelectItem key={r.value} value={r.value}>
                                             {r.label}
@@ -265,10 +264,10 @@ export default function StoreMemberList() {
                         <div className="min-w-[180px]">
                             <Label className="text-[12px]">Ordering</Label>
                             <Select value={ordering} onValueChange={(v) => setOrdering(v)}>
-                                <SelectTrigger className="bg-white/85 backdrop-blur-sm border-neutral-200 dark:bg-neutral-900/70 dark:border-neutral-800">
+                                <SelectTrigger className="bg-white/85 backdrop-blur-sm border-neutral-200">
                                     <SelectValue placeholder="Sort by…" />
                                 </SelectTrigger>
-                                <SelectContent className="bg-white/95 backdrop-blur-md dark:bg-neutral-900/90">
+                                <SelectContent className="bg-white/95 backdrop-blur-md">
                                     {orderings.map((o) => (
                                         <SelectItem key={o.value} value={o.value}>
                                             {o.label}
@@ -289,7 +288,7 @@ export default function StoreMemberList() {
                                     setRole(DEFAULT_ROLE);
                                     setOrdering(DEFAULT_ORDERING);
                                 }}
-                                className="cursor-pointer text-neutral-700 hover:text-neutral-900 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800"
+                                className="cursor-pointer text-neutral-700 hover:text-neutral-900 hover:bg-neutral-100"
                             >
                                 Reset
                             </Button>
