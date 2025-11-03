@@ -76,19 +76,19 @@ function ExpiryBadge({ expiryDate }) {
     let cls = "border text-xs px-2.5 py-0.5 rounded-full";
     let text = "";
     if (d <= 0) {
-        cls += " bg-red-100 text-red-700 border-red-200 dark:bg-red-400/10 dark:text-red-300 dark:border-red-500/30";
+        cls += " bg-red-100 text-red-700 border-red-200";
         text = d === 0 ? "Today" : "Expired";
     } else if (d <= 2) {
         // Red when product has 2 days (or fewer) left
-        cls += " bg-red-100 text-red-700 border-red-200 dark:bg-red-400/10 dark:text-red-300 dark:border-red-500/30";
+        cls += " bg-red-100 text-red-700 border-red-200";
         text = `${d}d left`;
     } else if (d <= 7) {
         cls +=
-            " bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-400/10 dark:text-amber-300 dark:border-amber-500/30";
+            " bg-amber-100 text-amber-700 border-amber-200";
         text = `${d}d left`;
     } else {
         cls +=
-            " bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-400/10 dark:text-emerald-300 dark:border-emerald-500/30";
+            " bg-emerald-100 text-emerald-700 border-emerald-200";
         text = `${d}d left`;
     }
 
@@ -136,7 +136,7 @@ function ProductThumb({ src, alt, size = 44, rounded = "rounded-xl", className =
     return (
         <div
             className={[
-                "relative shrink-0 overflow-hidden border border-black/5 bg-white/70 dark:border-white/10 dark:bg-neutral-900/60",
+                "relative shrink-0 overflow-hidden border border-black/5 bg-white/70",
                 rounded,
                 className,
             ].join(" ")}
@@ -181,7 +181,7 @@ function ProductCard({ row, onView, onEdit, onBatch, onTogglePublish, publishBus
     const busy = !!publishBusy?.[p.id];
 
     return (
-        <div className="rounded-2xl border border-black/5 bg-white/70 p-3 backdrop-blur-md dark:border-white/10 dark:bg-neutral-900/60">
+        <div className="rounded-2xl border border-black/5 bg-white/70 p-3 backdrop-blur-md">
             <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0 flex items-center gap-3">
                     <ProductThumb src={p.image || null} alt={p.name} size={44} />
@@ -205,29 +205,29 @@ function ProductCard({ row, onView, onEdit, onBatch, onTogglePublish, publishBus
                         className="data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600"
                         aria-label={`Publish ${p.name || "product"}`}
                     />
-                    <span className="text-xs text-neutral-600 dark:text-neutral-400">{isPublished ? "Published" : "Unpublished"}</span>
+                    <span className="text-xs text-neutral-600">{isPublished ? "Published" : "Unpublished"}</span>
                 </div>
             </div>
 
             <Separator className="my-3" />
 
             <div className="grid grid-cols-2 gap-2 text-sm">
-                <div className="rounded-xl border border-black/5 bg-white/60 p-2 dark:border-white/10 dark:bg-neutral-900/50">
+                <div className="rounded-xl border border-black/5 bg-white/60 p-2">
                     <div className="text-xs uppercase text-neutral-500">Remaining</div>
                     <div className="font-semibold">{fmtNum(q.remaining)}</div>
                 </div>
 
-                <div className="rounded-xl border border-black/5 bg-white/60 p-2 dark:border-white/10 dark:bg-neutral-900/50">
+                <div className="rounded-xl border border-black/5 bg-white/60 p-2">
                     <div className="text-xs uppercase text-neutral-500">Received</div>
                     <div className="font-semibold">{fmtNum(q.received)}</div>
                 </div>
 
-                <div className="rounded-xl border border-black/5 bg-white/60 p-2 dark:border-white/10 dark:bg-neutral-900/50">
+                <div className="rounded-xl border border-black/5 bg-white/60 p-2">
                     <div className="text-xs uppercase text-neutral-500">Unit price</div>
                     <div className="font-semibold">{fmtNum(val.unit_price)}</div>
                 </div>
 
-                <div className="rounded-xl border border-black/5 bg-white/60 p-2 dark:border-white/10 dark:bg-neutral-900/50">
+                <div className="rounded-xl border border-black/5 bg-white/60 p-2">
                     <div className="text-xs uppercase text-neutral-500">Gross value</div>
                     <div className="font-semibold">{fmtNum(val.value_gross)}</div>
                 </div>
@@ -422,9 +422,9 @@ const ProductsList = () => {
                     <Separator className="soft-divider" />
 
                     {/* Table (lg+) */}
-                    <div className="hidden overflow-x-auto rounded-xl ring-1 ring-black/5 dark:ring-white/10 lg:block">
+                    <div className="hidden overflow-x-auto rounded-xl ring-1 ring-black/5 lg:block">
                         <Table className="table-glassy">
-                            <TableHeader className="sticky top-0 z-10 bg-white/70 backdrop-blur supports-[backdrop-filter]:bg-white/50 dark:bg-neutral-900/50">
+                            <TableHeader className="sticky top-0 z-10 bg-white/70 backdrop-blur supports-[backdrop-filter]:bg-white/50">
                                 <TableRow className="border-0">
                                     <TableHead className="min-w=[320px]">Product</TableHead>
                                     <TableHead>Store</TableHead>
@@ -477,7 +477,7 @@ const ProductsList = () => {
                                         return (
                                             <TableRow
                                                 key={s.id}
-                                                className="row-soft transition-colors last:border-0 hover:bg-black/[0.025] dark:hover:bg-white/5"
+                                                className="row-soft transition-colors last:border-0 hover:bg-black/[0.025]"
                                             >
                                                 <TableCell>
                                                     <div className="flex min-w-0 items-center gap-3">
@@ -518,7 +518,7 @@ const ProductsList = () => {
                                                             aria-label={`Publish ${p.name || "product"}`}
                                                             className="data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600"
                                                         />
-                                                        <span className="text-xs text-neutral-600 dark:text-neutral-400">
+                                                        <span className="text-xs text-neutral-600">
                                                             {isPublished ? "Published" : "Unpublished"}
                                                         </span>
                                                     </div>
@@ -572,7 +572,7 @@ const ProductsList = () => {
                             </div>
                         )}
                         {!loading && (!rows || rows.length === 0) && (
-                            <div className="rounded-2xl border border-black/5 bg-white/70 p-6 text-center text-sm text-neutral-500 dark:border-white/10 dark:bg-neutral-900/60">
+                            <div className="rounded-2xl border border-black/5 bg-white/70 p-6 text-center text-sm text-neutral-500">
                                 <div className="inline-flex items-center gap-2">
                                     <CircleAlert className="h-4 w-4" />
                                     No products found.
