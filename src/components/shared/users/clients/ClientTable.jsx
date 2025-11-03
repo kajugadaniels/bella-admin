@@ -28,17 +28,17 @@ const ClientCard = ({ r, onView, onDelete }) => {
 	const phone = display.phone || r?.user?.phone_number;
 
 	return (
-		<div className="rounded-2xl border border-black/5 bg-white/70 p-3 backdrop-blur dark:border-white/10 dark:bg-neutral-900/50">
+		<div className="rounded-2xl border border-black/5 bg-white/70 p-3 backdrop-blur">
 			<div className="flex items-start gap-3">
 				{r?.user?.image_url ? (
 					<img
 						src={r.user.image_url}
 						alt={title}
-						className="h-10 w-10 shrink-0 rounded-lg object-cover ring-1 ring-black/5 dark:ring-white/10"
+						className="h-10 w-10 shrink-0 rounded-lg object-cover ring-1 ring-black/5"
 					/>
 				) : (
 					<div
-						className="h-8 w-8 shrink-0 rounded-full grid place-items-center text-[12px] font-semibold text-white ring-1 ring-black/5 dark:ring-white/10"
+						className="h-8 w-8 shrink-0 rounded-full grid place-items-center text-[12px] font-semibold text-white ring-1 ring-black/5"
 						style={{ background: 'linear-gradient(135deg, var(--primary-color), #059669)' }}
 					>
 						{inits}
@@ -72,7 +72,7 @@ const ClientCard = ({ r, onView, onDelete }) => {
 							variant="ghost"
 							size="sm"
 							onClick={() => onDelete?.(r)}
-							className="glass-cta-danger px-6 py-4 rounded-4xl hover:bg-red-50 dark:hover:bg-red-950/20"
+							className="glass-cta-danger px-6 py-4 rounded-4xl hover:bg-red-50"
 						>
 							<Trash2 className="mr-2 h-4 w-4" />
 							Delete
@@ -92,12 +92,12 @@ const ClientTable = ({ rows = [], loading = false, onView, onDelete }) => {
 			{/* Mobile cards */}
 			<div className="md:hidden">
 				{loading && (
-					<div className="rounded-xl border border-black/5 bg-white/70 p-4 text-center text-sm text-neutral-500 dark:border-white/10 dark:bg-neutral-900/50">
+					<div className="rounded-xl border border-black/5 bg-white/70 p-4 text-center text-sm text-neutral-500">
 						Loading clients…
 					</div>
 				)}
 				{empty && (
-					<div className="rounded-xl border border-black/5 bg-white/70 p-4 text-center text-sm text-neutral-500 dark:border-white/10 dark:bg-neutral-900/50">
+					<div className="rounded-xl border border-black/5 bg-white/70 p-4 text-center text-sm text-neutral-500">
 						No clients found.
 					</div>
 				)}
@@ -110,9 +110,9 @@ const ClientTable = ({ rows = [], loading = false, onView, onDelete }) => {
 			</div>
 
 			{/* Desktop table */}
-			<div className="hidden md:block overflow-x-auto rounded-xl ring-1 ring-black/5 dark:ring-white/10">
+			<div className="hidden md:block overflow-x-auto rounded-xl ring-1 ring-black/5">
 				<Table className="table-glassy">
-					<TableHeader className="sticky top-0 z-10 bg-white/70 backdrop-blur dark:bg-neutral-900/50">
+					<TableHeader className="sticky top-0 z-10 bg-white/70 backdrop-blur">
 						<TableRow className="border-0">
 							<TableHead className="min-w-[260px]">Client</TableHead>
 							<TableHead>Contact</TableHead>
@@ -147,7 +147,7 @@ const ClientTable = ({ rows = [], loading = false, onView, onDelete }) => {
 								return (
 									<TableRow
 										key={r.client_id}
-										className="row-soft last:border-0 hover:bg-black/[0.025] dark:hover:bg-white/5 transition-colors"
+										className="row-soft last:border-0 hover:bg-black/[0.025] transition-colors"
 									>
 										<TableCell>
 											<div className="flex items-center gap-3">
@@ -155,11 +155,11 @@ const ClientTable = ({ rows = [], loading = false, onView, onDelete }) => {
 													<img
 														src={r.user.image_url}
 														alt={title}
-														className="h-9 w-9 shrink-0 rounded-lg object-cover ring-1 ring-black/5 dark:ring-white/10"
+														className="h-9 w-9 shrink-0 rounded-lg object-cover ring-1 ring-black/5"
 													/>
 												) : (
 													<div
-														className="h-7 w-7 shrink-0 rounded-full grid place-items-center text-[12px] font-semibold text-white bg-gradient-to-br from-[var(--primary-color)] to-emerald-600 ring-1 ring-black/5 dark:ring-white/10"
+														className="h-7 w-7 shrink-0 rounded-full grid place-items-center text-[12px] font-semibold text-white bg-gradient-to-br from-[var(--primary-color)] to-emerald-600 ring-1 ring-black/5"
 														aria-hidden
 														title={title}
 													>
