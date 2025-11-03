@@ -149,7 +149,7 @@ const StoreCreateSheet = ({ open, onOpenChange, onDone }) => {
         <Sheet open={open} onOpenChange={onOpenChange}>
             <SheetContent
                 side="right"
-                className="w-[min(920px,100vw)] sm:max-w-[920px] p-0 border-l bg-white/90 backdrop-blur-xl dark:bg-neutral-950/85"
+                className="w-[min(920px,100vw)] sm:max-w-[920px] p-0 border-l bg-white/90 backdrop-blur-xl"
             >
                 {/* Top accent */}
                 <div className="h-1.5 w-full" style={{ background: "linear-gradient(90deg, var(--primary-color), #059669)" }} />
@@ -171,7 +171,7 @@ const StoreCreateSheet = ({ open, onOpenChange, onDone }) => {
                     </div>
 
                     {/* Bottom actions — pinned at the very bottom of the sheet */}
-                    <div className="sticky bottom-0 mt-4 rounded-none border-t border-black/5 bg-white/90 p-3 backdrop-blur-sm dark:border-white/10 dark:bg-neutral-900/70">
+                    <div className="sticky bottom-0 mt-4 rounded-none border-t border-black/5 bg-white/90 p-3 backdrop-blur-sm">
                         <div className="flex items-center justify-end gap-2">
                             <Button
                                 type="button"
