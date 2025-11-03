@@ -19,7 +19,7 @@ import { Separator } from "@/components/ui/separator";
 import { ShieldAlert, Store as StoreIcon } from "lucide-react";
 
 const InfoPill = ({ label, value }) => (
-    <div className="inline-flex items-center gap-1 rounded-full border border-neutral-200 bg-white/80 px-2.5 py-1 text-xs font-medium text-neutral-700 dark:border-neutral-800 dark:bg-neutral-900/60 dark:text-neutral-200">
+    <div className="inline-flex items-center gap-1 rounded-full border border-neutral-200 bg-white/80 px-2.5 py-1 text-xs font-medium text-neutral-700">
         <span className="opacity-70">{label}:</span>
         <span>{value ?? "—"}</span>
     </div>
@@ -78,9 +78,9 @@ const StoreDeleteDialog = ({ store, open, onOpenChange, onDeleted }) => {
                 className="
           fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2
           w-[92vw] max-w-[600px]
-          bg-white/90 dark:bg-neutral-900/85
+          bg-white
           backdrop-blur-xl
-          border border-neutral-200/70 dark:border-neutral-800
+          border border-neutral-200/70
           shadow-2xl rounded-2xl p-0
           focus:outline-none
         "
@@ -100,19 +100,19 @@ const StoreDeleteDialog = ({ store, open, onOpenChange, onDeleted }) => {
                         <AlertDialogTitle className="text-center text-[18px] font-semibold tracking-tight">
                             Delete store?
                         </AlertDialogTitle>
-                        <AlertDialogDescription className="mx-auto max-w-[48ch] text-center text-sm text-neutral-600 dark:text-neutral-300">
+                        <AlertDialogDescription className="mx-auto max-w-[48ch] text-center text-sm text-neutral-600">
                             This action is permanent and may remove related memberships and pending
                             invitations according to backend policy.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
 
-                    <div className="mt-6 rounded-xl border border-neutral-200 bg-white/80 p-4 shadow-sm dark:border-neutral-800 dark:bg-neutral-900/60">
+                    <div className="mt-6 rounded-xl border border-neutral-200 bg-white/80 p-4 shadow-sm">
                         <div className="flex items-start gap-3">
-                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-neutral-100 dark:bg-neutral-800">
-                                <StoreIcon className="h-5 w-5 text-neutral-600 dark:text-neutral-300" />
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-neutral-100">
+                                <StoreIcon className="h-5 w-5 text-neutral-600" />
                             </div>
                             <div className="min-w-0 flex-1">
-                                <div className="truncate text-[15px] font-semibold text-neutral-900 dark:text-neutral-100">
+                                <div className="truncate text-[15px] font-semibold text-neutral-900">
                                     {name}
                                 </div>
                                 <div className="truncate text-xs text-neutral-500">{store?.id}</div>
@@ -139,7 +139,7 @@ const StoreDeleteDialog = ({ store, open, onOpenChange, onDeleted }) => {
                                 <label
                                     key={opt.id}
                                     htmlFor={`reason-${opt.id}`}
-                                    className="group flex cursor-pointer items-center justify-between gap-3 rounded-lg border border-neutral-200 bg-white/85 px-3 py-2.5 text-sm transition hover:border-[var(--primary-color)]/40 hover:bg-white dark:border-neutral-800 dark:bg-neutral-900/60 dark:hover:bg-neutral-900"
+                                    className="group flex cursor-pointer items-center justify-between gap-3 rounded-lg border border-neutral-200 bg-white/85 px-3 py-2.5 text-sm transition hover:border-[var(--primary-color)]/40 hover:bg-white"
                                 >
                                     <div className="flex items-center gap-2">
                                         <RadioGroupItem id={`reason-${opt.id}`} value={opt.id} />
@@ -151,7 +151,7 @@ const StoreDeleteDialog = ({ store, open, onOpenChange, onDeleted }) => {
 
                         {reason === "other" && (
                             <div className="grid gap-1.5">
-                                <Label htmlFor="other-reason" className="text-xs text-neutral-600 dark:text-neutral-300">
+                                <Label htmlFor="other-reason" className="text-xs text-neutral-600">
                                     Please describe (required)
                                 </Label>
                                 <Input
@@ -178,16 +178,16 @@ const StoreDeleteDialog = ({ store, open, onOpenChange, onDeleted }) => {
                                 onCheckedChange={(v) => setAck(Boolean(v))}
                                 className="mt-0.5"
                             />
-                            <Label htmlFor="ack" className="text-sm leading-relaxed text-neutral-800 dark:text-neutral-200">
+                            <Label htmlFor="ack" className="text-sm leading-relaxed text-neutral-800">
                                 I understand this operation is <span className="font-semibold">irreversible</span> and related data
                                 may be removed per backend policy.
                             </Label>
                         </div>
 
                         <div className="grid gap-1.5">
-                            <Label htmlFor="confirm" className="text-xs text-neutral-600 dark:text-neutral-300">
+                            <Label htmlFor="confirm" className="text-xs text-neutral-600">
                                 Type the store name exactly to confirm:
-                                <span className="ml-1 rounded bg-neutral-100 px-1.5 py-0.5 text-[11px] font-semibold text-neutral-700 dark:bg-neutral-800 dark:text-neutral-200">
+                                <span className="ml-1 rounded bg-neutral-100 px-1.5 py-0.5 text-[11px] font-semibold text-neutral-700">
                                     {matchText || "—"}
                                 </span>
                             </Label>
