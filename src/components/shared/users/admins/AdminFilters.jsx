@@ -17,16 +17,6 @@ import {
     SheetTrigger,
     SheetFooter,
 } from "@/components/ui/sheet";
-import { Separator } from "@/components/ui/separator";
-import {
-    Command,
-    CommandEmpty,
-    CommandGroup,
-    CommandInput,
-    CommandItem,
-    CommandList,
-} from "@/components/ui/command";
-import { cn } from "@/lib/utils";
 import {
     Filter as FilterIcon,
     Search,
@@ -65,7 +55,6 @@ const AdminFilters = ({ value, onChange }) => {
                 className="
           hidden md:flex items-end gap-3
           rounded-2xl border border-neutral-200 bg-white/70 p-3 backdrop-blur-sm
-          dark:border-neutral-800 dark:bg-neutral-900/60
         "
             >
                 {/* Search */}
@@ -77,7 +66,7 @@ const AdminFilters = ({ value, onChange }) => {
                             placeholder="Search by email, username, phone…"
                             value={v.search || ""}
                             onChange={(e) => update({ search: e.target.value })}
-                            className="pl-9 border-neutral-300 bg-white/90 backdrop-blur-sm dark:border-neutral-800 dark:bg-neutral-900/70"
+                            className="pl-9 border-neutral-300 bg-white/90 backdrop-blur-sm"
                         />
                     </div>
                 </div>
@@ -89,10 +78,10 @@ const AdminFilters = ({ value, onChange }) => {
                         value={v.status || "all"}
                         onValueChange={(val) => update({ status: val })}
                     >
-                        <SelectTrigger className="bg-white/85 backdrop-blur-sm border-neutral-200 dark:bg-neutral-900/70 dark:border-neutral-800">
+                        <SelectTrigger className="bg-white/85 backdrop-blur-sm border-neutral-200">
                             <SelectValue placeholder="All" />
                         </SelectTrigger>
-                        <SelectContent className="bg-white/95 backdrop-blur-md dark:bg-neutral-900/90">
+                        <SelectContent className="bg-white/95 backdrop-blur-md border border-neutral-200">
                             <SelectItem value="all">All</SelectItem>
                             <SelectItem value="active">Active</SelectItem>
                             <SelectItem value="pending">Pending</SelectItem>
@@ -107,7 +96,7 @@ const AdminFilters = ({ value, onChange }) => {
             type="datetime-local"
             value={v.created_after || ""}
             onChange={(e) => update({ created_after: e.target.value })}
-            className="bg-white/85 backdrop-blur-sm border-neutral-200 dark:bg-neutral-900/70 dark:border-neutral-800"
+            className="bg-white/85 backdrop-blur-sm border-neutral-200"
           />
         </div> */}
 
@@ -118,7 +107,7 @@ const AdminFilters = ({ value, onChange }) => {
             type="datetime-local"
             value={v.created_before || ""}
             onChange={(e) => update({ created_before: e.target.value })}
-            className="bg-white/85 backdrop-blur-sm border-neutral-200 dark:bg-neutral-900/70 dark:border-neutral-800"
+            className="bg-white/85 backdrop-blur-sm border-neutral-200"
           />
         </div> */}
 
@@ -129,10 +118,10 @@ const AdminFilters = ({ value, onChange }) => {
                         value={v.ordering || "-created_at"}
                         onValueChange={(val) => update({ ordering: val })}
                     >
-                        <SelectTrigger className="bg-white/85 backdrop-blur-sm border-neutral-200 dark:bg-neutral-900/70 dark:border-neutral-800">
+                        <SelectTrigger className="bg-white/85 backdrop-blur-sm border-neutral-200">
                             <SelectValue placeholder="Sort by…" />
                         </SelectTrigger>
-                        <SelectContent className="bg-white/95 backdrop-blur-md dark:bg-neutral-900/90">
+                        <SelectContent className="bg-white/95 backdrop-blur-md border border-neutral-200">
                             {orders.map((o) => (
                                 <SelectItem key={o.value} value={o.value}>
                                     {o.label}
@@ -148,7 +137,7 @@ const AdminFilters = ({ value, onChange }) => {
                         type="button"
                         variant="ghost"
                         onClick={resetFilters}
-                        className="cursor-pointer text-neutral-700 hover:text-neutral-900 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800"
+                        className="cursor-pointer text-neutral-700 hover:text-neutral-900 hover:bg-neutral-100"
                     >
                         <RotateCcw className="mr-2 h-4 w-4" />
                         Reset
@@ -158,7 +147,7 @@ const AdminFilters = ({ value, onChange }) => {
 
             {/* Mobile: compact search + filters trigger */}
             <div className="md:hidden space-y-2">
-                <div className="rounded-2xl border border-neutral-200 bg-white/70 p-3 backdrop-blur-sm dark:border-neutral-800 dark:bg-neutral-900/60">
+                <div className="rounded-2xl border border-neutral-200 bg-white/70 p-3 backdrop-blur-sm">
                     <Label className="text-[12px]">Search</Label>
                     <div className="relative mt-1">
                         <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
@@ -166,7 +155,7 @@ const AdminFilters = ({ value, onChange }) => {
                             placeholder="Search by email, username, phone…"
                             value={v.search || ""}
                             onChange={(e) => update({ search: e.target.value })}
-                            className="pl-9 border-neutral-300 bg-white/90 backdrop-blur-sm dark:border-neutral-800 dark:bg-neutral-900/70"
+                            className="pl-9 border-neutral-300 bg-white/90 backdrop-blur-sm"
                         />
                     </div>
                 </div>
@@ -176,7 +165,6 @@ const AdminFilters = ({ value, onChange }) => {
                         <button
                             className="
                 w-full rounded-xl border border-neutral-300 bg-white/90 px-3 py-2 text-left text-sm text-neutral-700 backdrop-blur-sm
-                dark:border-neutral-800 dark:bg-neutral-900/70 dark:text-neutral-200
                 flex items-center gap-2
               "
                         >
@@ -189,7 +177,6 @@ const AdminFilters = ({ value, onChange }) => {
                         className="
               h-[85vh] overflow-y-auto
               bg-white/90 backdrop-blur-xl border-t border-neutral-200
-              dark:bg-neutral-900/90 dark:border-neutral-800
             "
                     >
                         <SheetHeader>
@@ -203,10 +190,10 @@ const AdminFilters = ({ value, onChange }) => {
                                     value={v.status || "all"}
                                     onValueChange={(val) => update({ status: val })}
                                 >
-                                    <SelectTrigger className="bg-white/85 backdrop-blur-sm border-neutral-200 dark:bg-neutral-900/70 dark:border-neutral-800">
+                                    <SelectTrigger className="bg-white/85 backdrop-blur-sm border-neutral-200">
                                         <SelectValue placeholder="All" />
                                     </SelectTrigger>
-                                    <SelectContent className="bg-white/95 backdrop-blur-md dark:bg-neutral-900/90">
+                                    <SelectContent className="bg-white/95 backdrop-blur-md">
                                         <SelectItem value="all">All</SelectItem>
                                         <SelectItem value="active">Active</SelectItem>
                                         <SelectItem value="pending">Pending</SelectItem>
@@ -220,7 +207,7 @@ const AdminFilters = ({ value, onChange }) => {
                                     type="datetime-local"
                                     value={v.created_after || ""}
                                     onChange={(e) => update({ created_after: e.target.value })}
-                                    className="bg-white/85 backdrop-blur-sm border-neutral-200 dark:bg-neutral-900/70 dark:border-neutral-800"
+                                    className="bg-white/85 backdrop-blur-sm border-neutral-200"
                                 />
                             </div>
 
@@ -230,7 +217,7 @@ const AdminFilters = ({ value, onChange }) => {
                                     type="datetime-local"
                                     value={v.created_before || ""}
                                     onChange={(e) => update({ created_before: e.target.value })}
-                                    className="bg-white/85 backdrop-blur-sm border-neutral-200 dark:bg-neutral-900/70 dark:border-neutral-800"
+                                    className="bg-white/85 backdrop-blur-sm border-neutral-200"
                                 />
                             </div>
 
@@ -240,10 +227,10 @@ const AdminFilters = ({ value, onChange }) => {
                                     value={v.ordering || "-created_at"}
                                     onValueChange={(val) => update({ ordering: val })}
                                 >
-                                    <SelectTrigger className="bg-white/85 backdrop-blur-sm border-neutral-200 dark:bg-neutral-900/70 dark:border-neutral-800">
+                                    <SelectTrigger className="bg-white/85 backdrop-blur-sm border-neutral-200">
                                         <SelectValue placeholder="Sort by…" />
                                     </SelectTrigger>
-                                    <SelectContent className="bg-white/95 backdrop-blur-md dark:bg-neutral-900/90">
+                                    <SelectContent className="bg-white/95 backdrop-blur-md">
                                         {orders.map((o) => (
                                             <SelectItem key={o.value} value={o.value}>
                                                 {o.label}
@@ -260,7 +247,7 @@ const AdminFilters = ({ value, onChange }) => {
                                     type="button"
                                     variant="ghost"
                                     onClick={resetFilters}
-                                    className="cursor-pointer text-neutral-700 hover:text-neutral-900 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800"
+                                    className="cursor-pointer text-neutral-700 hover:text-neutral-900 hover:bg-neutral-100"
                                 >
                                     <RotateCcw className="mr-2 h-4 w-4" />
                                     Reset
