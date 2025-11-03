@@ -109,7 +109,7 @@ const safeVillages = (province, district, sector, cell) => {
 
 /* ------------------------------ UI helpers ------------------------------ */
 const GlassSection = ({ title, children, extra }) => (
-    <div className="rounded-2xl border border-black/5 bg-white/60 p-4 backdrop-blur-md dark:border-white/10 dark:bg-neutral-900/40">
+    <div className="rounded-2xl border border-black/5 bg-white/60 p-4 backdrop-blur-md">
         <div className="mb-3 flex items-center justify-between">
             <div className="text-sm font-semibold">{title}</div>
             {extra}
@@ -125,7 +125,7 @@ const PermissionPicker = ({ value = [], onChange, disabled }) => (
             return (
                 <label
                     key={p}
-                    className="flex items-center gap-2 rounded-lg border border-black/5 bg-white/80 px-2 py-1 text-sm backdrop-blur dark:border-white/10 dark:bg-neutral-900/50"
+                    className="flex items-center gap-2 rounded-lg border border-black/5 bg-white/80 px-2 py-1 text-sm backdrop-blur"
                 >
                     <Checkbox
                         checked={checked}
@@ -149,7 +149,7 @@ const StaffInviteRow = ({ idx, register, control, remove, watch }) => {
     const initials = (emailVal || "U").slice(0, 2).toUpperCase();
 
     return (
-        <div className="grid grid-cols-1 gap-3 rounded-xl border border-black/5 bg-white/60 p-3 backdrop-blur dark:border-white/10 dark:bg-neutral-900/40 md:grid-cols-12">
+        <div className="grid grid-cols-1 gap-3 rounded-xl border border-black/5 bg-white/60 p-3 backdrop-blur md:grid-cols-12">
             <div className="md:col-span-12 flex items-center gap-2 text-xs text-neutral-500">
                 <div className="h-7 w-7 shrink-0 rounded-full grid place-items-center text-[12px] font-semibold text-white bg-gradient-to-br from-[var(--primary-color)] to-emerald-600">
                     {initials}
@@ -406,6 +406,7 @@ const StoreForm = ({
                                     }}
                                     options={provinces}
                                     placeholder="Select province"
+                                    className="border border-neutral-200"
                                 />
                             )}
                         />
@@ -430,6 +431,7 @@ const StoreForm = ({
                                     options={districts}
                                     placeholder="Select district"
                                     disabled={!pv}
+                                    className="border border-neutral-200"
                                 />
                             )}
                         />
@@ -452,6 +454,7 @@ const StoreForm = ({
                                     options={sectors}
                                     placeholder="Select sector"
                                     disabled={!pv || !dt}
+                                    className="border border-neutral-200"
                                 />
                             )}
                         />
@@ -473,6 +476,7 @@ const StoreForm = ({
                                     options={cells}
                                     placeholder="Select cell"
                                     disabled={!pv || !dt || !sc}
+                                    className="border border-neutral-200"
                                 />
                             )}
                         />
@@ -491,6 +495,7 @@ const StoreForm = ({
                                     options={villages}
                                     placeholder="Select village"
                                     disabled={!pv || !dt || !sc || !cl}
+                                    className="border border-neutral-200"
                                 />
                             )}
                         />
@@ -515,7 +520,7 @@ const StoreForm = ({
                         "group relative grid place-items-center rounded-2xl border border-dashed p-6 transition-colors",
                         isDragActive
                             ? "border-emerald-500 bg-emerald-50"
-                            : "border-black/10 bg-white/70 dark:border-white/10 dark:bg-neutral-900/40"
+                            : "border-black/10 bg-white/70"
                     )}
                 >
                     <input {...getInputProps()} />
@@ -539,7 +544,7 @@ const StoreForm = ({
                             <img
                                 src={previewSrc}
                                 alt="Preview"
-                                className="mx-auto h-40 w-full max-w-sm rounded-xl object-cover ring-1 ring-black/5 dark:ring-white/10"
+                                className="mx-auto h-40 w-full max-w-sm rounded-xl object-cover ring-1 ring-black/5"
                             />
                             <div className="mt-2 flex items-center justify-center gap-2 text-xs text-neutral-500">
                                 {file ? (
@@ -601,7 +606,7 @@ const StoreForm = ({
                     }
                 >
                     {fields.length === 0 && (
-                        <div className="rounded-xl border border-dashed border-black/10 bg-white/60 p-4 text-center text-sm text-neutral-500 dark:border-white/10 dark:bg-neutral-900/40">
+                        <div className="rounded-xl border border-dashed border-black/10 bg-white/60 p-4 text-center text-sm text-neutral-500">
                             No invites added yet.
                         </div>
                     )}
