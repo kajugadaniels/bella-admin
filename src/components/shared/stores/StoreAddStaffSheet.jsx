@@ -48,7 +48,7 @@ function PermissionPicker({ value = [], onChange, disabled }) {
                 return (
                     <label
                         key={p}
-                        className="flex items-center gap-2 rounded-lg border border-black/5 bg-white/80 px-2 py-1 text-sm backdrop-blur dark:border-white/10 dark:bg-neutral-900/50"
+                        className="flex items-center gap-2 rounded-lg border border-black/5 bg-white/80 px-2 py-1 text-sm backdrop-blur"
                     >
                         <Checkbox
                             checked={checked}
@@ -68,7 +68,7 @@ function PermissionPicker({ value = [], onChange, disabled }) {
 }
 
 const Section = ({ title, children, extra }) => (
-    <div className="rounded-2xl border border-black/5 bg-white/70 p-4 backdrop-blur dark:border-white/10 dark:bg-neutral-900/50">
+    <div className="rounded-2xl border border-black/5 bg-white/70 p-4 backdrop-blur">
         <div className="mb-3 flex items-center justify-between">
             <div className="text-sm font-semibold">{title}</div>
             {extra}
@@ -141,7 +141,7 @@ export default function StoreAddStaffSheet({ store, open, onOpenChange, onDone }
         <Sheet open={open} onOpenChange={onOpenChange}>
             <SheetContent
                 side="right"
-                className="w-[min(720px,100vw)] sm:max-w-[720px] p-0 border-l bg-white/90 backdrop-blur-xl dark:bg-neutral-950/85 flex h-full flex-col"
+                className="w-[min(720px,100vw)] sm:max-w-[720px] p-0 border-l bg-white/90 backdrop-blur-xl flex h-full flex-col"
             >
                 <div
                     className="h-1.5 w-full"
@@ -159,16 +159,16 @@ export default function StoreAddStaffSheet({ store, open, onOpenChange, onDone }
                     </SheetHeader>
 
                     <Tabs value={tab} onValueChange={setTab} className="w-full">
-                        <TabsList className="grid w-full grid-cols-2 rounded-2xl border border-black/5 bg-white/70 p-1 backdrop-blur dark:border-white/10 dark:bg-neutral-900/50">
+                        <TabsList className="grid w-full grid-cols-2 rounded-2xl border border-black/5 bg-white/70 p-1 backdrop-blur">
                             <TabsTrigger
                                 value="existing"
-                                className="data-[state=active]:bg-white dark:data-[state=active]:bg-neutral-900"
+                                className="data-[state=active]:bg-white"
                             >
                                 Existing user
                             </TabsTrigger>
                             <TabsTrigger
                                 value="invite"
-                                className="data-[state=active]:bg-white dark:data-[state=active]:bg-neutral-900"
+                                className="data-[state=active]:bg-white"
                             >
                                 Invite new
                             </TabsTrigger>
@@ -296,7 +296,7 @@ export default function StoreAddStaffSheet({ store, open, onOpenChange, onDone }
                                 )}
 
                                 {/* Info note about email + temp password */}
-                                <div className="mt-2 rounded-xl border border-emerald-200/60 bg-emerald-50 px-3 py-2 text-xs text-emerald-900 dark:border-emerald-900/30 dark:bg-emerald-900/20 dark:text-emerald-100">
+                                <div className="mt-2 rounded-xl border border-emerald-200/60 bg-emerald-50 px-3 py-2 text-xs text-emerald-900">
                                     <div className="flex items-center gap-2">
                                         <Mail className="h-4 w-4" />
                                         <span>
@@ -310,7 +310,7 @@ export default function StoreAddStaffSheet({ store, open, onOpenChange, onDone }
                 </div>
 
                 {/* Bottom actions (always at the very bottom) */}
-                <div className="border-t border-black/5 bg-white/90 p-3 backdrop-blur-sm dark:border-white/10 dark:bg-neutral-900/70">
+                <div className="border-t border-black/5 bg-white/90 p-3 backdrop-blur-sm">
                     <div className="flex items-center justify-end gap-2">
                         <Button
                             type="button"
