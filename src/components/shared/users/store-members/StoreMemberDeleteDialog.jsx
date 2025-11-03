@@ -62,9 +62,9 @@ export default function StoreMemberDeleteDialog({ member, open, onOpenChange, on
                 className="
           fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2
           w-[92vw] max-w-[560px]
-          bg-white/90 dark:bg-neutral-900/85
+          bg-white/90
           backdrop-blur-xl
-          border border-neutral-200/70 dark:border-neutral-800
+          border border-neutral-200/70
           shadow-2xl rounded-2xl p-0
           focus:outline-none
         "
@@ -84,7 +84,7 @@ export default function StoreMemberDeleteDialog({ member, open, onOpenChange, on
                         <AlertDialogTitle className="text-center text-[18px] font-semibold tracking-tight">
                             Remove store member?
                         </AlertDialogTitle>
-                        <AlertDialogDescription className="mx-auto max-w-[48ch] text-center text-sm text-neutral-600 dark:text-neutral-300">
+                        <AlertDialogDescription className="mx-auto max-w-[48ch] text-center text-sm text-neutral-600">
                             This detaches <strong>{email}</strong> from the store. The operation is immediate and cannot be undone.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
@@ -108,7 +108,7 @@ export default function StoreMemberDeleteDialog({ member, open, onOpenChange, on
                                     <Label htmlFor="allow-last-admin" className="text-sm">
                                         Allow removing even if this is the <span className="font-semibold">last admin</span>
                                     </Label>
-                                    <p className="mt-1 text-xs text-neutral-600 dark:text-neutral-300">
+                                    <p className="mt-1 text-xs text-neutral-600">
                                         Only use this if you are certain the store will keep proper management.
                                     </p>
                                 </div>
