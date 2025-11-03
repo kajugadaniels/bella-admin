@@ -84,8 +84,7 @@ const Header = () => {
             transition={{ duration: 0.35, ease: "easeOut" }}
             className={cn(
                 "sticky top-0 z-40 w-full",
-                "border-b border-neutral-200/80 bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/70",
-                "dark:border-neutral-800 dark:bg-neutral-900/70 dark:supports-[backdrop-filter]:bg-neutral-900/50"
+                "border-b border-neutral-200/80 bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/70"
             )}
         >
             <div className="mx-auto">
@@ -141,7 +140,7 @@ const Header = () => {
                             <DropdownMenuTrigger asChild>
                                 <Button variant="ghost" className="pl-1 pr-2">
                                     <div className="relative">
-                                        <Avatar className="h-8 w-8 ring-1 ring-black/5 dark:ring-white/10">
+                                        <Avatar className="h-8 w-8 ring-1 ring-black/5">
                                             {user?.image ? (
                                                 <AvatarImage
                                                     src={user.image}
@@ -157,19 +156,19 @@ const Header = () => {
                                         </Avatar>
                                     </div>
                                     <div className="ml-2 hidden sm:flex flex-col text-left leading-tight cursor-pointer">
-                                        <span className="text-xs text-neutral-900 dark:text-neutral-50 line-clamp-1 uppercase font-bold">
+                                        <span className="text-xs text-neutral-900 line-clamp-1 uppercase font-bold">
                                             {user?.username || user?.email?.split("@")[0] || "User"}
 
                                             {role === "ADMIN" && (
                                                 <Badge
-                                                    className="ml-1 text-xs border-emerald-200 bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-200 dark:border-emerald-900"
+                                                    className="ml-1 text-xs border-emerald-200 bg-emerald-50 text-emerald-700"
                                                     variant="secondary"
                                                 >
                                                     ADMIN
                                                 </Badge>
                                             )}
                                         </span>
-                                        <span className="text-[11px] text-neutral-500 dark:text-neutral-400 line-clamp-1">
+                                        <span className="text-[11px] text-neutral-500 line-clamp-1">
                                             {user?.email || "—"}
                                         </span>
                                     </div>
