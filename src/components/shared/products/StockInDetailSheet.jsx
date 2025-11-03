@@ -410,7 +410,7 @@ export default function StockInDetailSheet({ id, open, onOpenChange, onDone }) {
 
             {/* Delete confirm dialog */}
             <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-                <AlertDialogContent>
+                <AlertDialogContent className="bg-white backdrop-blur-xl rounded-4xl">
                     <AlertDialogHeader>
                         <AlertDialogTitle className="flex items-center gap-2">
                             <Trash2 className="h-5 w-5 text-red-600" />
