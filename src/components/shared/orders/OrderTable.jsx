@@ -37,10 +37,10 @@ const OrderCard = ({ o, onView }) => {
 	const d = o?.__display || {};
 	const created = o?.order_created_at ? new Date(o.order_created_at) : null;
 	return (
-		<div className="rounded-2xl border border-black/5 bg-white/70 p-3 backdrop-blur dark:border-white/10 dark:bg-neutral-900/50">
+		<div className="rounded-2xl border border-black/5 bg-white/70 p-3 backdrop-blur">
 			<div className="flex items-start gap-3">
 				<div
-					className="h-8 w-8 shrink-0 rounded-lg grid place-items-center text-[11px] font-semibold text-white ring-1 ring-black/5 dark:ring-white/10"
+					className="h-8 w-8 shrink-0 rounded-lg grid place-items-center text-[11px] font-semibold text-white ring-1 ring-black/5"
 					style={{ background: 'linear-gradient(135deg, var(--primary-color), #059669)' }}
 				>
 					PO
@@ -58,15 +58,15 @@ const OrderCard = ({ o, onView }) => {
 					<div className="truncate text-xs text-neutral-500">{d.clientName}</div>
 
 					<div className="mt-2 grid grid-cols-3 gap-2 text-xs">
-						<div className="rounded-lg bg-black/[0.03] p-2 dark:bg-white/[0.06]">
+						<div className="rounded-lg bg-black/[0.03] p-2">
 							<div className="text-neutral-500">Total</div>
 							<div className="font-medium">{currency(d.total, o?.currency)}</div>
 						</div>
-						<div className="rounded-lg bg-black/[0.03] p-2 dark:bg-white/[0.06]">
+						<div className="rounded-lg bg-black/[0.03] p-2">
 							<div className="text-neutral-500">Products</div>
 							<div className="font-medium">{o?.product_count ?? '—'}</div>
 						</div>
-						<div className="rounded-lg bg-black/[0.03] p-2 dark:bg-white/[0.06]">
+						<div className="rounded-lg bg-black/[0.03] p-2">
 							<div className="text-neutral-500">Created</div>
 							<div className="font-medium">{created ? created.toISOString().slice(0, 10) : '—'}</div>
 						</div>
@@ -97,12 +97,12 @@ const OrderTable = ({ rows = [], loading = false, onView }) => {
 			{/* Mobile: cards */}
 			<div className="md:hidden">
 				{loading && (
-					<div className="rounded-xl border border-black/5 bg-white/70 p-4 text-center text-sm text-neutral-500 dark:border-white/10 dark:bg-neutral-900/50">
+					<div className="rounded-xl border border-black/5 bg-white/70 p-4 text-center text-sm text-neutral-500">
 						Loading orders…
 					</div>
 				)}
 				{empty && (
-					<div className="rounded-xl border border-black/5 bg-white/70 p-4 text-center text-sm text-neutral-500 dark:border-white/10 dark:bg-neutral-900/50">
+					<div className="rounded-xl border border-black/5 bg-white/70 p-4 text-center text-sm text-neutral-500">
 						No orders found.
 					</div>
 				)}
@@ -115,9 +115,9 @@ const OrderTable = ({ rows = [], loading = false, onView }) => {
 			</div>
 
 			{/* Desktop: table */}
-			<div className="hidden md:block overflow-x-auto rounded-xl ring-1 ring-black/5 dark:ring-white/10">
+			<div className="hidden md:block overflow-x-auto rounded-xl ring-1 ring-black/5">
 				<Table className="table-glassy">
-					<TableHeader className="sticky top-0 z-10 bg-white/70 backdrop-blur dark:bg-neutral-900/50">
+					<TableHeader className="sticky top-0 z-10 bg-white/70 backdrop-blur">
 						<TableRow className="border-0">
 							<TableHead className="min-w-[220px]">Order</TableHead>
 							<TableHead>Client</TableHead>
@@ -150,12 +150,12 @@ const OrderTable = ({ rows = [], loading = false, onView }) => {
 								return (
 									<TableRow
 										key={o.order_id}
-										className="row-soft last:border-0 hover:bg-black/[0.025] dark:hover:bg-white/5 transition-colors"
+										className="row-soft last:border-0 hover:bg-black/[0.025] transition-colors"
 									>
 										<TableCell>
 											<div className="flex items-center gap-3">
 												<div
-													className="h-7 w-7 shrink-0 rounded-lg grid place-items-center text-[10px] font-semibold text-white bg-gradient-to-br from-[var(--primary-color)] to-emerald-600 ring-1 ring-black/5 dark:ring-white/10"
+													className="h-7 w-7 shrink-0 rounded-lg grid place-items-center text-[10px] font-semibold text-white bg-gradient-to-br from-[var(--primary-color)] to-emerald-600 ring-1 ring-black/5"
 													aria-hidden
 												>
 													PO
