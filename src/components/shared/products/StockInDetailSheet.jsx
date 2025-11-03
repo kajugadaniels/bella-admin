@@ -64,7 +64,6 @@ const Glass = ({ className = "", children }) => (
     <div
         className={[
             "rounded-2xl border border-black/5 bg-white/70 p-4 backdrop-blur-md",
-            "dark:border-white/10 dark:bg-neutral-900/60",
             className,
         ].join(" ")}
     >
@@ -149,7 +148,7 @@ export default function StockInDetailSheet({ id, open, onOpenChange, onDone }) {
             <Sheet open={open} onOpenChange={onOpenChange}>
                 <SheetContent
                     side="right"
-                    className="w-[min(980px,100vw)] sm:max-w-[980px] p-0 border-l bg-white/90 backdrop-blur-xl dark:bg-neutral-950/85"
+                    className="w-[min(980px,100vw)] sm:max-w-[980px] p-0 border-l bg-white/90 backdrop-blur-xl"
                 >
                     <div className="h-1.5 w-full" style={{ background: "linear-gradient(90deg, var(--primary-color), #059669)" }} />
                     <div className="p-5 sm:p-6">
@@ -169,7 +168,7 @@ export default function StockInDetailSheet({ id, open, onOpenChange, onDone }) {
                             </div>
                         ) : !payload ? (
                             <Glass>
-                                <div className="flex items-center gap-2 text-sm text-neutral-600 dark:text-neutral-300">
+                                <div className="flex items-center gap-2 text-sm text-neutral-600">
                                     <AlertTriangle className="h-4 w-4 text-amber-600" />
                                     Could not load this batch.
                                 </div>
@@ -224,20 +223,20 @@ export default function StockInDetailSheet({ id, open, onOpenChange, onDone }) {
                                     {/* Left column */}
                                     <div className="space-y-4 lg:col-span-1">
                                         <Glass>
-                                            <div className="mb-2 flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-neutral-600 dark:text-neutral-400">
+                                            <div className="mb-2 flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-neutral-600">
                                                 <Package2 className="h-4 w-4" />
                                                 Quantities
                                             </div>
                                             <div className="grid grid-cols-3 gap-2 text-sm">
-                                                <div className="rounded-xl border border-black/5 bg-white/60 p-3 dark:border-white/10 dark:bg-neutral-900/50">
+                                                <div className="rounded-xl border border-black/5 bg-white/60 p-3">
                                                     <div className="text-xs uppercase text-neutral-500">Received</div>
                                                     <div className="text-lg font-semibold">{fmtNum(q.received)}</div>
                                                 </div>
-                                                <div className="rounded-xl border border-black/5 bg-white/60 p-3 dark:border-white/10 dark:bg-neutral-900/50">
+                                                <div className="rounded-xl border border-black/5 bg-white/60 p-3">
                                                     <div className="text-xs uppercase text-neutral-500">Issued</div>
                                                     <div className="text-lg font-semibold">{fmtNum(q.issued)}</div>
                                                 </div>
-                                                <div className="rounded-xl border border-black/5 bg-white/60 p-3 dark:border-white/10 dark:bg-neutral-900/50">
+                                                <div className="rounded-xl border border-black/5 bg-white/60 p-3">
                                                     <div className="text-xs uppercase text-neutral-500">Remaining</div>
                                                     <div className="text-lg font-semibold">{fmtNum(q.remaining)}</div>
                                                 </div>
@@ -245,25 +244,25 @@ export default function StockInDetailSheet({ id, open, onOpenChange, onDone }) {
                                         </Glass>
 
                                         <Glass>
-                                            <div className="mb-2 flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-neutral-600 dark:text-neutral-400">
+                                            <div className="mb-2 flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-neutral-600">
                                                 <Factory className="h-4 w-4" />
                                                 Pricing
                                             </div>
                                             <div className="grid grid-cols-3 gap-2 text-sm">
-                                                <div className="rounded-xl border border-black/5 bg-white/60 p-3 dark:border-white/10 dark:bg-neutral-900/50">
+                                                <div className="rounded-xl border border-black/5 bg-white/60 p-3">
                                                     <div className="text-xs uppercase text-neutral-500">Unit</div>
                                                     <div className="text-lg font-semibold">{fmtNum(price.unit_price)}</div>
                                                 </div>
-                                                <div className="rounded-xl border border-black/5 bg-white/60 p-3 dark:border-white/10 dark:bg-neutral-900/50">
+                                                <div className="rounded-xl border border-black/5 bg-white/60 p-3">
                                                     <div className="text-xs uppercase text-neutral-500">Tax %</div>
                                                     <div className="text-lg font-semibold">{fmtNum(price.tax_rate)}</div>
                                                 </div>
-                                                <div className="rounded-xl border border-black/5 bg-white/60 p-3 dark:border-white/10 dark:bg-neutral-900/50">
+                                                <div className="rounded-xl border border-black/5 bg-white/60 p-3">
                                                     <div className="text-xs uppercase text-neutral-500">Unit w/ tax</div>
                                                     <div className="text-lg font-semibold">{fmtNum(price.unit_price_with_tax)}</div>
                                                 </div>
 
-                                                <div className="rounded-xl border border-black/5 bg-white/60 p-3 dark:border-white/10 dark:bg-neutral-900/50 col-span-3">
+                                                <div className="rounded-xl border border-black/5 bg-white/60 p-3 col-span-3">
                                                     <div className="text-xs uppercase text-neutral-500">Gross value</div>
                                                     <div className="text-lg font-semibold">{fmtNum(price.value_gross)}</div>
                                                 </div>
@@ -271,16 +270,16 @@ export default function StockInDetailSheet({ id, open, onOpenChange, onDone }) {
                                         </Glass>
 
                                         <Glass>
-                                            <div className="mb-2 flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-neutral-600 dark:text-neutral-400">
+                                            <div className="mb-2 flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-neutral-600">
                                                 <Hammer className="h-4 w-4" />
                                                 Costs
                                             </div>
                                             <div className="grid grid-cols-2 gap-2 text-sm">
-                                                <div className="rounded-xl border border-black/5 bg-white/60 p-3 dark:border-white/10 dark:bg-neutral-900/50">
+                                                <div className="rounded-xl border border-black/5 bg-white/60 p-3">
                                                     <div className="text-xs uppercase text-neutral-500">Unit cost</div>
                                                     <div className="text-lg font-semibold">{fmtNum(costs.unit_cost)}</div>
                                                 </div>
-                                                <div className="rounded-xl border border-black/5 bg-white/60 p-3 dark:border-white/10 dark:bg-neutral-900/50">
+                                                <div className="rounded-xl border border-black/5 bg-white/60 p-3">
                                                     <div className="text-xs uppercase text-neutral-500">Total cost</div>
                                                     <div className="text-lg font-semibold">{fmtNum(costs.total_cost)}</div>
                                                 </div>
@@ -291,20 +290,20 @@ export default function StockInDetailSheet({ id, open, onOpenChange, onDone }) {
                                     {/* Right column */}
                                     <div className="space-y-4 lg:col-span-2">
                                         <Glass>
-                                            <div className="mb-2 flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-neutral-600 dark:text-neutral-400">
+                                            <div className="mb-2 flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-neutral-600">
                                                 <Activity className="h-4 w-4" />
                                                 Product totals
                                             </div>
                                             <div className="grid grid-cols-3 gap-2 text-sm">
-                                                <div className="rounded-xl border border-black/5 bg-white/60 p-3 dark:border-white/10 dark:bg-neutral-900/50">
+                                                <div className="rounded-xl border border-black/5 bg-white/60 p-3">
                                                     <div className="text-xs uppercase text-neutral-500">Stock-in</div>
                                                     <div className="text-lg font-semibold">{fmtNum(stats.stockin_total)}</div>
                                                 </div>
-                                                <div className="rounded-xl border border-black/5 bg-white/60 p-3 dark:border-white/10 dark:bg-neutral-900/50">
+                                                <div className="rounded-xl border border-black/5 bg-white/60 p-3">
                                                     <div className="text-xs uppercase text-neutral-500">Stock-out</div>
                                                     <div className="text-lg font-semibold">{fmtNum(stats.stockout_total)}</div>
                                                 </div>
-                                                <div className="rounded-xl border border-black/5 bg-white/60 p-3 dark:border-white/10 dark:bg-neutral-900/50">
+                                                <div className="rounded-xl border border-black/5 bg-white/60 p-3">
                                                     <div className="text-xs uppercase text-neutral-500">Remaining</div>
                                                     <div className="text-lg font-semibold">{fmtNum(stats.remaining_total)}</div>
                                                 </div>
@@ -328,7 +327,7 @@ export default function StockInDetailSheet({ id, open, onOpenChange, onDone }) {
 
                                         <Glass>
                                             <div className="mb-2 flex items-center justify-between">
-                                                <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-neutral-600 dark:text-neutral-400">
+                                                <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-neutral-600">
                                                     <Layers className="h-4 w-4" />
                                                     Stock-outs for this batch
                                                 </div>
@@ -342,7 +341,7 @@ export default function StockInDetailSheet({ id, open, onOpenChange, onDone }) {
                                                         {stockouts.map((s) => (
                                                             <div
                                                                 key={s.id}
-                                                                className="rounded-xl border border-black/5 bg-white/60 p-3 text-sm dark:border-white/10 dark:bg-neutral-900/50"
+                                                                className="rounded-xl border border-black/5 bg-white/60 p-3 text-sm"
                                                             >
                                                                 <div className="flex items-center justify-between">
                                                                     <div className="min-w-0">
@@ -367,11 +366,11 @@ export default function StockInDetailSheet({ id, open, onOpenChange, onDone }) {
                                 </div>
 
                                 {/* Actions bar */}
-                                <div className="sticky bottom-0 mt-4 rounded-xl border border-black/5 bg-white/90 p-3 backdrop-blur-sm dark:border-white/10 dark:bg-neutral-900/70">
+                                <div className="sticky bottom-0 mt-4 rounded-xl border border-black/5 bg-white/90 p-3 backdrop-blur-sm">
                                     <div className="flex flex-wrap items-center gap-3">
                                         {/* Void/Restore with cascade */}
                                         <div className="flex items-center gap-3">
-                                            <div className="flex items-center gap-2 rounded-xl border border-black/5 bg-white/60 px-3 py-2 text-sm dark:border-white/10 dark:bg-neutral-900/50">
+                                            <div className="flex items-center gap-2 rounded-xl border border-black/5 bg-white/60 px-3 py-2 text-sm">
                                                 <Switch checked={!!voidCascade} onCheckedChange={setVoidCascade} />
                                                 <span>Cascade stock-outs</span>
                                             </div>
@@ -392,7 +391,7 @@ export default function StockInDetailSheet({ id, open, onOpenChange, onDone }) {
 
                                         <div className="ml-auto flex items-center gap-2">
                                             {/* Hard delete */}
-                                            <div className="flex items-center gap-2 rounded-4xl border border-black/5 bg-white/60 px-3 py-2 text-sm dark:border-white/10 dark:bg-neutral-900/50">
+                                            <div className="flex items-center gap-2 rounded-4xl border border-black/5 bg-white/60 px-3 py-2 text-sm">
                                                 <Switch checked={!!deleteCascade} onCheckedChange={setDeleteCascade} />
                                                 <span>Delete stock-outs first</span>
                                             </div>
@@ -426,7 +425,7 @@ export default function StockInDetailSheet({ id, open, onOpenChange, onDone }) {
                             )}
                         </AlertDialogDescription>
                     </AlertDialogHeader>
-                    <div className="rounded-xl border border-black/5 bg-white/70 p-3 text-sm dark:border-white/10 dark:bg-neutral-900/50">
+                    <div className="rounded-xl border border-black/5 bg-white/70 p-3 text-sm">
                         <div className="flex items-center gap-3">
                             <Switch checked={!!deleteCascade} onCheckedChange={setDeleteCascade} />
                             <span>Delete dependent stock-outs (cascade)</span>
