@@ -34,17 +34,17 @@ function normalize(row) {
 const AdminCard = ({ r, onView, onDelete }) => {
     const inits = initials(r.email || r.username);
     return (
-        <div className="rounded-2xl border border-black/5 bg-white/70 p-3 backdrop-blur dark:border-white/10 dark:bg-neutral-900/50">
+        <div className="rounded-2xl border border-black/5 bg-white/70 p-3 backdrop-blur">
             <div className="flex items-start gap-3">
                 {r.image ? (
                     <img
                         src={r.image}
                         alt={r.email || r.username}
-                        className="h-10 w-10 shrink-0 rounded-lg object-cover ring-1 ring-black/5 dark:ring-white/10"
+                        className="h-10 w-10 shrink-0 rounded-lg object-cover ring-1 ring-black/5"
                     />
                 ) : (
                     <div
-                        className="h-8 w-8 shrink-0 rounded-full grid place-items-center text-[12px] font-semibold text-white ring-1 ring-black/5 dark:ring-white/10"
+                        className="h-8 w-8 shrink-0 rounded-full grid place-items-center text-[12px] font-semibold text-white ring-1 ring-black/5"
                         style={{ background: "linear-gradient(135deg, var(--primary-color), #059669)" }}
                     >
                         {inits}
@@ -77,7 +77,7 @@ const AdminCard = ({ r, onView, onDelete }) => {
                             variant="ghost"
                             size="sm"
                             onClick={() => onDelete?.(r)}
-                            className="glass-cta-danger px-6 py-4 rounded-4xl hover:bg-red-50 dark:hover:bg-red-950/20"
+                            className="glass-cta-danger px-6 py-4 rounded-4xl hover:bg-red-50"
                             disabled={r.is_superuser}
                             title={r.is_superuser ? "Cannot delete superuser" : "Delete admin"}
                         >
@@ -100,12 +100,12 @@ const AdminTable = ({ rows = [], loading = false, onDelete, onView }) => {
             {/* Mobile: Card list */}
             <div className="md:hidden">
                 {loading && (
-                    <div className="rounded-xl border border-black/5 bg-white/70 p-4 text-center text-sm text-neutral-500 dark:border-white/10 dark:bg-neutral-900/50">
+                    <div className="rounded-xl border border-black/5 bg-white/70 p-4 text-center text-sm text-neutral-500">
                         Loading admins…
                     </div>
                 )}
                 {empty && (
-                    <div className="rounded-xl border border-black/5 bg-white/70 p-4 text-center text-sm text-neutral-500 dark:border-white/10 dark:bg-neutral-900/50">
+                    <div className="rounded-xl border border-black/5 bg-white/70 p-4 text-center text-sm text-neutral-500">
                         No admins found.
                     </div>
                 )}
@@ -118,9 +118,9 @@ const AdminTable = ({ rows = [], loading = false, onDelete, onView }) => {
             </div>
 
             {/* Desktop: Table */}
-            <div className="hidden md:block overflow-x-auto rounded-xl ring-1 ring-black/5 dark:ring-white/10">
+            <div className="hidden md:block overflow-x-auto rounded-xl ring-1 ring-black/5">
                 <Table className="table-glassy">
-                    <TableHeader className="sticky top-0 z-10 bg-white/70 backdrop-blur supports-[backdrop-filter]:bg-white/50 dark:bg-neutral-900/50">
+                    <TableHeader className="sticky top-0 z-10 bg-white/70 backdrop-blur supports-[backdrop-filter]:bg-white/50">
                         <TableRow className="border-0">
                             <TableHead className="min-w-[280px]">Admin</TableHead>
                             <TableHead>Contact</TableHead>
@@ -148,7 +148,7 @@ const AdminTable = ({ rows = [], loading = false, onDelete, onView }) => {
                             items.map((r) => (
                                 <TableRow
                                     key={r.id}
-                                    className="row-soft last:border-0 hover:bg-black/[0.025] dark:hover:bg-white/5 transition-colors"
+                                    className="row-soft last:border-0 hover:bg-black/[0.025] transition-colors"
                                 >
                                     <TableCell>
                                         <div className="flex items-center gap-3">
@@ -156,11 +156,11 @@ const AdminTable = ({ rows = [], loading = false, onDelete, onView }) => {
                                                 <img
                                                     src={r.image}
                                                     alt={r.email || r.username}
-                                                    className="h-9 w-9 shrink-0 rounded-lg object-cover ring-1 ring-black/5 dark:ring-white/10"
+                                                    className="h-9 w-9 shrink-0 rounded-lg object-cover ring-1 ring-black/5"
                                                 />
                                             ) : (
                                                 <div
-                                                    className="h-7 w-7 shrink-0 rounded-full grid place-items-center text-[12px] font-semibold text-white bg-gradient-to-br from-[var(--primary-color)] to-emerald-600 ring-1 ring-black/5 dark:ring-white/10"
+                                                    className="h-7 w-7 shrink-0 rounded-full grid place-items-center text-[12px] font-semibold text-white bg-gradient-to-br from-[var(--primary-color)] to-emerald-600 ring-1 ring-black/5"
                                                     aria-hidden
                                                     title={r.email || r.username}
                                                 >
