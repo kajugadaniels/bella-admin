@@ -43,7 +43,6 @@ const GlassCard = ({ className = "", children }) => (
         className={[
             "rounded-2xl border p-3",
             "border-neutral-200/80 bg-white/70 backdrop-blur-md",
-            "dark:border-neutral-800 dark:bg-neutral-900/60",
             className,
         ].join(" ")}
     >
@@ -53,7 +52,7 @@ const GlassCard = ({ className = "", children }) => (
 
 const InfoRow = ({ icon: Icon, label, value, href, copyable }) => {
     const content = (
-        <div className="min-w-0 flex-1 truncate text-sm text-neutral-800 dark:text-neutral-200">
+        <div className="min-w-0 flex-1 truncate text-sm text-neutral-800">
             {value ?? "—"}
         </div>
     );
@@ -68,8 +67,8 @@ const InfoRow = ({ icon: Icon, label, value, href, copyable }) => {
     };
 
     return (
-        <div className="flex items-center gap-3 rounded-xl px-3 py-2 transition-colors hover:bg-black/[0.03] dark:hover:bg-white/5">
-            <div className="h-8 w-8 grid place-items-center rounded-lg border border-neutral-200/80 bg-white/70 text-neutral-600 backdrop-blur-sm dark:border-neutral-800 dark:bg-neutral-900/60 dark:text-neutral-300">
+        <div className="flex items-center gap-3 rounded-xl px-3 py-2 transition-colors hover:bg-black/[0.03]">
+            <div className="h-8 w-8 grid place-items-center rounded-lg border border-neutral-200/80 bg-white/70 text-neutral-600 backdrop-blur-sm">
                 <Icon className="h-4 w-4" />
             </div>
             <div className="w-28 shrink-0 text-xs font-medium uppercase tracking-wide text-neutral-500">
@@ -95,7 +94,7 @@ const InfoRow = ({ icon: Icon, label, value, href, copyable }) => {
                     size="icon"
                     variant="ghost"
                     onClick={copy}
-                    className="h-8 w-8 text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-100"
+                    className="h-8 w-8 text-neutral-500 hover:text-neutral-800"
                 >
                     <Copy className="h-4 w-4" />
                 </Button>
@@ -164,13 +163,13 @@ export default function AdminDetailSheet({ adminId, open, onOpenChange, onDelete
                 <img
                     src={user.image_url || user.image}
                     alt={text}
-                    className="h-10 w-10 rounded-xl object-cover ring-1 ring-black/5 dark:ring-white/10"
+                    className="h-10 w-10 rounded-xl object-cover ring-1 ring-black/5"
                 />
             );
         }
         return (
             <div
-                className="grid h-10 w-10 place-items-center rounded-4xl text-sm font-semibold text-white ring-1 ring-black/5 dark:ring-white/10"
+                className="grid h-10 w-10 place-items-center rounded-4xl text-sm font-semibold text-white ring-1 ring-black/5"
                 style={{ background: "linear-gradient(135deg, var(--primary-color), #059669)" }}
             >
                 {initials(text)}
@@ -198,7 +197,7 @@ export default function AdminDetailSheet({ adminId, open, onOpenChange, onDelete
           w-[min(980px,100vw)] sm:max-w-[980px]
           data-[state=open]:animate-in data-[state=closed]:animate-out
           data-[state=open]:slide-in-from-right data-[state=closed]:slide-out-to-right
-          border-l border-neutral-200 bg-white/90 backdrop-blur-xl dark:border-neutral-800 dark:bg-neutral-950/85
+          border-l border-neutral-200 bg-white/90 backdrop-blur-xl
         "
             >
                 {/* Top banner */}
@@ -277,7 +276,7 @@ export default function AdminDetailSheet({ adminId, open, onOpenChange, onDelete
 
                 {/* Body */}
                 <div className="px-5 pb-6 pt-4 sm:px-6">
-                    <Separator className="my-4 border-neutral-200 dark:border-neutral-800" />
+                    <Separator className="my-4 border-neutral-200" />
 
                     {loading ? (
                         <div className="space-y-3">
@@ -290,7 +289,7 @@ export default function AdminDetailSheet({ adminId, open, onOpenChange, onDelete
                         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                             {/* LEFT: Contact */}
                             <GlassCard>
-                                <div className="mb-1 flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-neutral-600 dark:text-neutral-400">
+                                <div className="mb-1 flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-neutral-600">
                                     <UserCircle2 className="h-4 w-4" />
                                     Profile & Contact
                                 </div>
@@ -320,7 +319,7 @@ export default function AdminDetailSheet({ adminId, open, onOpenChange, onDelete
 
                             {/* RIGHT: Security / Meta */}
                             <GlassCard>
-                                <div className="mb-1 flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-neutral-600 dark:text-neutral-400">
+                                <div className="mb-1 flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-neutral-600">
                                     <ShieldCheck className="h-4 w-4" />
                                     Security & Meta
                                 </div>
