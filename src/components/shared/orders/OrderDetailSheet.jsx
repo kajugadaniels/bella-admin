@@ -31,7 +31,6 @@ const GlassCard = ({ className = '', children }) => (
 		className={[
 			'rounded-3xl border p-4 md:p-5',
 			'border-neutral-200/70 bg-white/70 shadow-[0_8px_30px_rgb(0,0,0,0.05)] ring-1 ring-black/5 backdrop-blur',
-			'dark:border-neutral-800 dark:bg-neutral-900/60 dark:ring-white/10',
 			className,
 		].join(' ')}
 	>
@@ -43,10 +42,10 @@ const GlassCard = ({ className = '', children }) => (
 const SectionHeader = ({ icon: Icon, title, count }) => (
 	<div className="mb-2 flex items-center justify-between gap-2">
 		<div className="flex items-center gap-3">
-			<div className="grid h-9 w-9 place-items-center rounded-2xl bg-gradient-to-br from-[var(--primary-color)]/15 to-emerald-600/15 ring-1 ring-black/5 dark:ring-white/10">
-				<Icon className="h-4.5 w-4.5 text-emerald-700 dark:text-emerald-300" />
+			<div className="grid h-9 w-9 place-items-center rounded-2xl bg-gradient-to-br from-[var(--primary-color)]/15 to-emerald-600/15 ring-1 ring-black/5">
+				<Icon className="h-4.5 w-4.5 text-emerald-700" />
 			</div>
-			<div className="text-[13px] font-semibold tracking-wide text-neutral-700 dark:text-neutral-200 uppercase">
+			<div className="text-[13px] font-semibold tracking-wide text-neutral-700 uppercase">
 				{title}
 			</div>
 		</div>
@@ -57,7 +56,7 @@ const SectionHeader = ({ icon: Icon, title, count }) => (
 /** Consistent label/value alignment using CSS grid */
 const Row = ({ label, value, href }) => {
 	const content = (
-		<div className="min-w-0 truncate text-sm text-neutral-800 dark:text-neutral-200">{value ?? '—'}</div>
+		<div className="min-w-0 truncate text-sm text-neutral-800">{value ?? '—'}</div>
 	);
 	const body = href ? (
 		<a href={href} target={href.startsWith('http') ? '_blank' : undefined} rel="noreferrer" className="min-w-0">
@@ -71,7 +70,7 @@ const Row = ({ label, value, href }) => {
 	);
 
 	return (
-		<div className="grid grid-cols-[140px_1fr] items-center rounded-xl px-3 py-2 transition-colors hover:bg-black/[0.03] dark:hover:bg-white/5">
+		<div className="grid grid-cols-[140px_1fr] items-center rounded-xl px-3 py-2 transition-colors hover:bg-black/[0.03]">
 			<div className="truncate pr-3 text-xs font-medium uppercase tracking-wide text-neutral-500">{label}</div>
 			{body}
 		</div>
@@ -79,7 +78,7 @@ const Row = ({ label, value, href }) => {
 };
 
 const ItemRow = ({ it, ccy }) => (
-	<div className="grid grid-cols-[1fr_auto] items-center gap-3 rounded-xl px-3 py-2 hover:bg-black/[0.03] dark:hover:bg-white/5">
+	<div className="grid grid-cols-[1fr_auto] items-center gap-3 rounded-xl px-3 py-2 hover:bg-black/[0.03]">
 		<div className="min-w-0">
 			<div className="truncate text-sm font-medium">{it?.name_snapshot || 'Product'}</div>
 			<div className="truncate text-xs text-neutral-500">{it?.product_id}</div>
@@ -174,7 +173,6 @@ export default function OrderDetailSheet({ orderId, open, onOpenChange }) {
           data-[state=open]:animate-in data-[state=closed]:animate-out
           data-[state=open]:slide-in-from-right data-[state=closed]:slide-out-to-right
           border-l border-neutral-200 bg-white/90 backdrop-blur-xl
-          dark:border-neutral-800 dark:bg-neutral-950/85
         "
 			>
 				{/* Banner */}
@@ -193,7 +191,7 @@ export default function OrderDetailSheet({ orderId, open, onOpenChange }) {
 							) : (
 								<div className="flex flex-wrap items-center gap-4">
 									<div
-										className="grid h-10 w-10 place-items-center rounded-4xl text-base font-semibold text-white ring-1 ring-black/5 dark:ring-white/10"
+										className="grid h-10 w-10 place-items-center rounded-4xl text-base font-semibold text-white ring-1 ring-black/5"
 										style={{ background: 'linear-gradient(135deg, var(--primary-color), #059669)' }}
 									>
 										PO
@@ -227,7 +225,7 @@ export default function OrderDetailSheet({ orderId, open, onOpenChange }) {
 						{/* Hero stats row */}
 						{!loading && o?.id ? (
 							<div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-								<div className="rounded-2xl border border-black/5 bg-white/70 p-3 text-center dark:border-white/10 dark:bg-neutral-900/60">
+								<div className="rounded-2xl border border-black/5 bg-white/70 p-3 text-center">
 									<div className="text-[11px] uppercase tracking-wide text-neutral-500">
 										Grand Total
 									</div>
@@ -235,15 +233,15 @@ export default function OrderDetailSheet({ orderId, open, onOpenChange }) {
 										{currency(o?.grand_total, o?.currency)}
 									</div>
 								</div>
-								<div className="rounded-2xl border border-black/5 bg-white/70 p-3 text-center dark:border-white/10 dark:bg-neutral-900/60">
+								<div className="rounded-2xl border border-black/5 bg-white/70 p-3 text-center">
 									<div className="text-[11px] uppercase tracking-wide text-neutral-500">Products</div>
 									<div className="mt-1 text-lg font-semibold">{items.length}</div>
 								</div>
-								<div className="rounded-2xl border border-black/5 bg-white/70 p-3 text-center dark:border-white/10 dark:bg-neutral-900/60">
+								<div className="rounded-2xl border border-black/5 bg-white/70 p-3 text-center">
 									<div className="text-[11px] uppercase tracking-wide text-neutral-500">Code</div>
 									<div className="mt-1 truncate text-lg font-semibold">{o?.code || '—'}</div>
 								</div>
-								<div className="rounded-2xl border border-black/5 bg-white/70 p-3 text-center dark:border-white/10 dark:bg-neutral-900/60">
+								<div className="rounded-2xl border border-black/5 bg-white/70 p-3 text-center">
 									<div className="text-[11px] uppercase tracking-wide text-neutral-500">Created</div>
 									<div className="mt-1 text-lg font-semibold">
 										{created ? created.toISOString().slice(0, 10) : '—'}
