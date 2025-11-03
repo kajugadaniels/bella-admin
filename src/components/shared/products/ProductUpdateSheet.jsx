@@ -98,7 +98,7 @@ function ImageDropzone({ file, onFileChange, removeFlag, onToggleRemove, serverI
     return (
         <div
             {...getRootProps()}
-            className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-neutral-300 bg-white/70 p-4 text-center text-sm text-neutral-500 backdrop-blur hover:border-emerald-500 hover:bg-emerald-50 dark:border-neutral-700 dark:bg-neutral-900/50 dark:hover:border-emerald-400 dark:hover:bg-neutral-900/70 cursor-pointer"
+            className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-neutral-300 bg-white/70 p-4 text-center text-sm text-neutral-500 backdrop-blur hover:border-emerald-500 hover:bg-emerald-50 cursor-pointer"
         >
             <input {...getInputProps()} />
             {file ? (
@@ -184,7 +184,7 @@ function StorePicker({ value, onChange }) {
             <button
                 type="button"
                 onClick={() => setOpen((v) => !v)}
-                className="flex w-full items-center justify-between rounded-xl border border-black/5 bg-white/70 px-3 py-2 text-left text-sm backdrop-blur transition hover:bg-white/80 dark:border-white/10 dark:bg-neutral-900/50"
+                className="flex w-full items-center justify-between rounded-xl border border-black/5 bg-white/70 px-3 py-2 text-left text-sm backdrop-blur transition hover:bg-white/80"
             >
                 <span className="flex items-center gap-2">
                     <StoreIcon className="h-4 w-4 text-neutral-400" />
@@ -194,7 +194,7 @@ function StorePicker({ value, onChange }) {
             </button>
 
             {open && (
-                <div className="absolute z-20 mt-2 w-full rounded-xl border border-black/5 bg-white/95 p-2 shadow-lg backdrop-blur-sm dark:border-white/10 dark:bg-neutral-900/95">
+                <div className="absolute z-20 mt-2 w-full rounded-xl border border-black/5 bg-white/95 p-2 shadow-lg backdrop-blur-sm">
                     <div className="relative mb-2">
                         <Input
                             placeholder="Search stores…"
@@ -212,7 +212,7 @@ function StorePicker({ value, onChange }) {
                                 onChange("");
                                 setOpen(false);
                             }}
-                            className="mb-1 flex w-full items-center justify-between rounded-lg px-2 py-2 text-left text-sm hover:bg-black/[0.03] dark:hover:bg-white/5"
+                            className="mb-1 flex w-full items-center justify-between rounded-lg px-2 py-2 text-left text-sm hover:bg-black/[0.03]"
                         >
                             <span className="truncate">No store (Global)</span>
                             <Badge variant="secondary" className="glass-badge">
@@ -237,7 +237,7 @@ function StorePicker({ value, onChange }) {
                                         onChange(o.id);
                                         setOpen(false);
                                     }}
-                                    className="flex items-start gap-2 rounded-lg px-2 py-2 text-left hover:bg-black/[0.03] dark:hover:bg-white/5"
+                                    className="flex items-start gap-2 rounded-lg px-2 py-2 text-left hover:bg-black/[0.03]"
                                 >
                                     <div className="min-w-0">
                                         <div className="truncate text-sm font-medium">{o.name}</div>
@@ -495,7 +495,7 @@ export default function ProductUpdateSheet({ id, open, onOpenChange, onDone }) {
         <Sheet open={open} onOpenChange={onOpenChange}>
             <SheetContent
                 side="right"
-                className="w-[min(920px,100vw)] sm:max-w-[920px] p-0 border-l bg-white/90 backdrop-blur-xl dark:bg-neutral-950/85"
+                className="w-[min(920px,100vw)] sm:max-w-[920px] p-0 border-l bg-white/90 backdrop-blur-xl"
             >
                 <div
                     className="h-1.5 w-full"
@@ -522,7 +522,7 @@ export default function ProductUpdateSheet({ id, open, onOpenChange, onDone }) {
                         ) : (
                             <>
                                 {/* Product block */}
-                                <div className="rounded-2xl border border-black/5 bg-white/70 p-4 backdrop-blur dark:border-white/10 dark:bg-neutral-900/50">
+                                <div className="rounded-2xl border border-black/5 bg-white/70 p-4 backdrop-blur">
                                     <div className="mb-3 flex items-center justify-between">
                                         <div className="text-sm font-semibold">Product</div>
                                         <Badge variant="secondary" className="glass-badge">
@@ -534,7 +534,7 @@ export default function ProductUpdateSheet({ id, open, onOpenChange, onDone }) {
                                     <div className="grid gap-3 sm:grid-cols-3">
                                         <div className="grid gap-1.5 sm:col-span-2">
                                             <Label>Name</Label>
-                                            <Input placeholder="e.g., Premium Orange Juice 1L" {...form.register("name")} />
+                                            <Input placeholder="e.g., Premium Orange Juice 1L" {...form.register("name")} className="border border-neutral-200" />
                                         </div>
 
                                         {/* Category via shadcn Select (glassy) */}
@@ -549,10 +549,10 @@ export default function ProductUpdateSheet({ id, open, onOpenChange, onDone }) {
                                                         onValueChange={field.onChange}
                                                         disabled={catLoading || !categories.length}
                                                     >
-                                                        <SelectTrigger className="h-9 w-full rounded-xl border border-black/5 bg-white/90 px-3 text-sm outline-none transition-[box-shadow] focus:ring-2 focus:ring-emerald-500/30 dark:border-white/10 dark:bg-neutral-900">
+                                                        <SelectTrigger className="h-10 w-full rounded-md border border-neutral-200 bg-white/90 px-3 text-sm outline-none transition-[box-shadow] focus:ring-2 focus:ring-emerald-500/30">
                                                             <SelectValue placeholder={catLoading ? "Loading…" : "Select a category"} />
                                                         </SelectTrigger>
-                                                        <SelectContent className="rounded-xl border border-black/5 bg-white/95 backdrop-blur dark:border-white/10 dark:bg-neutral-900/95">
+                                                        <SelectContent className="rounded-md border border-neutral-200 bg-white/95 backdrop-blur">
                                                             {categories.length ? (
                                                                 categories.map((opt) => (
                                                                     <SelectItem key={opt.value} value={opt.value}>
@@ -578,7 +578,7 @@ export default function ProductUpdateSheet({ id, open, onOpenChange, onDone }) {
                                         </div>
                                         <div className="grid gap-1.5">
                                             <Label>Price w/ tax (preview)</Label>
-                                            <div className="rounded-xl border border-black/5 bg-white/70 px-3 py-2 text-sm dark:border-white/10 dark:bg-neutral-900/60">
+                                            <div className="rounded-xl border border-black/5 bg-white/70 px-3 py-2 text-sm">
                                                 {Number.isFinite(priceWithTax) ? priceWithTax.toFixed(2) : "—"}
                                             </div>
                                         </div>
@@ -603,10 +603,10 @@ export default function ProductUpdateSheet({ id, open, onOpenChange, onDone }) {
                                 </div>
 
                                 {/* Status & Image */}
-                                <div className="mt-4 rounded-2xl border border-black/5 bg-white/70 p-4 backdrop-blur dark:border-white/10 dark:bg-neutral-900/50">
+                                <div className="mt-4 rounded-2xl border border-black/5 bg-white/70 p-4 backdrop-blur">
                                     <div className="mb-3 text-sm font-semibold">Status & Image</div>
                                     <div className="grid gap-3 md:grid-cols-2">
-                                        <div className="flex items-center gap-3 rounded-xl border border-black/5 bg-white/60 p-3 dark:border-white/10 dark:bg-neutral-900/40">
+                                        <div className="flex items-center gap-3 rounded-xl border border-black/5 bg-white/60 p-3">
                                             <Controller
                                                 control={control}
                                                 name="is_active"
@@ -634,7 +634,7 @@ export default function ProductUpdateSheet({ id, open, onOpenChange, onDone }) {
                                 </div>
 
                                 {/* Batches (StockIn updates) */}
-                                <div className="mt-4 rounded-2xl border border-black/5 bg-white/70 p-4 backdrop-blur dark:border-white/10 dark:bg-neutral-900/50">
+                                <div className="mt-4 rounded-2xl border border-black/5 bg-white/70 p-4 backdrop-blur">
                                     <div className="mb-3 flex items-center justify-between">
                                         <div className="text-sm font-semibold">Stock-in batches</div>
                                         <Button
@@ -650,14 +650,14 @@ export default function ProductUpdateSheet({ id, open, onOpenChange, onDone }) {
 
                                     <div className="grid gap-3">
                                         {fields.length === 0 ? (
-                                            <div className="rounded-xl border border-dashed border-black/5 p-4 text-sm text-neutral-500 dark:border-white/10">
+                                            <div className="rounded-xl border border-dashed border-black/5 p-4 text-sm text-neutral-500">
                                                 No batches added yet. Use “Add batch” to create one.
                                             </div>
                                         ) : (
                                             fields.map((f, idx) => (
                                                 <div
                                                     key={f.__key}
-                                                    className="rounded-xl border border-black/5 bg-white/60 p-3 dark:border-white/10 dark:bg-neutral-900/40"
+                                                    className="rounded-xl border border-black/5 bg-white/60 p-3"
                                                 >
                                                     <div className="mb-2 flex items-center justify-between">
                                                         <div className="text-sm font-medium">
@@ -718,7 +718,7 @@ export default function ProductUpdateSheet({ id, open, onOpenChange, onDone }) {
 
                                                     {/* Live calc per row */}
                                                     <div className="mt-3 grid grid-cols-3 gap-2 text-sm">
-                                                        <div className="rounded-lg border border-black/5 bg-white/60 p-2 dark:border-white/10 dark:bg-neutral-900/50">
+                                                        <div className="rounded-lg border border-black/5 bg-white/60 p-2">
                                                             <div className="text-xs uppercase text-neutral-500">Value net</div>
                                                             <div className="font-semibold">
                                                                 {(() => {
@@ -727,7 +727,7 @@ export default function ProductUpdateSheet({ id, open, onOpenChange, onDone }) {
                                                                 })()}
                                                             </div>
                                                         </div>
-                                                        <div className="rounded-lg border border-black/5 bg-white/60 p-2 dark:border-white/10 dark:bg-neutral-900/50">
+                                                        <div className="rounded-lg border border-black/5 bg-white/60 p-2">
                                                             <div className="text-xs uppercase text-neutral-500">Value gross</div>
                                                             <div className="font-semibold">
                                                                 {(() => {
@@ -736,7 +736,7 @@ export default function ProductUpdateSheet({ id, open, onOpenChange, onDone }) {
                                                                 })()}
                                                             </div>
                                                         </div>
-                                                        <div className="rounded-lg border border-black/5 bg-white/60 p-2 dark:border-white/10 dark:bg-neutral-900/50">
+                                                        <div className="rounded-lg border border-black/5 bg-white/60 p-2">
                                                             <div className="text-xs uppercase text-neutral-500">Price w/ tax</div>
                                                             <div className="font-semibold">
                                                                 {Number.isFinite(priceWithTax) ? priceWithTax.toFixed(2) : "—"}
@@ -750,15 +750,15 @@ export default function ProductUpdateSheet({ id, open, onOpenChange, onDone }) {
 
                                     {/* Totals */}
                                     <div className="mt-4 grid grid-cols-3 gap-2 text-sm">
-                                        <div className="rounded-xl border border-black/5 bg-white/70 p-3 dark:border-white/10 dark:bg-neutral-900/60">
+                                        <div className="rounded-xl border border-black/5 bg-white/70 p-3">
                                             <div className="text-xs uppercase text-neutral-500">Total qty</div>
                                             <div className="text-lg font-semibold">{totals.qty.toFixed(2)}</div>
                                         </div>
-                                        <div className="rounded-xl border border-black/5 bg-white/70 p-3 dark:border-white/10 dark:bg-neutral-900/60">
+                                        <div className="rounded-xl border border-black/5 bg-white/70 p-3">
                                             <div className="text-xs uppercase text-neutral-500">Total net value</div>
                                             <div className="text-lg font-semibold">{totals.net.toFixed(2)}</div>
                                         </div>
-                                        <div className="rounded-xl border border-black/5 bg-white/70 p-3 dark:border-white/10 dark:bg-neutral-900/60">
+                                        <div className="rounded-xl border border-black/5 bg-white/70 p-3">
                                             <div className="text-xs uppercase text-neutral-500">Total gross value</div>
                                             <div className="text-lg font-semibold">{totals.gross.toFixed(2)}</div>
                                         </div>
@@ -766,12 +766,12 @@ export default function ProductUpdateSheet({ id, open, onOpenChange, onDone }) {
                                 </div>
 
                                 {/* Description */}
-                                <div className="mt-4 rounded-2xl border border-black/5 bg-white/70 p-4 backdrop-blur dark:border-white/10 dark:bg-neutral-900/50">
+                                <div className="mt-4 rounded-2xl border border-black/5 bg-white/70 p-4 backdrop-blur">
                                     <div className="mb-3 text-sm font-semibold">Description</div>
                                     <textarea
                                         rows={4}
                                         placeholder="Optional description…"
-                                        className="w-full rounded-xl border border-black/5 bg-white/70 p-3 text-sm outline-none dark:border-white/10 dark:bg-neutral-900/50"
+                                        className="w-full rounded-xl border border-black/5 bg-white/70 p-3 text-sm outline-none"
                                         {...form.register("description")}
                                     />
                                 </div>
@@ -780,7 +780,7 @@ export default function ProductUpdateSheet({ id, open, onOpenChange, onDone }) {
                     </div>
 
                     {/* Bottom actions */}
-                    <div className="sticky bottom-0 rounded-none border-t border-black/5 bg-white/90 p-3 backdrop-blur-sm dark:border-white/10 dark:bg-neutral-900/70">
+                    <div className="sticky bottom-0 rounded-none border-t border-black/5 bg-white/90 p-3 backdrop-blur-sm">
                         <div className="flex items-center justify-end gap-2">
                             <Button
                                 type="button"

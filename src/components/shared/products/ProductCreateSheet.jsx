@@ -447,7 +447,7 @@ export default function ProductCreateSheet({ open, onOpenChange, onDone }) {
 
                                 <div className="grid gap-1.5">
                                     <Label>Price w/ tax (preview)</Label>
-                                    <div className="rounded-lg border border-black bg-white/70 px-3 py-2 text-sm cursor-pointer">
+                                    <div className="rounded-md border border-neutral-200 bg-white/70 px-4 py-2 text-sm cursor-pointer">
                                         {priceWithTax ? priceWithTax.toFixed(2) : "—"}
                                     </div>
                                 </div>
