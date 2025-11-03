@@ -42,7 +42,7 @@ const NavItem = ({ to, icon: Icon, label, collapsed, end = false }) => {
     const activeGradient =
         "bg-gradient-to-r from-[var(--primary-color)] to-emerald-600 text-white shadow-sm";
     const idle =
-        "text-neutral-700 hover:bg-neutral-100 hover:text-neutral-900 dark:text-neutral-300 dark:hover:bg-neutral-800 dark:hover:text-white";
+        "text-neutral-700 hover:bg-neutral-100 hover:text-neutral-900";
 
     return (
         <NavLink
@@ -213,7 +213,7 @@ const Sidebar = () => {
                                             "flex items-center gap-3 rounded-4xl px-3 py-3.5 text-sm transition-colors ring-0",
                                             isActive
                                                 ? "bg-gradient-to-r from-[var(--primary-color)] to-emerald-600 text-white shadow-sm"
-                                                : "text-neutral-700 hover:bg-neutral-100 hover:text-neutral-900 dark:text-neutral-300 dark:hover:bg-neutral-800 dark:hover:text-white"
+                                                : "text-neutral-700 hover:bg-neutral-100 hover:text-neutral-900"
                                         )
                                     }
                                 >
@@ -236,7 +236,7 @@ const Sidebar = () => {
                                     onClick={logout}
                                     className={cn(
                                         "w-full text-left flex items-center gap-3 rounded-4xl px-3 py-3.5 text-sm cursor-pointer",
-                                        "text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+                                        "text-red-600 hover:bg-red-50"
                                     )}
                                 >
                                     <LogOut className="h-[14px] w-[14px] shrink-0" />
@@ -265,8 +265,7 @@ const Sidebar = () => {
                     side="left"
                     className={cn(
                         "w-[85%] p-0",
-                        "bg-white backdrop-blur supports-[backdrop-filter]:bg-white",
-                        "dark:bg-neutral-900/70 dark:supports-[backdrop-filter]:bg-neutral-900/50"
+                        "bg-white backdrop-blur supports-[backdrop-filter]:bg-white"
                     )}
                 >
                     <SheetHeader className="px-4 py-3">
@@ -287,7 +286,7 @@ const Sidebar = () => {
                                                 "flex items-center gap-3 rounded-4xl px-4 py-3.5 text-sm transition-colors",
                                                 isActive
                                                     ? "bg-gradient-to-r from-[var(--primary-color)] to-emerald-600 text-white shadow-sm"
-                                                    : "text-neutral-800 hover:bg-neutral-100 dark:text-neutral-200 dark:hover:bg-neutral-800"
+                                                    : "text-neutral-800 hover:bg-neutral-100"
                                             )
                                         }
                                     >
@@ -308,8 +307,7 @@ const Sidebar = () => {
                                             "rounded-4xl  px-3 py-3.5 text-sm text-center transition-colors",
                                             isActive
                                                 ? "bg-gradient-to-r from-[var(--primary-color)] to-emerald-600 text-white shadow-sm"
-                                                : "bg-white/60 text-neutral-700 hover:bg-neutral-100 border border-neutral-200",
-                                            "dark:bg-neutral-900/50 dark:text-neutral-200 dark:hover:bg-neutral-800 dark:border-neutral-800"
+                                                : "bg-white/60 text-neutral-700 hover:bg-neutral-100 border border-neutral-200"
                                         )
                                     }
                                 >
@@ -322,8 +320,7 @@ const Sidebar = () => {
                                     }}
                                     className={cn(
                                         "rounded-4xl  px-3 py-3.5 text-sm text-center cursor-pointer",
-                                        "bg-white/60 text-red-600 hover:bg-red-50 border border-red-200",
-                                        "dark:bg-neutral-900/50 dark:hover:bg-red-900/20 dark:border-red-900/40"
+                                        "bg-white/60 text-red-600 hover:bg-red-50 border border-red-200"
                                     )}
                                 >
                                     Sign out
