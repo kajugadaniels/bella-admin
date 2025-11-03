@@ -149,7 +149,7 @@ const StoreCreateSheet = ({ open, onOpenChange, onDone }) => {
         <Sheet open={open} onOpenChange={onOpenChange}>
             <SheetContent
                 side="right"
-                className="w-[min(920px,100vw)] sm:max-w-[920px] p-0 border-l bg-white/90 backdrop-blur-xl"
+                className="w-[min(920px,100vw)] sm:max-w-[920px] p-0 border-l bg-white backdrop-blur-xl"
             >
                 {/* Top accent */}
                 <div className="h-1.5 w-full" style={{ background: "linear-gradient(90deg, var(--primary-color), #059669)" }} />
