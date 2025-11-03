@@ -201,14 +201,14 @@ const OrderList = () => {
 					</div>
 
 					{/* Filters */}
-					<div className="hidden md:grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 rounded-2xl border border-neutral-200 bg-white/70 p-3 backdrop-blur-sm dark:border-neutral-800 dark:bg-neutral-900/60">
+					<div className="hidden md:grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 rounded-2xl border border-neutral-200 bg-white/70 p-3 backdrop-blur-sm">
 						<div>
 							<Label className="text-[12px]">Order status</Label>
 							<Select value={status} onValueChange={setStatus}>
-								<SelectTrigger className="bg-white/85 backdrop-blur-sm border-neutral-200 dark:bg-neutral-900/70 dark:border-neutral-800">
+								<SelectTrigger className="bg-white/85 backdrop-blur-sm border-neutral-200">
 									<SelectValue />
 								</SelectTrigger>
-								<SelectContent className="bg-white/95 backdrop-blur-md dark:bg-neutral-900/90">
+								<SelectContent className="bg-white/95 backdrop-blur-md border-neutral-200">
 									{statusOptions.map((o) => (
 										<SelectItem key={o.value} value={o.value}>
 											{o.label}
@@ -221,10 +221,10 @@ const OrderList = () => {
 						<div>
 							<Label className="text-[12px]">Payment status</Label>
 							<Select value={paymentStatus} onValueChange={setPaymentStatus}>
-								<SelectTrigger className="bg-white/85 backdrop-blur-sm border-neutral-200 dark:bg-neutral-900/70 dark:border-neutral-800">
+								<SelectTrigger className="bg-white/85 backdrop-blur-sm border-neutral-200">
 									<SelectValue />
 								</SelectTrigger>
-								<SelectContent className="bg-white/95 backdrop-blur-md dark:bg-neutral-900/90">
+								<SelectContent className="bg-white/95 backdrop-blur-md border-neutral-200">
 									{pStatusOptions.map((o) => (
 										<SelectItem key={o.value} value={o.value}>
 											{o.label}
@@ -237,10 +237,10 @@ const OrderList = () => {
 						<div>
 							<Label className="text-[12px]">Payment method</Label>
 							<Select value={paymentMethod} onValueChange={setPaymentMethod}>
-								<SelectTrigger className="bg-white/85 backdrop-blur-sm border-neutral-200 dark:bg-neutral-900/70 dark:border-neutral-800">
+								<SelectTrigger className="bg-white/85 backdrop-blur-sm border-neutral-200">
 									<SelectValue />
 								</SelectTrigger>
-								<SelectContent className="bg-white/95 backdrop-blur-md dark:bg-neutral-900/90">
+								<SelectContent className="bg-white/95 backdrop-blur-md border-neutral-200">
 									{pMethodOptions.map((o) => (
 										<SelectItem key={o.value} value={o.value}>
 											{o.label}
@@ -253,10 +253,10 @@ const OrderList = () => {
 						<div>
 							<Label className="text-[12px]">Ordering</Label>
 							<Select value={ordering} onValueChange={setOrdering}>
-								<SelectTrigger className="bg-white/85 backdrop-blur-sm border-neutral-200 dark:bg-neutral-900/70 dark:border-neutral-800">
+								<SelectTrigger className="bg-white/85 backdrop-blur-sm border-neutral-200">
 									<SelectValue placeholder="Sort by…" />
 								</SelectTrigger>
-								<SelectContent className="bg-white/95 backdrop-blur-md dark:bg-neutral-900/90">
+								<SelectContent className="bg-white/95 backdrop-blur-md border-neutral-200">
 									{orderingOptions.map((o) => (
 										<SelectItem key={o.value} value={o.value}>
 											{o.label}
