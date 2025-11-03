@@ -167,8 +167,7 @@ function ProductFiltersBase({ value, onChange, className }) {
     return (
         <div
             className={[
-                "rounded-2xl border border-black/5 bg-white/70 p-3 backdrop-blur-md",
-                "dark:border-white/10 dark:bg-neutral-900/60",
+                "rounded-2xl border border-neutral-200 bg-white/70 p-3 backdrop-blur-md",
                 className || "",
             ].join(" ")}
         >
@@ -185,14 +184,14 @@ function ProductFiltersBase({ value, onChange, className }) {
                     >
                         <SelectTrigger
                             id="pf-category"
-                            className="h-9 w-full rounded-xl border border-black/5 bg-white/90 px-3 text-sm outline-none transition-[box-shadow] focus:ring-2 focus:ring-emerald-500/30 dark:border-white/10 dark:bg-neutral-900 cursor-pointer"
+                            className="h-9 w-full rounded-xl border border-neutral-200 bg-white/90 px-3 text-sm outline-none transition-[box-shadow] focus:ring-2 focus:ring-emerald-500/30"
                         >
                             <SelectValue placeholder={catLoading ? "Loading…" : "All categories"} />
                         </SelectTrigger>
                         <SelectContent
                             position="popper"
                             sideOffset={6}
-                            className="max-h-64 overflow-y-auto rounded-xl border border-black/5 bg-white/95 backdrop-blur dark:border-white/10 dark:bg-neutral-900/95 scrollbar-thin scrollbar-thumb-neutral-300 scrollbar-track-transparent dark:scrollbar-thumb-neutral-700 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0 data-[side=bottom]:slide-in-from-top-1 data-[side=top]:slide-in-from-bottom-1"
+                            className="max-h-64 overflow-y-auto rounded-xl border border-neutral-200 bg-white/95 backdrop-blur scrollbar-thin scrollbar-thumb-neutral-300 scrollbar-track-transparent data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0 data-[side=bottom]:slide-in-from-top-1 data-[side=top]:slide-in-from-bottom-1"
                         >
                             <SelectItem value={ALL_CATEGORIES_VALUE}>All categories</SelectItem>
                             {catLoading ? (
@@ -226,17 +225,17 @@ function ProductFiltersBase({ value, onChange, className }) {
                     >
                         <SelectTrigger
                             id="pf-store"
-                            className="h-9 w-full rounded-xl border border-black/5 bg-white/90 px-3 text-sm outline-none transition-[box-shadow] focus:ring-2 focus:ring-emerald-500/30 dark:border-white/10 dark:bg-neutral-900 cursor-pointer"
+                            className="h-9 w-full rounded-xl border border-neutral-200 bg-white/90 px-3 text-sm outline-none transition-[box-shadow] focus:ring-2 focus:ring-emerald-500/30"
                         >
                             <SelectValue placeholder={storeLoading ? "Loading…" : "All stores"} />
                         </SelectTrigger>
                         <SelectContent
                             position="popper"
                             sideOffset={6}
-                            className="w-[var(--radix-select-trigger-width)] max-h-72 overflow-y-auto rounded-xl border border-black/5 bg-white/95 p-0 backdrop-blur dark:border-white/10 dark:bg-neutral-900/95"
+                            className="w-[var(--radix-select-trigger-width)] max-h-72 overflow-y-auto rounded-xl border border-neutral-200 bg-white/95 p-0 backdrop-blur"
                         >
                             {/* Inline search input inside the Select popover */}
-                            <div className="sticky top-0 z-10 border-b border-black/5 bg-white/95 p-2 backdrop-blur dark:border-white/10 dark:bg-neutral-900/95">
+                            <div className="sticky top-0 z-10 border-b border-neutral-200 bg-white/95 p-2 backdrop-blur">
                                 <div className="relative">
                                     <SearchIcon className="pointer-events-none absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
                                     <Input
