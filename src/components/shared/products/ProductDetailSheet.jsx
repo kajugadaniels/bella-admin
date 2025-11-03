@@ -26,7 +26,6 @@ function GlassCard({ className = "", children }) {
             className={[
                 "rounded-2xl border p-3",
                 "border-neutral-200/80 bg-white/70 backdrop-blur-md",
-                "dark:border-neutral-800 dark:bg-neutral-900/60",
                 className,
             ].join(" ")}
         >
@@ -37,9 +36,9 @@ function GlassCard({ className = "", children }) {
 
 function Stat({ icon: Icon, label, value, hint }) {
     return (
-        <div className="flex items-center gap-3 rounded-2xl border border-neutral-200/80 bg-white/70 p-3 backdrop-blur-md dark:border-neutral-800 dark:bg-neutral-900/60">
+        <div className="flex items-center gap-3 rounded-2xl border border-neutral-200/80 bg-white/70 p-3 backdrop-blur-md">
             <div
-                className="grid h-10 w-10 place-items-center rounded-xl text-white ring-1 ring-black/5 dark:ring-white/10"
+                className="grid h-10 w-10 place-items-center rounded-xl text-white ring-1 ring-black/5"
                 style={{ background: "linear-gradient(135deg, var(--primary-color), #059669)" }}
             >
                 <Icon className="h-5 w-5" />
@@ -124,7 +123,7 @@ export default function ProductDetailSheet({ id, open, onOpenChange }) {
           w-[min(980px,100vw)] sm:max-w-[980px]
           data-[state=open]:animate-in data-[state=closed]:animate-out
           data-[state=open]:slide-in-from-right data-[state=closed]:slide-out-to-right
-          border-l border-neutral-200 bg-white/90 backdrop-blur-xl dark:border-neutral-800 dark:bg-neutral-950/85
+          border-l border-neutral-200 bg-white/90 backdrop-blur-xl
         "
             >
                 {/* Top banner */}
@@ -161,13 +160,13 @@ export default function ProductDetailSheet({ id, open, onOpenChange }) {
 
                 {/* Body */}
                 <div className="px-5 pb-6 pt-4 sm:px-6">
-                    <Separator className="my-4 border-neutral-200 dark:border-neutral-800" />
+                    <Separator className="my-4 border-neutral-200" />
 
                     <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
                         {/* LEFT: Product & stats */}
                         <div className="space-y-4 lg:col-span-1">
                             <GlassCard>
-                                <div className="mb-1 flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-neutral-600 dark:text-neutral-400">
+                                <div className="mb-1 flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-neutral-600">
                                     <Tag className="h-4 w-4" />
                                     Product
                                 </div>
@@ -179,15 +178,15 @@ export default function ProductDetailSheet({ id, open, onOpenChange }) {
                                     </div>
                                 ) : (
                                     <div className="grid grid-cols-2 gap-2 text-sm">
-                                        <div className="rounded-xl border border-black/5 bg-white/60 p-2 dark:border-white/10 dark:bg-neutral-900/50">
+                                        <div className="rounded-xl border border-black/5 bg-white/60 p-2">
                                             <div className="text-xs uppercase text-neutral-500">Unit price</div>
                                             <div className="font-semibold">{fmtNum(product?.unit_price)}</div>
                                         </div>
-                                        <div className="rounded-xl border border-black/5 bg-white/60 p-2 dark:border-white/10 dark:bg-neutral-900/50">
+                                        <div className="rounded-xl border border-black/5 bg-white/60 p-2">
                                             <div className="text-xs uppercase text-neutral-500">Tax %</div>
                                             <div className="font-semibold">{product?.tax_rate ?? 18}</div>
                                         </div>
-                                        <div className="rounded-xl border border-black/5 bg-white/60 p-2 dark:border-white/10 dark:bg-neutral-900/50">
+                                        <div className="rounded-xl border border-black/5 bg-white/60 p-2">
                                             <div className="text-xs uppercase text-neutral-500">Price w/ tax</div>
                                             <div className="font-semibold">{fmtNum(product?.unit_price_with_tax)}</div>
                                         </div>
@@ -207,7 +206,7 @@ export default function ProductDetailSheet({ id, open, onOpenChange }) {
                         {/* RIGHT: Stores / Batches / Stock-outs */}
                         <div className="lg:col-span-2 space-y-4">
                             <GlassCard className="p-0">
-                                <div className="px-3 pt-3 pb-2 text-xs font-medium uppercase tracking-wide text-neutral-600 dark:text-neutral-400 flex items-center gap-2">
+                                <div className="px-3 pt-3 pb-2 text-xs font-medium uppercase tracking-wide text-neutral-600 flex items-center gap-2">
                                     <Store className="h-4 w-4" />
                                     Per-store totals
                                 </div>
@@ -226,7 +225,7 @@ export default function ProductDetailSheet({ id, open, onOpenChange }) {
                                     ) : (
                                         <div className="grid gap-2 p-2">
                                             {stores.map((s, i) => (
-                                                <div key={i} className="grid grid-cols-5 items-center gap-2 rounded-xl p-2 transition-colors hover:bg-black/[0.03] dark:hover:bg-white/5">
+                                                <div key={i} className="grid grid-cols-5 items-center gap-2 rounded-xl p-2 transition-colors hover:bg-black/[0.03]">
                                                     <div className="col-span-2 truncate text-sm">{s.name || "Global"}</div>
                                                     <div className="text-right text-sm">{fmtNum(s.received_total)}</div>
                                                     <div className="text-right text-sm">{fmtNum(s.issued_total)}</div>
@@ -241,7 +240,7 @@ export default function ProductDetailSheet({ id, open, onOpenChange }) {
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                                 {/* Batches */}
                                 <GlassCard className="p-0">
-                                    <div className="px-3 pt-3 pb-2 text-xs font-medium uppercase tracking-wide text-neutral-600 dark:text-neutral-400">
+                                    <div className="px-3 pt-3 pb-2 text-xs font-medium uppercase tracking-wide text-neutral-600">
                                         Recent batches
                                     </div>
                                     <ScrollArea className="max-h-[36vh] pr-2">
@@ -259,7 +258,7 @@ export default function ProductDetailSheet({ id, open, onOpenChange }) {
                                         ) : (
                                             <div className="grid gap-2 p-2">
                                                 {batches.map((b) => (
-                                                    <div key={b.id} className="rounded-xl p-2 transition-colors hover:bg-black/[0.03] dark:hover:bg-white/5">
+                                                    <div key={b.id} className="rounded-xl p-2 transition-colors hover:bg-black/[0.03]">
                                                         <div className="flex items-center justify-between gap-3">
                                                             <div className="min-w-0">
                                                                 <div className="truncate text-sm font-medium">{b.store?.name || "Global"}</div>
@@ -273,15 +272,15 @@ export default function ProductDetailSheet({ id, open, onOpenChange }) {
                                                             </Badge>
                                                         </div>
                                                         <div className="mt-2 grid grid-cols-3 gap-2 text-sm">
-                                                            <div className="rounded-lg border border-black/5 bg-white/60 p-2 dark:border-white/10 dark:bg-neutral-900/50">
+                                                            <div className="rounded-lg border border-black/5 bg-white/60 p-2">
                                                                 <div className="text-xs uppercase text-neutral-500">Remaining</div>
                                                                 <div className="font-semibold">{fmtNum(b.quantities?.remaining)}</div>
                                                             </div>
-                                                            <div className="rounded-lg border border-black/5 bg-white/60 p-2 dark:border-white/10 dark:bg-neutral-900/50">
+                                                            <div className="rounded-lg border border-black/5 bg-white/60 p-2">
                                                                 <div className="text-xs uppercase text-neutral-500">Unit price</div>
                                                                 <div className="font-semibold">{fmtNum(b.pricing?.unit_price)}</div>
                                                             </div>
-                                                            <div className="rounded-lg border border-black/5 bg-white/60 p-2 dark:border-white/10 dark:bg-neutral-900/50">
+                                                            <div className="rounded-lg border border-black/5 bg-white/60 p-2">
                                                                 <div className="text-xs uppercase text-neutral-500">Gross value</div>
                                                                 <div className="font-semibold">{fmtNum(b.pricing?.value_gross)}</div>
                                                             </div>
@@ -295,7 +294,7 @@ export default function ProductDetailSheet({ id, open, onOpenChange }) {
 
                                 {/* Stock-outs */}
                                 <GlassCard className="p-0">
-                                    <div className="px-3 pt-3 pb-2 text-xs font-medium uppercase tracking-wide text-neutral-600 dark:text-neutral-400">
+                                    <div className="px-3 pt-3 pb-2 text-xs font-medium uppercase tracking-wide text-neutral-600">
                                         Recent stock-outs
                                     </div>
                                     <ScrollArea className="max-h-[36vh] pr-2">
@@ -313,7 +312,7 @@ export default function ProductDetailSheet({ id, open, onOpenChange }) {
                                         ) : (
                                             <div className="grid gap-2 p-2">
                                                 {stockouts.map((o) => (
-                                                    <div key={o.id} className="grid grid-cols-3 items-center gap-2 rounded-xl p-2 transition-colors hover:bg-black/[0.03] dark:hover:bg-white/5">
+                                                    <div key={o.id} className="grid grid-cols-3 items-center gap-2 rounded-xl p-2 transition-colors hover:bg-black/[0.03]">
                                                         <div className="truncate text-sm col-span-2">{o.stock_in__store__name || "Global"}</div>
                                                         <div className="text-right text-sm font-medium">{fmtNum(o.quantity)}</div>
                                                     </div>
