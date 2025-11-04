@@ -13,7 +13,7 @@ const ProtectedRoute = () => {
     const navigate = useNavigate();
     const notifiedRef = useRef(false);
 
-    // Avoid duplicate toasts (e.g., StrictMode)
+    // Avoid duplicate toasts in StrictMode
     const notifyOnce = (fn) => {
         if (notifiedRef.current) return;
         notifiedRef.current = true;
@@ -27,40 +27,56 @@ const ProtectedRoute = () => {
     const tokenValid = isAccessValid();
     const user = getUser();
 
-    // If a token exists but is invalid, force logout immediately.
+    const hasCookieBasedSession = !!user && !token;
+    const hasSession = tokenValid || hasCookieBasedSession;
+    const role = String(user?.role || "").toUpperCase();
+
+    // PRE-CALCULATED redirects (NO hooks inside conditions)
+    let redirectElement = null;
+
     if (token && !tokenValid) {
         notifyOnce(() =>
-            toast.error("Session expired", { description: "Please sign in again." })
+            toast.error("Session expired", {
+                description: "Please sign in again.",
+            })
         );
         clearSession();
-        return <Navigate to={`${loginUrl}&reason=expired`} replace />;
-    }
-
-    // If no valid session, redirect to login.
-    const hasCookieBasedSession = !!user && !token; // allow cookie-based auth if you use it
-    const hasSession = tokenValid || hasCookieBasedSession;
-
-    if (!hasSession) {
-        notifyOnce(() => toast.error("Please sign in to continue."));
-        return <Navigate to={loginUrl} state={{ from: location }} replace />;
-    }
-
-    // Role gate
-    const role = String(user?.role || "").toUpperCase();
-    if (role !== "ADMIN") {
-        notifyOnce(() =>
-            toast.error("Access denied", { description: "This portal is for Admins only." })
+        redirectElement = (
+            <Navigate to={`${loginUrl}&reason=expired`} replace />
         );
-        return <Navigate to="/?error=forbidden" state={{ from: location }} replace />;
+    } else if (!hasSession) {
+        notifyOnce(() => toast.error("Please sign in to continue."));
+        redirectElement = (
+            <Navigate
+                to={loginUrl}
+                state={{ from: location }}
+                replace
+            />
+        );
+    } else if (role !== "admin" && role !== "ADMIN") {
+        notifyOnce(() =>
+            toast.error("Access denied", {
+                description: "This portal is for Admins only.",
+            })
+        );
+        redirectElement = (
+            <Navigate
+                to="/?error=forbidden"
+                state={{ from: location }}
+                replace
+            />
+        );
     }
 
-    // Background watchers: token expiry mid-session, cross-tab changes, tab visibility
+    // ✅ Hooks ALWAYS before returns
     useEffect(() => {
         const enforce = () => {
             const t = getAccessToken();
             if (t && !isAccessValid()) {
                 if (!notifiedRef.current) {
-                    toast.error("Session expired", { description: "Please sign in again." });
+                    toast.error("Session expired", {
+                        description: "Please sign in again.",
+                    });
                 }
                 notifiedRef.current = true;
                 clearSession();
@@ -68,31 +84,28 @@ const ProtectedRoute = () => {
             }
         };
 
-        // Check on mount and then at intervals
         enforce();
-        const id = setInterval(enforce, 15000); // 15s heartbeat
+        const intervalId = setInterval(enforce, 15000);
 
-        // Cross-tab/session updates
         const onStorage = (e) => {
             if (!e || e.key === "bella_session_updated") enforce();
         };
         window.addEventListener("storage", onStorage);
 
-        // When tab becomes active again
         const onVis = () => {
             if (document.visibilityState === "visible") enforce();
         };
         document.addEventListener("visibilitychange", onVis);
 
         return () => {
-            clearInterval(id);
+            clearInterval(intervalId);
             window.removeEventListener("storage", onStorage);
             document.removeEventListener("visibilitychange", onVis);
         };
-         
     }, [navigate, loginUrl]);
 
-    return <Outlet />;
+    // ✅ Only 1 return
+    return redirectElement || <Outlet />;
 };
 
 export default ProtectedRoute;
