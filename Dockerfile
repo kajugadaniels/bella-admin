@@ -4,7 +4,7 @@
 # Builder  #
 ############
 FROM node:20-alpine AS builder
-WORKDIR /app
+WORKDIR /admin
 
 # Install deps first for better caching
 COPY package.json package-lock.json* ./
@@ -52,7 +52,7 @@ FROM nginx:1.27-alpine AS runner
 # Replace the default site with our SPA config
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 # App assets
-COPY --from=builder /app/dist /usr/share/nginx/html
+COPY --from=builder /admin/dist /usr/share/nginx/html
 
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]
