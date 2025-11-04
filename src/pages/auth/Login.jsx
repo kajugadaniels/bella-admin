@@ -192,6 +192,9 @@ const Login = () => {
             setLoading(false);
         }
     }
+    
+    // Make ESLint see a concrete JS usage
+    const MotionDiv = motion.div;
 
     return (
         <div className="w-full">
@@ -270,7 +273,7 @@ const Login = () => {
                 </div>
 
                 {/* Sign In */}
-                <motion.div whileTap={{ scale: 0.98 }} whileHover={{ y: -1 }}>
+                <MotionDiv whileTap={{ scale: 0.98 }} whileHover={{ y: -1 }}>
                     <Button
                         type="submit"
                         disabled={loading}
@@ -284,7 +287,7 @@ const Login = () => {
                             "Sign In"
                         )}
                     </Button>
-                </motion.div>
+                </MotionDiv>
 
                 {/* <div className="relative text-center">
                     <div className="absolute inset-0 flex items-center">
@@ -293,7 +296,7 @@ const Login = () => {
                     <span className="relative bg-white px-4 text-xs text-neutral-500">OR</span>
                 </div>
 
-                <motion.div whileTap={{ scale: 0.98 }}>
+                <MotionDiv whileTap={{ scale: 0.98 }}>
                     <Button
                         type="button"
                         variant="outline"
@@ -308,7 +311,7 @@ const Login = () => {
                         />
                         Continue with Google
                     </Button>
-                </motion.div> */}
+                </MotionDiv> */}
             </form>
         </div>
     );
