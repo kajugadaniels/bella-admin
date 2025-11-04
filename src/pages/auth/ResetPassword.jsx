@@ -150,6 +150,9 @@ const ResetPassword = () => {
         "shadow-none";
 
     if (!gateChecked) return null;
+        
+    // Make ESLint see a concrete JS usage
+    const MotionDiv = motion.div;
 
     return (
         <div className="w-full">
@@ -282,7 +285,7 @@ const ResetPassword = () => {
                 </div>
 
                 {/* Reset Password */}
-                <motion.div whileTap={{ scale: 0.98 }} whileHover={{ y: -1 }}>
+                <MotionDiv whileTap={{ scale: 0.98 }} whileHover={{ y: -1 }}>
                     <Button
                         type="submit"
                         disabled={loading}
@@ -297,7 +300,7 @@ const ResetPassword = () => {
                             "Reset Password"
                         )}
                     </Button>
-                </motion.div>
+                </MotionDiv>
             </form>
         </div>
     );
