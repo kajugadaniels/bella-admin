@@ -139,9 +139,9 @@ export default function ClientDetailSheet({ clientId, open, onOpenChange, onDele
 	const userMemo = useMemo(() => n.user || {}, [n.user]);
 	const client = n.client || null;
 
-	const displayName = client?.name || user?.username || user?.email || 'Client';
-	const displayEmail = client?.email || user?.email || null;
-	const displayPhone = client?.phone_number || user?.phone_number || null;
+	const displayName = client?.name || userMemo?.username || userMemo?.email || 'Client';
+	const displayEmail = client?.email || userMemo?.email || null;
+	const displayPhone = client?.phone_number || userMemo?.phone_number || null;
 
 	const id = n.client_id || n.id || clientId;
 	const title = displayName;
@@ -280,7 +280,7 @@ export default function ClientDetailSheet({ clientId, open, onOpenChange, onDele
 										href={displayEmail ? `mailto:${displayEmail}` : undefined}
 										copyable
 									/>
-									<InfoRow icon={UserCircle2} label="Username" value={user?.username} copyable />
+									<InfoRow icon={UserCircle2} label="Username" value={userMemo?.username} copyable />
 									<InfoRow
 										icon={Phone}
 										label="Phone"
@@ -298,7 +298,7 @@ export default function ClientDetailSheet({ clientId, open, onOpenChange, onDele
 									Status & Meta
 								</div>
 								<div className="mt-2 space-y-1">
-									<InfoRow icon={Shield} label="Role" value={user?.role || 'CLIENT'} copyable />
+									<InfoRow icon={Shield} label="Role" value={userMemo?.role || 'CLIENT'} copyable />
 									<InfoRow icon={Shield} label="Status" value={n?.status || 'active'} />
 									<InfoRow
 										icon={Shield}
@@ -306,8 +306,8 @@ export default function ClientDetailSheet({ clientId, open, onOpenChange, onDele
 										value={
 											n?.created_at
 												? new Date(n.created_at).toLocaleString()
-												: user?.created_at
-												? new Date(user.created_at).toLocaleString()
+												: userMemo?.created_at
+												? new Date(userMemo.created_at).toLocaleString()
 												: '—'
 										}
 									/>
