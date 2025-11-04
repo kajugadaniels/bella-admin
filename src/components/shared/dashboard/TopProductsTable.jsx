@@ -6,8 +6,11 @@ import { Link } from "react-router-dom";
 export default function TopProductsTable({ loading, rows }) {
     const data = (rows || []).slice(0, 5);
 
+    // Make ESLint see a concrete JS usage
+    const MotionDiv = motion.div;
+
     return (
-        <motion.div
+        <MotionDiv
             initial={{ opacity: 0, y: 8 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.3 }}
@@ -65,6 +68,6 @@ export default function TopProductsTable({ loading, rows }) {
                     </tbody>
                 </table>
             </div>
-        </motion.div>
+        </MotionDiv>
     );
 }
