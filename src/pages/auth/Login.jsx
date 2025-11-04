@@ -87,7 +87,9 @@ const Login = () => {
         (async () => {
             try {
                 await auth.logoutAll();
-            } catch { }
+            } catch (error) {
+                console.log("Logout cleanup failed:", error);
+            }
             clearTokens();
             clearSession();
         })();
