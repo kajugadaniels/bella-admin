@@ -38,16 +38,16 @@ const InfoRow = ({ icon, label, value, href, copyable }) => {
 
     const content = (
         <div className="min-w-0 flex-1 truncate text-sm text-neutral-800">
-            {value ?? "—"}
+            {value ?? '—'}
         </div>
     );
 
     const copy = async () => {
         try {
-            await navigator.clipboard.writeText(String(value ?? ""));
+            await navigator.clipboard.writeText(String(value ?? ''));
             toast.success(`${label} copied`);
         } catch {
-            toast.error("Could not copy");
+            toast.error('Could not copy');
         }
     };
 
@@ -56,7 +56,6 @@ const InfoRow = ({ icon, label, value, href, copyable }) => {
             <div className="h-8 w-8 grid place-items-center rounded-lg border border-neutral-200/80 bg-white/70 text-neutral-600 backdrop-blur-sm">
                 <Icon className="h-4 w-4" />
             </div>
-
             <div className="w-28 shrink-0 text-xs font-medium uppercase tracking-wide text-neutral-500">
                 {label}
             </div>
@@ -64,7 +63,7 @@ const InfoRow = ({ icon, label, value, href, copyable }) => {
             {href ? (
                 <a
                     href={href}
-                    target={href.startsWith("http") ? "_blank" : undefined}
+                    target={href.startsWith('http') ? '_blank' : undefined}
                     rel="noreferrer"
                     className="flex-1 min-w-0"
                 >
@@ -137,7 +136,7 @@ export default function ClientDetailSheet({ clientId, open, onOpenChange, onDele
 
 	// Prefer client values, fallback to user
 	const n = payload || {};
-	const memoUser = useMemo(() => user, [user]);
+	const userMemo = useMemo(() => n.user || {}, [n.user]);
 	const client = n.client || null;
 
 	const displayName = client?.name || user?.username || user?.email || 'Client';
@@ -148,15 +147,16 @@ export default function ClientDetailSheet({ clientId, open, onOpenChange, onDele
 	const title = displayName;
 
 	const avatar = useMemo(() => {
-		if (user?.image_url) {
+		if (userMemo?.image_url) {
 			return (
 				<img
-					src={user.image_url}
+					src={userMemo.image_url}
 					alt={title}
 					className="h-10 w-10 rounded-xl object-cover ring-1 ring-black/5"
 				/>
 			);
 		}
+
 		return (
 			<div
 				className="grid h-10 w-10 place-items-center rounded-4xl text-sm font-semibold text-white ring-1 ring-black/5"
@@ -165,7 +165,7 @@ export default function ClientDetailSheet({ clientId, open, onOpenChange, onDele
 				{initials(title)}
 			</div>
 		);
-	}, [memoUser, title]);
+	}, [userMemo, title]);
 
 	const copyId = async () => {
 		try {
