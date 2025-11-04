@@ -30,12 +30,15 @@ const GlassCard = ({ className = "", children }) => (
         {children}
     </div>
 );
-const InfoRow = ({ icon: Icon, label, value, href, copyable }) => {
+const InfoRow = ({ icon, label, value, href, copyable }) => {
+    const Icon = icon;
+
     const content = (
         <div className="min-w-0 flex-1 truncate text-sm text-neutral-800">
             {value ?? "—"}
         </div>
     );
+
     const doCopy = async () => {
         try {
             await navigator.clipboard.writeText(String(value ?? ""));
@@ -44,6 +47,7 @@ const InfoRow = ({ icon: Icon, label, value, href, copyable }) => {
             toast.error("Could not copy");
         }
     };
+
     return (
         <div className="flex items-center gap-3 rounded-xl px-3 py-2 transition-colors hover:bg-black/[0.03]">
             <div className="h-8 w-8 grid place-items-center rounded-lg border border-neutral-200/80 bg-white/70 text-neutral-600 backdrop-blur-sm">
@@ -68,6 +72,7 @@ const InfoRow = ({ icon: Icon, label, value, href, copyable }) => {
         </div>
     );
 };
+
 const HeaderSkeleton = () => (
     <div className="flex items-center gap-3">
         <Skeleton className="h-14 w-14 rounded-xl" />
@@ -132,7 +137,7 @@ export default function StoreMemberDetailSheet({ membershipId, open, onOpenChang
 
     const m = row || {};
     const id = m.id || membershipId;
-    const u = m.user || {};
+    const u = useMemo(() => m.user || {}, [m.user]);
     const s = m.store || {};
     const title = u.email || u.username || "Member";
 
