@@ -62,7 +62,7 @@ const ClientList = () => {
 	const [loading, setLoading] = useState(true);
 	const [rows, setRows] = useState([]);
 	const [count, setCount] = useState(0);
-	const totalPages = Math.max(1, Math.ceil(count / PAGE_SIZE));
+	// const totalPages = Math.max(1, Math.ceil(count / PAGE_SIZE));
 
 	const [detailId, setDetailId] = useState(null);
 	const [deleteTarget, setDeleteTarget] = useState(null);
@@ -131,10 +131,13 @@ const ClientList = () => {
 	const refresh = useCallback(() => {
 		fetchClients();
 	}, [fetchClients]);
+	
+	// Make ESLint see a concrete JS usage
+	const MotionDiv = motion.div;
 
 	return (
 		<>
-			<motion.div
+			<MotionDiv
 				initial={{ opacity: 0, y: 8 }}
 				animate={{ opacity: 1, y: 0 }}
 				transition={{ duration: 0.28 }}
@@ -273,7 +276,7 @@ const ClientList = () => {
 						</div>
 					</div>
 				</div>
-			</motion.div>
+			</MotionDiv>
 
 			<ClientDetailSheet
 				clientId={detailId}
