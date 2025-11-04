@@ -5,9 +5,12 @@ import {
 } from "lucide-react";
 import { currency } from "./SAUtils";
 
-function StatCard({ title, value, hint, icon: Icon, accentClass = "" }) {
+function StatCard({ title, value, hint, icon, accentClass = "" }) {
+    // Make ESLint see a concrete JS usage
+    const MotionDiv = motion.div;
+
     return (
-        <motion.div
+        <MotionDiv
             initial={{ opacity: 0, y: 8 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.3 }}
@@ -22,14 +25,14 @@ function StatCard({ title, value, hint, icon: Icon, accentClass = "" }) {
                     {hint ? <div className="text-[11px] mt-0.5 text-neutral-500">{hint}</div> : null}
                 </div>
                 <div className={`h-10 w-10 grid place-items-center rounded-xl ${accentClass}`}>
-                    <Icon className="h-5 w-5" />
+                    {icon && <icon className="h-5 w-5" />}
                 </div>
             </div>
-        </motion.div>
+        </MotionDiv>
     );
 }
 
-export default function SAStatsCards({ loading, kpis }) {
+export default function SAStatsCards({ kpis }) {
     const {
         revenue = 0,
         ordersCount = 0,
