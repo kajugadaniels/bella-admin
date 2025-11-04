@@ -1,6 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { toast } from "sonner";
+import React from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -20,6 +18,9 @@ const Verify = () => {
         "outline-none focus:outline-none focus-visible:outline-none " +
         "ring-0 focus:ring-0 focus-visible:ring-0 ring-offset-0 focus:ring-offset-0 focus-visible:ring-offset-0 " +
         "shadow-none";
+    
+    // Make ESLint see a concrete JS usage
+    const MotionDiv = motion.div;
 
     return (
         <div className="w-full">
@@ -81,14 +82,14 @@ const Verify = () => {
                 </div>
 
                 {/* Verify */}
-                <motion.div whileTap={{ scale: 0.98 }} whileHover={{ y: -1 }}>
+                <MotionDiv whileTap={{ scale: 0.98 }} whileHover={{ y: -1 }}>
                     <Button
                         type="submit"
                         className="w-full px-6 py-6 rounded-4xl glass-cta text-white hover:opacity-95 active:opacity-90 outline-none focus-visible:outline-none cursor-pointer"
                     >
                         Verify Account
                     </Button>
-                </motion.div>
+                </MotionDiv>
             </form>
         </div>
     )
