@@ -49,7 +49,7 @@ function toNum(x) {
 function AsyncStoreSelect({
     value,
     onChange,
-    placeholder = "Choose store…",
+    // placeholder = "Choose store…",
     disabled = false,
     buttonClassName = "",
 }) {
@@ -214,7 +214,6 @@ function ImageDropzone({ value, onChange }) {
                     <div className="flex w-full items-center gap-3">
                         <div className="relative h-16 w-16 overflow-hidden rounded-lg border border-black/5">
                             {preview ? (
-                                // eslint-disable-next-line @next/next/no-img-element
                                 <img alt="preview" src={preview} className="h-full w-full object-cover" />
                             ) : (
                                 <ImageIcon className="m-auto h-6 w-6 text-neutral-400" />
@@ -311,7 +310,7 @@ export default function ProductCreateSheet({ open, onOpenChange, onDone }) {
             const first = categories?.[0]?.value || "";
             if (!current && first) setValue("category", first, { shouldValidate: true });
         }
-    }, [catLoading, categories]);
+    }, [catLoading, categories, form, setValue]);
 
     const unitPrice = toNum(watch("unit_price"));
     const priceWithTax = useMemo(() => unitPrice * 1.18, [unitPrice]);
