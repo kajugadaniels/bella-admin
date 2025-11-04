@@ -46,7 +46,9 @@ function extractToastError(err) {
                         else if (typeof v === "string") lines.push(`${k}: ${v}`);
                     }
                     if (lines.length) return lines.join("\n");
-                } catch {}
+                } catch (error) {
+                    console.error("Error extracting nested errors:", error);
+                }
             }
             try {
                 const lines = [];
@@ -55,7 +57,9 @@ function extractToastError(err) {
                     else if (typeof v === "string") lines.push(`${k}: ${v}`);
                 }
                 if (lines.length) return lines.join("\n");
-            } catch {}
+            } catch (error) {
+                console.error("Error extracting errors:", error);
+            }
         }
         if (typeof err.message === "string") return err.message;
     }
@@ -112,7 +116,7 @@ function buildUpdateBody(values) {
     const wantsRemove = !!v.remove_image;
 
     if (!hasFile && !wantsRemove) {
-        const { image, remove_image, ...rest } = v;
+        const { image: _image, remove_image: _remove_image, ...rest } = v;
         // drop empties
         Object.keys(rest).forEach((k) => {
             if (rest[k] === "" || rest[k] === null || rest[k] === undefined) delete rest[k];
