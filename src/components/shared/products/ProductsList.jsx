@@ -363,9 +363,12 @@ const ProductsList = () => {
         }
     };
 
+    // Make ESLint see a concrete JS usage
+    const MotionDiv = motion.div;
+
     return (
         <>
-            <motion.div
+            <MotionDiv
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.28 }}
@@ -618,7 +621,7 @@ const ProductsList = () => {
                         </div>
                     </div>
                 </div>
-            </motion.div>
+            </MotionDiv>
 
             {/* Product detail */}
             {detailProductId && (
