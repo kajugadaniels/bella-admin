@@ -1,0 +1,14 @@
+node_modules
+dist
+.git
+.github
+.vscode
+.idea
+*.log
+Dockerfile
+docker-compose*.yml
+
+# Ignore all envs by default…
+.env*
+# …but keep the production one if you rely on it during builds:
+!/.env.production
