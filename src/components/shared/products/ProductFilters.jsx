@@ -19,6 +19,7 @@ import {
     SelectItem,
     SelectValue,
 } from "@/components/ui/select";
+import { DEFAULT_PRODUCT_FILTERS } from "./productFiltersConstants";
 
 // Non-empty sentinels for Radix Select
 const ALL_CATEGORIES_VALUE = "__ALL__";
@@ -389,20 +390,5 @@ function ProductFiltersBase({ value, onChange, className }) {
 }
 
 const ProductFilters = memo(ProductFiltersBase);
-
-/** Exported so the parent can share the same defaults */
-export const DEFAULT_PRODUCT_FILTERS = {
-    category: "",
-    store_id: "",
-    has_store: "",
-    has_remaining: "",
-    is_void: "",
-    min_unit_price: "",
-    max_unit_price: "",
-    expiring_after: "",
-    expiring_before: "",
-    created_after: "",
-    created_before: "",
-};
 
 export default ProductFilters;
