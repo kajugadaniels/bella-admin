@@ -50,7 +50,7 @@ const GlassCard = ({ className = "", children }) => (
     </div>
 );
 
-const InfoRow = ({ icon: Icon, label, value, href, copyable }) => {
+const InfoRow = ({ icon, label, value, href, copyable }) => {
     const content = (
         <div className="min-w-0 flex-1 truncate text-sm text-neutral-800">
             {value ?? "—"}
@@ -69,7 +69,7 @@ const InfoRow = ({ icon: Icon, label, value, href, copyable }) => {
     return (
         <div className="flex items-center gap-3 rounded-xl px-3 py-2 transition-colors hover:bg-black/[0.03]">
             <div className="h-8 w-8 grid place-items-center rounded-lg border border-neutral-200/80 bg-white/70 text-neutral-600 backdrop-blur-sm">
-                <Icon className="h-4 w-4" />
+                {icon && <icon className="h-4 w-4" />}
             </div>
             <div className="w-28 shrink-0 text-xs font-medium uppercase tracking-wide text-neutral-500">
                 {label}
