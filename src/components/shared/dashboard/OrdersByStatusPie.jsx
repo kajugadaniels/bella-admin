@@ -4,11 +4,14 @@ import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend } from "recha
 
 const COLORS = ["#10b981", "#f59e0b", "#ef4444", "#3b82f6", "#22c55e", "#6b7280"];
 
-export default function OrdersByStatusPie({ loading, data }) {
+export default function OrdersByStatusPie({ data }) {
     const total = data.reduce((s, r) => s + (Number(r.value) || 0), 0);
 
+    // Make ESLint see a concrete JS usage
+    const MotionDiv = motion.div;
+
     return (
-        <motion.div
+        <MotionDiv
             initial={{ opacity: 0, y: 8 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.3 }}
@@ -32,6 +35,6 @@ export default function OrdersByStatusPie({ loading, data }) {
                     </PieChart>
                 </ResponsiveContainer>
             </div>
-        </motion.div>
+        </MotionDiv>
     );
 }
