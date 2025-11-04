@@ -89,7 +89,7 @@ const ProtectedRoute = () => {
             window.removeEventListener("storage", onStorage);
             document.removeEventListener("visibilitychange", onVis);
         };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+         
     }, [navigate, loginUrl]);
 
     return <Outlet />;

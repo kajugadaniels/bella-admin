@@ -114,7 +114,7 @@ export default function StockMovementBar() {
             setStockOuts(outs);
             setLastUpdated(new Date().toISOString());
         } catch (e) {
-            // eslint-disable-next-line no-console
+             
             console.error("StockMovementBar load error:", e);
             toast.error("Couldn’t load stock movement.");
             setStockIns([]);

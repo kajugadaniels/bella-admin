@@ -103,7 +103,7 @@ export default function Dashboard() {
             setProductsCount({ published: pPubTotal, total: pAllTotal });
             setLastRefreshedAt(new Date().toISOString());
         } catch (e) {
-            // eslint-disable-next-line no-console
+             
             console.error("Superadmin dashboard load error:", e);
             toast.error("Couldn’t load dashboard data.");
             setOrders([]); setStockouts([]); setStockinBatches([]); setClients([]);

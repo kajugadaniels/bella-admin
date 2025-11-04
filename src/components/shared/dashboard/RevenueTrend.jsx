@@ -106,7 +106,7 @@ export default function RevenueTrend() {
             setOrders(raw);
             setLastUpdated(new Date().toISOString());
         } catch (e) {
-            // eslint-disable-next-line no-console
+             
             console.error("RevenueTrend load error:", e);
             toast.error("Couldn’t load trend data.");
             setOrders([]);
