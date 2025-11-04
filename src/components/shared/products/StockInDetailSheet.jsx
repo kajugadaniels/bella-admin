@@ -20,7 +20,6 @@ import {
     AlertTriangle,
     CircleCheck,
     CircleX,
-    ClipboardCopy,
     Factory,
     Hammer,
     Layers,
