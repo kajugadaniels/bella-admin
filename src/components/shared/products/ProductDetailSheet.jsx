@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
     BadgeDollarSign,
     Boxes,
@@ -34,14 +34,14 @@ function GlassCard({ className = "", children }) {
     );
 }
 
-function Stat({ icon: Icon, label, value, hint }) {
+function Stat({ icon, label, value, hint }) {
     return (
         <div className="flex items-center gap-3 rounded-2xl border border-neutral-200/80 bg-white/70 p-3 backdrop-blur-md">
             <div
                 className="grid h-10 w-10 place-items-center rounded-xl text-white ring-1 ring-black/5"
                 style={{ background: "linear-gradient(135deg, var(--primary-color), #059669)" }}
             >
-                <Icon className="h-5 w-5" />
+                {icon && <icon className="h-5 w-5" />}
             </div>
             <div className="min-w-0">
                 <div className="text-xs uppercase tracking-wide text-neutral-500">{label}</div>
