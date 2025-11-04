@@ -25,8 +25,11 @@ export default function RecentOrders5({ loading, rows }) {
         currency: (o?.currency || "RWF").toUpperCase()
     })), [rows]);
 
+    // Make ESLint see a concrete JS usage
+    const MotionDiv = motion.div;
+
     return (
-        <motion.div
+        <MotionDiv
             initial={{ opacity: 0, y: 8 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.3 }}
@@ -65,6 +68,6 @@ export default function RecentOrders5({ loading, rows }) {
                     </tbody>
                 </table>
             </div>
-        </motion.div>
+        </MotionDiv>
     );
 }
