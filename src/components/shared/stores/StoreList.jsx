@@ -31,8 +31,8 @@ const DEFAULT_ORDERING = "-created_at";
 
 const StoreList = () => {
     const [query, setQuery] = useState("");
-    const debouncedQuery =
-        typeof useDebounce === "function" ? useDebounce(query, 500) : useDebounceLocal(query, 500);
+    const useDebounceHook = typeof useDebounce === "function" ? useDebounce : useDebounceLocal;
+    const debouncedQuery = useDebounceHook(query, 500);
 
     const [filters, setFilters] = useState({
         has_admin: "",
