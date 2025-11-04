@@ -295,7 +295,7 @@ export default function ProductUpdateSheet({ id, open, onOpenChange, onDone }) {
     });
 
     const { control } = form;
-    const { fields, append, update, remove } = useFieldArray({
+    const { fields, append, remove } = useFieldArray({
         control,
         name: "batches",
         keyName: "__key", // stable key for React lists
