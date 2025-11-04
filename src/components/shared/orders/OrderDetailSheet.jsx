@@ -39,11 +39,11 @@ const GlassCard = ({ className = '', children }) => (
 );
 
 /** Section header with icon chip */
-const SectionHeader = ({ icon: Icon, title, count }) => (
+const SectionHeader = ({ icon, title, count }) => (
 	<div className="mb-2 flex items-center justify-between gap-2">
 		<div className="flex items-center gap-3">
 			<div className="grid h-9 w-9 place-items-center rounded-2xl bg-gradient-to-br from-[var(--primary-color)]/15 to-emerald-600/15 ring-1 ring-black/5">
-				<Icon className="h-4.5 w-4.5 text-emerald-700" />
+				{icon && <icon className="h-4.5 w-4.5 text-emerald-700" />}
 			</div>
 			<div className="text-[13px] font-semibold tracking-wide text-neutral-700 uppercase">
 				{title}
