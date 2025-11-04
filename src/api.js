@@ -170,7 +170,9 @@ export async function apiRequest(path, opts = {}) {
 		const headersObj = {};
 		try {
 			for (const [k, v] of res.headers.entries()) headersObj[k.toLowerCase()] = v;
-		} catch {}
+		} catch (err) {
+			console.log('[API] Failed to parse response headers.', err);
+		}
 		return { ok: true, status: res.status, data, message: extractMessage(data), headers: headersObj };
 	}
 
