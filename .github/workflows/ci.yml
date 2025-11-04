@@ -1,0 +1,78 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop, release/** ]
+  pull_request:
+    branches: [ main, develop ]
+
+# Cancel older runs on the same ref to save time & money
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    name: Lint & Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      matrix:
+        node-version: [ 20.x ] # matches your local toolchain; add 18.x if needed
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: npm
+
+      - name: Install dependencies (npm ci)
+        run: npm ci
+
+      - name: Environment sanity checks (non-blocking)
+        # Warn (do not fail) on a few common pitfalls in .env files
+        run: |
+          set -euo pipefail
+
+          for f in .env .env.production; do
+            if [[ -f "$f" ]]; then
+              echo "Found $f"
+            else
+              echo "::warning file=$f::Missing $f"
+            fi
+          done
+
+          if [[ -f .env.production ]]; then
+            # Warn if ORIGIN vars end with a trailing slash
+            awk -F= '/^VITE_SERVICE_.*_ORIGIN=/{ if ($2 ~ /\/$/) print "::warning file=.env.production,line=" NR "::" $1 " ends with a trailing slash (recommended to remove)"; }' .env.production || true
+
+            # Warn on accidental double slashes in URLs after the host (protocol excluded)
+            # e.g. https://domain.tld//about
+            grep -nE 'https?://[^[:space:]]+//[^/]' .env.production \
+              | sed -E 's/^/::warning file=.env.production,line=/' || true
+          fi
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build (production)
+        env:
+          NODE_ENV: production
+        run: npm run build
+        # Vite automatically loads .env.production for `build` (mode=production).
+        # Your vite.config.js also detects GitHub Actions to set `base` correctly.
+
+      - name: Upload build artifact (dist/)
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: bella-web-dist-${{ github.sha }}
+          path: dist
+          if-no-files-found: warn
+          retention-days: 7
