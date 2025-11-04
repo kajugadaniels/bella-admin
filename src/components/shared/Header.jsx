@@ -29,24 +29,24 @@ function cn(...parts) {
 
 function initialsFrom(user) {
     const base = (user?.username || user?.email?.split("@")[0] || user?.email || "User").trim();
-    const words = base.replace(/[_\-\.]+/g, " ").split(" ").filter(Boolean);
+    const words = base.replace(/[_\-.]+/g, " ").split(" ").filter(Boolean);
     const first = (words[0]?.[0] || "U").toUpperCase();
     const second = (words.length > 1 ? words[1][0] : (base[1] || "")).toUpperCase();
     return (first + second).substring(0, 2);
 }
 
-function hashToHue(seed = "") {
-    let h = 0;
-    for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0;
-    return h % 360;
-}
+// function hashToHue(seed = "") {
+//     let h = 0;
+//     for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0;
+//     return h % 360;
+// }
 
-function gradientFor(user) {
-    const key = user?.email || user?.username || "bella";
-    const h1 = hashToHue(key);
-    const h2 = (h1 + 66) % 360;
-    return `linear-gradient(135deg, hsl(${h1} 75% 60%) 0%, hsl(${h2} 75% 55%) 100%)`;
-}
+// function gradientFor(user) {
+//     const key = user?.email || user?.username || "bella";
+//     const h1 = hashToHue(key);
+//     const h2 = (h1 + 66) % 360;
+//     return `linear-gradient(135deg, hsl(${h1} 75% 60%) 0%, hsl(${h2} 75% 55%) 100%)`;
+// }
 
 /* ------------------------------------------------------------------ */
 /* Header                                                             */
@@ -58,7 +58,7 @@ const Header = () => {
     const user = useMemo(() => getUser(), []);
     const role = (user?.role || "").toUpperCase();
     const avatarInitials = useMemo(() => initialsFrom(user), [user]);
-    const avatarBg = useMemo(() => gradientFor(user), [user]);
+    // const avatarBg = useMemo(() => gradientFor(user), [user]);
 
     const handleOpenSidebar = useCallback(() => {
         setOpening(true);
@@ -77,8 +77,11 @@ const Header = () => {
         }
     }, [navigate]);
 
+    // Make ESLint see a concrete JS usage
+    const MotionDiv = motion.div;
+
     return (
-        <motion.header
+        <MotionDiv
             initial={{ y: -12, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ duration: 0.35, ease: "easeOut" }}
@@ -205,7 +208,7 @@ const Header = () => {
                     </div>
                 </div>
             </div>
-        </motion.header>
+        </MotionDiv>
     );
 };
 
