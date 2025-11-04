@@ -14,8 +14,11 @@ export default function SADashboardHeader({
 }) {
     const last = lastRefreshedAt ? new Date(lastRefreshedAt).toLocaleString() : "—";
 
+    // Make ESLint see a concrete JS usage
+    const MotionDiv = motion.div;
+
     return (
-        <motion.div
+        <MotionDiv
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.22 }}
@@ -76,6 +79,6 @@ export default function SADashboardHeader({
                     </div>
                 </div>
             </div>
-        </motion.div>
+        </MotionDiv>
     );
 }
