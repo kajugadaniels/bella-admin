@@ -66,13 +66,13 @@ const GlassCard = ({ className = "", children }) => (
     </div>
 );
 
-const StatChip = ({ icon: Icon, label, value, hint }) => (
+const StatChip = ({ icon, label, value, hint }) => (
     <div className="flex items-center gap-3 rounded-2xl border border-neutral-200/80 bg-white/70 p-3 backdrop-blur-md">
         <div
             className="grid px-3 py-3 place-items-center rounded-4xl text-white ring-1 ring-black/5"
             style={{ background: "linear-gradient(135deg, var(--primary-color), #059669)" }}
         >
-            <Icon className="h-5 w-5" />
+            {icon && <icon className="h-5 w-5" />}
         </div>
         <div className="min-w-0">
             <div className="text-xs uppercase tracking-wide text-neutral-500">{label}</div>
@@ -84,7 +84,7 @@ const StatChip = ({ icon: Icon, label, value, hint }) => (
     </div>
 );
 
-const InfoRow = ({ icon: Icon, label, value, href, copyable }) => {
+const InfoRow = ({ icon, label, value, href, copyable }) => {
     const content = (
         <div className="min-w-0 flex-1 truncate text-sm text-neutral-800">
             {value || "—"}
@@ -103,7 +103,7 @@ const InfoRow = ({ icon: Icon, label, value, href, copyable }) => {
     return (
         <div className="flex items-center gap-3 rounded-xl px-3 py-2 transition-colors hover:bg-black/[0.03]">
             <div className="h-8 w-8 grid place-items-center rounded-lg border border-neutral-200/80 bg-white/70 text-neutral-600 backdrop-blur-sm">
-                <Icon className="h-4 w-4" />
+                {icon && <icon className="h-4 w-4" />}
             </div>
             <div className="w-28 shrink-0 text-xs font-medium uppercase tracking-wide text-neutral-500">
                 {label}
