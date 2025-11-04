@@ -111,7 +111,7 @@ export default function StoreAddStaffSheet({ store, open, onOpenChange, onDone }
     const canSubmit = useMemo(() => {
         const f = tab === "existing" ? existingForm : inviteForm;
         return f.formState.isValid && !submitting;
-    }, [tab, existingForm.formState.isValid, inviteForm.formState.isValid, submitting]);
+    }, [tab, existingForm, inviteForm, submitting]);
 
     const onSubmit = async () => {
         try {
