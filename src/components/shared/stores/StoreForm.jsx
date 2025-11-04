@@ -265,7 +265,7 @@ const StoreForm = ({
     defaultValues,
     onSubmit,
     onFormStateChange,
-    submitting = false,
+    // submitting = false,
     mode = "create",
     initialImageUrl, // <- new: pass existing image URL when updating
 }) => {
