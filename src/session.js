@@ -13,7 +13,9 @@ export function saveSession({ tokens, user } = {}) {
         if (user) localStorage.setItem(USER_KEY, JSON.stringify(user));
         // trigger storage event for other tabs on same origin
         localStorage.setItem("bella_session_updated", String(Date.now()));
-    } catch { }
+    } catch (error) {
+        console.error("Failed to save session:", error);
+    }
 }
 
 /** Save/replace just the user snapshot */
@@ -21,7 +23,9 @@ export function saveUser(user) {
     try {
         localStorage.setItem(USER_KEY, JSON.stringify(user || null));
         localStorage.setItem("bella_session_updated", String(Date.now()));
-    } catch { }
+    } catch (error) {
+        console.error("Failed to save session:", error);
+    }
 }
 
 /** Read current user snapshot (may be null) */
@@ -56,7 +60,9 @@ export function clearSession() {
         localStorage.removeItem(REFRESH_KEY);
         localStorage.removeItem(USER_KEY);
         localStorage.setItem("bella_session_updated", String(Date.now()));
-    } catch { }
+    } catch (error) {
+        console.error("Failed to save session:", error);
+    }
 }
 
 /** Minimal JWT decoder (no signature verification) */
