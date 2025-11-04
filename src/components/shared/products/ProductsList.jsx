@@ -25,7 +25,9 @@ import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
 
-import ProductFilters, { DEFAULT_PRODUCT_FILTERS } from "./ProductFilters";
+import ProductFilters from "./ProductFilters";
+import { DEFAULT_PRODUCT_FILTERS } from "./productFiltersConstants";
+
 import ProductDetailSheet from "./ProductDetailSheet";
 import ProductCreateSheet from "./ProductCreateSheet";
 import ProductUpdateSheet from "./ProductUpdateSheet";
