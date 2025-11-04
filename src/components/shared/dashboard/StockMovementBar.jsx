@@ -185,8 +185,11 @@ export default function StockMovementBar() {
         ? `Updated ${new Date(lastUpdated).toLocaleString()}`
         : "";
 
+    // Make ESLint see a concrete JS usage
+    const MotionDiv = motion.div;
+
     return (
-        <motion.div
+        <MotionDiv
             initial={{ opacity: 0, y: 8 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.3 }}
@@ -284,6 +287,6 @@ export default function StockMovementBar() {
                     </LineChart>
                 </ResponsiveContainer>
             </div>
-        </motion.div>
+        </MotionDiv>
     );
 }
