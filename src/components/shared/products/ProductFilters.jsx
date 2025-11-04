@@ -21,24 +21,7 @@ import {
 } from "@/components/ui/select";
 
 /** Exported so the parent can share the same defaults */
-export const DEFAULT_PRODUCT_FILTERS = {
-    category: "",
-    store_id: "",
-    has_store: "",
-    has_remaining: "",
-    is_void: "",
-    min_unit_price: "",
-    max_unit_price: "",
-    expiring_after: "",
-    expiring_before: "",
-    created_after: "",
-    created_before: "",
-};
-
-// Non-empty sentinels for Radix Select
-const ALL_CATEGORIES_VALUE = "__ALL__";
-const ALL_STORES_VALUE = "__ALL_STORES__";
-const GLOBAL_STORE_VALUE = "__GLOBAL__";
+import { DEFAULT_PRODUCT_FILTERS, ALL_CATEGORIES_VALUE, ALL_STORES_VALUE, GLOBAL_STORE_VALUE } from "../../../lib/constants";
 
 function ProductFiltersBase({ value, onChange, className }) {
     const [moreOpen, setMoreOpen] = useState(false);
@@ -159,9 +142,9 @@ function ProductFiltersBase({ value, onChange, className }) {
             created_after: "created ≥",
             created_before: "created ≤",
         };
-        return Object.entries(v)
-            .filter(([_, val]) => val !== "" && val !== null && val !== undefined)
-            .map(([k]) => labels[k] || k.replaceAll("_", " "));
+        return Object.keys(v)
+            .filter((k) => v[k] !== "" && v[k] !== null && v[k] !== undefined)
+            .map((k) => labels[k] || k.replaceAll("_", " "));
     }, [v]);
 
     return (
