@@ -75,6 +75,9 @@ const ForgetPassword = () => {
             setLoading(false);
         }
     }
+    
+    // Make ESLint see a concrete JS usage
+    const MotionDiv = motion.div;
 
     return (
         <div className="w-full">
@@ -106,7 +109,7 @@ const ForgetPassword = () => {
                 </div>
 
                 {/* Send OTP */}
-                <motion.div whileTap={{ scale: 0.98 }} whileHover={{ y: -1 }}>
+                <MotionDiv whileTap={{ scale: 0.98 }} whileHover={{ y: -1 }}>
                     <Button
                         type="submit"
                         disabled={loading}
@@ -120,7 +123,7 @@ const ForgetPassword = () => {
                             "Send OTP"
                         )}
                     </Button>
-                </motion.div>
+                </MotionDiv>
             </form>
         </div>
     );
