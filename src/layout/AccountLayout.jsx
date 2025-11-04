@@ -42,6 +42,9 @@ const AccountLayout = () => {
     const PRIVACY_URL =
         import.meta.env.VITE_PRIVACY_URL
 
+    // Make ESLint see a concrete JS usage
+    const MotionDiv = motion.div;
+
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 h-screen bg-white">
             {/* LEFT: header / scrollable content / fixed footer */}
@@ -56,7 +59,7 @@ const AccountLayout = () => {
 
                 {/* Scrollable center (form area), scrollbars hidden */}
                 <div className="px-6 sm:px-10 no-scrollbar overflow-y-auto">
-                    <motion.div
+                    <MotionDiv
                         initial={{ opacity: 0, y: 14 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.35, ease: "easeOut" }}
@@ -64,7 +67,7 @@ const AccountLayout = () => {
                         style={{ minHeight: "calc(100vh - 160px)" }}
                     >
                         <Outlet />
-                    </motion.div>
+                    </MotionDiv>
                 </div>
 
                 {/* Fixed footer (centered, unmoveable) */}
@@ -111,7 +114,7 @@ const AccountLayout = () => {
                     className="absolute inset-0 h-full w-full object-cover select-none pointer-events-none"
                 />
                 <div className="absolute inset-0 bg-black/45" />
-                <motion.div
+                <MotionDiv
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.15, duration: 0.4 }}
@@ -124,7 +127,7 @@ const AccountLayout = () => {
                         </div>
                         <p className="text-lg leading-7 opacity-95">{meta.tagline}</p>
                     </div>
-                </motion.div>
+                </MotionDiv>
             </div>
         </div>
     );
