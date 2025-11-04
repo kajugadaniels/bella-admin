@@ -33,51 +33,62 @@ const GlassCard = ({ className = '', children }) => (
 	</div>
 );
 
-const InfoRow = ({ icon: Icon, label, value, href, copyable }) => {
-	const content = (
-		<div className="min-w-0 flex-1 truncate text-sm text-neutral-800">{value ?? '—'}</div>
-	);
-	const copy = async () => {
-		try {
-			await navigator.clipboard.writeText(String(value ?? ''));
-			toast.success(`${label} copied`);
-		} catch {
-			toast.error('Could not copy');
-		}
-	};
-	return (
-		<div className="flex items-center gap-3 rounded-xl px-3 py-2 transition-colors hover:bg-black/[0.03]">
-			<div className="h-8 w-8 grid place-items-center rounded-lg border border-neutral-200/80 bg-white/70 text-neutral-600 backdrop-blur-sm">
-				<Icon className="h-4 w-4" />
-			</div>
-			<div className="w-28 shrink-0 text-xs font-medium uppercase tracking-wide text-neutral-500">{label}</div>
-			{href ? (
-				<a
-					href={href}
-					target={href.startsWith('http') ? '_blank' : undefined}
-					rel="noreferrer"
-					className="flex-1 min-w-0"
-				>
-					<div className="group flex items-center gap-2">
-						{content}
-						<ExternalLink className="h-3.5 w-3.5 opacity-60 group-hover:opacity-100" />
-					</div>
-				</a>
-			) : (
-				content
-			)}
-			{copyable && value ? (
-				<Button
-					size="icon"
-					variant="ghost"
-					onClick={copy}
-					className="h-8 w-8 text-neutral-500 hover:text-neutral-800"
-				>
-					<Copy className="h-4 w-4" />
-				</Button>
-			) : null}
-		</div>
-	);
+const InfoRow = ({ icon, label, value, href, copyable }) => {
+    const Icon = icon;
+
+    const content = (
+        <div className="min-w-0 flex-1 truncate text-sm text-neutral-800">
+            {value ?? "—"}
+        </div>
+    );
+
+    const copy = async () => {
+        try {
+            await navigator.clipboard.writeText(String(value ?? ""));
+            toast.success(`${label} copied`);
+        } catch {
+            toast.error("Could not copy");
+        }
+    };
+
+    return (
+        <div className="flex items-center gap-3 rounded-xl px-3 py-2 transition-colors hover:bg-black/[0.03]">
+            <div className="h-8 w-8 grid place-items-center rounded-lg border border-neutral-200/80 bg-white/70 text-neutral-600 backdrop-blur-sm">
+                <Icon className="h-4 w-4" />
+            </div>
+
+            <div className="w-28 shrink-0 text-xs font-medium uppercase tracking-wide text-neutral-500">
+                {label}
+            </div>
+
+            {href ? (
+                <a
+                    href={href}
+                    target={href.startsWith("http") ? "_blank" : undefined}
+                    rel="noreferrer"
+                    className="flex-1 min-w-0"
+                >
+                    <div className="group flex items-center gap-2">
+                        {content}
+                        <ExternalLink className="h-3.5 w-3.5 opacity-60 group-hover:opacity-100" />
+                    </div>
+                </a>
+            ) : (
+                content
+            )}
+
+            {copyable && value ? (
+                <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={copy}
+                    className="h-8 w-8 text-neutral-500 hover:text-neutral-800"
+                >
+                    <Copy className="h-4 w-4" />
+                </Button>
+            ) : null}
+        </div>
+    );
 };
 
 const HeaderSkeleton = () => (
@@ -126,7 +137,7 @@ export default function ClientDetailSheet({ clientId, open, onOpenChange, onDele
 
 	// Prefer client values, fallback to user
 	const n = payload || {};
-	const user = n.user || {};
+	const memoUser = useMemo(() => user, [user]);
 	const client = n.client || null;
 
 	const displayName = client?.name || user?.username || user?.email || 'Client';
@@ -154,7 +165,7 @@ export default function ClientDetailSheet({ clientId, open, onOpenChange, onDele
 				{initials(title)}
 			</div>
 		);
-	}, [user, title]);
+	}, [memoUser, title]);
 
 	const copyId = async () => {
 		try {
