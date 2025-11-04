@@ -99,7 +99,9 @@ function extractApiError(err) {
                         else if (typeof v === "string") lines.push(`${k}: ${v}`);
                     }
                     if (lines.length) return lines.join("\n");
-                } catch { }
+                } catch (error) {
+                    console.error("Error extracting api error details:", error);
+                }
             }
             try {
                 const lines = [];
@@ -108,7 +110,9 @@ function extractApiError(err) {
                     else if (typeof v === "string") lines.push(`${k}: ${v}`);
                 }
                 if (lines.length) return lines.join("\n");
-            } catch { }
+            } catch (error) {
+                console.error("Error extracting api error data:", error);
+            }
         }
         if (typeof err.message === "string") return err.message;
     }
