@@ -179,7 +179,7 @@ const Header = () => {
                                 </Button>
                             </DropdownMenuTrigger>
 
-                            <DropdownMenuContent align="end" className="w-64">
+                            <DropdownMenuContent align="end" className="w-64 bg-white border border-neutral-200 backdrop-blur supports-[backdrop-filter]:bg-white/70">
                                 <DropdownMenuLabel className="space-y-1">
                                     <div className="text-sm font-semibold">
                                         {user?.username || user?.email || "User"}
