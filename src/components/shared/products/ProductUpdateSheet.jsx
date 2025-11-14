@@ -386,6 +386,7 @@ export default function ProductUpdateSheet({ id, open, onOpenChange, onDone }) {
                     name: p.name || "",
                     category: p.category || "",
                     unit_price: p.unit_price != null ? String(p.unit_price) : "",
+                    discount_rate: p.discount_rate != null ? String(p.discount_rate) : "",
                     tax_rate: p.tax_rate != null ? String(p.tax_rate) : "",
                     sku: p.sku || "",
                     barcode: p.barcode || "",
