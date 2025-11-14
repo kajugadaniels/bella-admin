@@ -197,9 +197,9 @@ export default function ProductDetailSheet({ id, open, onOpenChange }) {
 
                                         {/* Original price */}
                                         <div className="rounded-xl border border-black/5 bg-white/60 p-2">
-                                            <div className="text-xs uppercase text-neutral-500">Original</div>
+                                            <div className="text-xs uppercase text-neutral-500">Original Price</div>
                                             <div className="font-semibold text-neutral-600 line-through decoration-red-500/70">
-                                                {fmtNum(product?.discount_price)}
+                                                {fmtNum(product?.original_price)}
                                             </div>
                                         </div>
 
@@ -323,9 +323,9 @@ export default function ProductDetailSheet({ id, open, onOpenChange }) {
                                                                 <div className="font-semibold text-emerald-700">{fmtNum(b.pricing?.unit_price)}</div>
                                                             </div>
                                                             <div className="rounded-lg border border-black/5 bg-white/60 p-2">
-                                                                <div className="text-xs uppercase text-neutral-500">Original</div>
+                                                                <div className="text-xs uppercase text-neutral-500">Original P</div>
                                                                 <div className="font-semibold text-neutral-600 line-through decoration-red-500/70">
-                                                                    {fmtNum(b.product?.discount_price)}
+                                                                    {fmtNum(b.product?.original_price || product?.original_price)}
                                                                 </div>
                                                             </div>
                                                             <div className="rounded-lg border border-black/5 bg-white/60 p-2">
