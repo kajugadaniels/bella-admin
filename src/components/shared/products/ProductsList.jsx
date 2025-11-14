@@ -189,6 +189,11 @@ function ProductCard({ row, onView, onEdit, onBatch, onTogglePublish, publishBus
                     <ProductThumb src={p.image || null} alt={p.name} size={44} />
                     <div className="min-w-0">
                         <div className="truncate font-medium">{p.name || "—"}</div>
+                        {p.discount_rate > 0 && (
+                            <Badge className="bg-amber-100 text-amber-700 border-amber-200 text-[10px]">
+                                -{fmtNum(p.discount_rate)}%
+                            </Badge>
+                        )}
                         <div className="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-neutral-500">
                             <Badge variant="secondary" className="glass-badge">{p.category || "UNCAT"}</Badge>
                             {store?.name ? <span className="truncate">· {store.name}</span> : <span className="truncate">· Global</span>}
@@ -224,9 +229,24 @@ function ProductCard({ row, onView, onEdit, onBatch, onTogglePublish, publishBus
                     <div className="font-semibold">{fmtNum(q.received)}</div>
                 </div>
 
+                {/* Discounted price */}
                 <div className="rounded-xl border border-black/5 bg-white/60 p-2">
-                    <div className="text-xs uppercase text-neutral-500">Unit price</div>
-                    <div className="font-semibold">{fmtNum(val.unit_price)}</div>
+                    <div className="text-xs uppercase text-neutral-500">Discounted</div>
+                    <div className="font-semibold text-emerald-700">{fmtNum(p.unit_price)}</div>
+                </div>
+
+                {/* Original price */}
+                <div className="rounded-xl border border-black/5 bg-white/60 p-2">
+                    <div className="text-xs uppercase text-neutral-500">Original</div>
+                    <div className="font-semibold text-neutral-600 line-through decoration-red-500/70">
+                        {fmtNum(p.discount_price)}
+                    </div>
+                </div>
+
+                {/* Discount % */}
+                <div className="rounded-xl border border-black/5 bg-white/60 p-2 col-span-2">
+                    <div className="text-xs uppercase text-neutral-500">Discount</div>
+                    <div className="font-medium text-amber-600">{fmtNum(p.discount_rate)}%</div>
                 </div>
 
                 <div className="rounded-xl border border-black/5 bg-white/60 p-2">
@@ -434,7 +454,8 @@ const ProductsList = () => {
                                     <TableHead className="min-w=[320px]">Product</TableHead>
                                     <TableHead>Store</TableHead>
                                     <TableHead className="text-right">Remaining</TableHead>
-                                    <TableHead className="text-right">Unit&nbsp;Price</TableHead>
+                                    <TableHead className="text-right">Discounted</TableHead>
+                                    <TableHead className="text-right">Original</TableHead>
                                     <TableHead className="text-right">Gross&nbsp;Value</TableHead>
                                     <TableHead className="text-right">Received</TableHead>
                                     <TableHead className="text-right">Expiry</TableHead>
@@ -489,6 +510,11 @@ const ProductsList = () => {
                                                         <ProductThumb src={p.image || null} alt={p.name} size={40} rounded="rounded-lg" />
                                                         <div className="min-w-0">
                                                             <div className="truncate text-sm font-medium">{p.name}</div>
+                                                            {p.discount_rate > 0 && (
+                                                                <span className="text-[11px] text-amber-600 font-medium">
+                                                                    -{fmtNum(p.discount_rate)}% off
+                                                                </span>
+                                                            )}
                                                             <div className="truncate text-[11px] text-neutral-500">{p.id}</div>
                                                         </div>
                                                     </div>
@@ -502,7 +528,17 @@ const ProductsList = () => {
                                                     </div>
                                                 </TableCell>
                                                 <TableCell className="text-right">{fmtNum(q.remaining)}</TableCell>
-                                                <TableCell className="text-right">{fmtNum(val.unit_price)}</TableCell>
+                                                {/* Discounted price */}
+                                                <TableCell className="text-right font-medium text-emerald-700">
+                                                    {fmtNum(val.unit_price)}
+                                                </TableCell>
+
+                                                {/* Original price */}
+                                                <TableCell className="text-right text-neutral-600 line-through decoration-red-500/70">
+                                                    {fmtNum(p.discount_price)}
+                                                </TableCell>
+
+                                                {/* Gross value unchanged */}
                                                 <TableCell className="text-right">{fmtNum(val.value_gross)}</TableCell>
                                                 <TableCell className="text-right">{dateOnly(d.received_at)}</TableCell>
 
