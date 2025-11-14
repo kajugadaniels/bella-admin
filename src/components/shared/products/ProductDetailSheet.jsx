@@ -41,7 +41,7 @@ function Stat({ icon, label, value, hint }) {
                 className="grid h-10 w-10 place-items-center rounded-xl text-white ring-1 ring-black/5"
                 style={{ background: "linear-gradient(135deg, var(--primary-color), #059669)" }}
             >
-                {icon && <icon className="h-5 w-5" />}
+                {icon && React.createElement(icon, { className: "h-5 w-5" })}
             </div>
             <div className="min-w-0">
                 <div className="text-xs uppercase tracking-wide text-neutral-500">{label}</div>
@@ -147,7 +147,18 @@ export default function ProductDetailSheet({ id, open, onOpenChange }) {
                                     )}
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    <Badge variant="secondary" className="glass-badge">{product?.category || "UNCAT"}</Badge>
+                                    <div className="flex items-center gap-2">
+                                        <Badge variant="secondary" className="glass-badge">
+                                            {product?.category || "UNCAT"}
+                                        </Badge>
+
+                                        {product?.discount_rate > 0 && (
+                                            <Badge className="bg-amber-100 text-amber-700 border-amber-200">
+                                                -{fmtNum(product.discount_rate)}%
+                                            </Badge>
+                                        )}
+                                    </div>
+
                                     <Button variant="outline" size="sm" onClick={copyId} className="cursor-pointer">
                                         <ClipboardCopy className="mr-2 h-4 w-4" />
                                         Copy ID
@@ -178,17 +189,48 @@ export default function ProductDetailSheet({ id, open, onOpenChange }) {
                                     </div>
                                 ) : (
                                     <div className="grid grid-cols-2 gap-2 text-sm">
+                                        {/* Discounted price */}
                                         <div className="rounded-xl border border-black/5 bg-white/60 p-2">
-                                            <div className="text-xs uppercase text-neutral-500">Unit price</div>
-                                            <div className="font-semibold">{fmtNum(product?.unit_price)}</div>
+                                            <div className="text-xs uppercase text-neutral-500">Discounted</div>
+                                            <div className="font-semibold text-emerald-700">{fmtNum(product?.unit_price)}</div>
                                         </div>
+
+                                        {/* Original price */}
+                                        <div className="rounded-xl border border-black/5 bg-white/60 p-2">
+                                            <div className="text-xs uppercase text-neutral-500">Original</div>
+                                            <div className="font-semibold text-neutral-600 line-through decoration-red-500/70">
+                                                {fmtNum(product?.discount_price)}
+                                            </div>
+                                        </div>
+
+                                        {/* Discount rate */}
+                                        <div className="rounded-xl border border-black/5 bg-white/60 p-2">
+                                            <div className="text-xs uppercase text-neutral-500">Discount rate</div>
+                                            <div className="font-semibold text-amber-600">
+                                                {fmtNum(product?.discount_rate)}%
+                                            </div>
+                                        </div>
+
+                                        {/* Tax rate */}
                                         <div className="rounded-xl border border-black/5 bg-white/60 p-2">
                                             <div className="text-xs uppercase text-neutral-500">Tax %</div>
-                                            <div className="font-semibold">{product?.tax_rate ?? 18}</div>
+                                            <div className="font-semibold">{fmtNum(product?.tax_rate)}</div>
                                         </div>
+
+                                        {/* Discounted with tax */}
                                         <div className="rounded-xl border border-black/5 bg-white/60 p-2">
-                                            <div className="text-xs uppercase text-neutral-500">Price w/ tax</div>
-                                            <div className="font-semibold">{fmtNum(product?.unit_price_with_tax)}</div>
+                                            <div className="text-xs uppercase text-neutral-500">Discounted + tax</div>
+                                            <div className="font-semibold text-emerald-700">
+                                                {fmtNum(product?.discounted_price_with_tax || product?.unit_price_with_tax)}
+                                            </div>
+                                        </div>
+
+                                        {/* Original with tax */}
+                                        <div className="rounded-xl border border-black/5 bg-white/60 p-2">
+                                            <div className="text-xs uppercase text-neutral-500">Original + tax</div>
+                                            <div className="font-semibold text-neutral-600 line-through decoration-red-500/70">
+                                                {fmtNum(product?.original_price_with_tax || product?.discount_price_with_tax)}
+                                            </div>
                                         </div>
                                     </div>
                                 )}
@@ -277,8 +319,14 @@ export default function ProductDetailSheet({ id, open, onOpenChange }) {
                                                                 <div className="font-semibold">{fmtNum(b.quantities?.remaining)}</div>
                                                             </div>
                                                             <div className="rounded-lg border border-black/5 bg-white/60 p-2">
-                                                                <div className="text-xs uppercase text-neutral-500">Unit price</div>
-                                                                <div className="font-semibold">{fmtNum(b.pricing?.unit_price)}</div>
+                                                                <div className="text-xs uppercase text-neutral-500">Discounted</div>
+                                                                <div className="font-semibold text-emerald-700">{fmtNum(b.pricing?.unit_price)}</div>
+                                                            </div>
+                                                            <div className="rounded-lg border border-black/5 bg-white/60 p-2">
+                                                                <div className="text-xs uppercase text-neutral-500">Original</div>
+                                                                <div className="font-semibold text-neutral-600 line-through decoration-red-500/70">
+                                                                    {fmtNum(b.product?.discount_price)}
+                                                                </div>
                                                             </div>
                                                             <div className="rounded-lg border border-black/5 bg-white/60 p-2">
                                                                 <div className="text-xs uppercase text-neutral-500">Gross value</div>
