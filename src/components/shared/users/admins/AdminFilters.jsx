@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React from "react";
+
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -15,15 +16,10 @@ import {
     SheetContent,
     SheetHeader,
     SheetTitle,
-    SheetTrigger,
     SheetFooter,
 } from "@/components/ui/sheet";
 
-import {
-    Filter as FilterIcon,
-    RotateCcw,
-    Search,
-} from "lucide-react";
+import { RotateCcw } from "lucide-react";
 
 const orders = [
     { value: "-created_at", label: "Newest" },
@@ -42,152 +38,110 @@ const DEFAULTS = {
     ordering: "-created_at",
 };
 
-const AdminFilters = ({ value, onChange }) => {
+const AdminFilters = ({ value, onChange, open, onOpenChange }) => {
     const v = value || DEFAULTS;
+
     const update = (patch) => onChange?.({ ...v, ...patch });
     const resetFilters = () => onChange?.({ ...DEFAULTS });
 
-    const [open, setOpen] = useState(false);
-
     return (
-        <>
-            {/* Trigger button visible on both desktop and mobile */}
-            <div className="flex justify-end w-full">
-                <Sheet open={open} onOpenChange={setOpen}>
-                    <SheetTrigger asChild>
-                        <Button
-                            variant="outline"
-                            className="rounded-xl flex items-center gap-2 px-4 py-2"
+        <Sheet open={open} onOpenChange={onOpenChange}>
+            <SheetContent
+                side="right"
+                className="w-[90%] sm:w-[380px] p-0 flex flex-col"
+            >
+                <SheetHeader className="px-5 py-4 border-b border-neutral-200">
+                    <SheetTitle className="text-left">Filters</SheetTitle>
+                </SheetHeader>
+
+                {/* Scrollable filter fields */}
+                <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5">
+                    {/* STATUS */}
+                    <div className="space-y-1">
+                        <Label>Status</Label>
+                        <Select
+                            value={v.status}
+                            onValueChange={(val) => update({ status: val })}
                         >
-                            <FilterIcon className="h-4 w-4" />
-                            Filters
+                            <SelectTrigger className="border-neutral-300 bg-white/90 backdrop-blur-sm">
+                                <SelectValue placeholder="All" />
+                            </SelectTrigger>
+                            <SelectContent className="bg-white/95 backdrop-blur-md">
+                                <SelectItem value="all">All</SelectItem>
+                                <SelectItem value="active">Active</SelectItem>
+                                <SelectItem value="pending">Pending</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+
+                    {/* CREATED AFTER */}
+                    <div className="space-y-1">
+                        <Label>Created after</Label>
+                        <Input
+                            type="datetime-local"
+                            value={v.created_after || ""}
+                            onChange={(e) => update({ created_after: e.target.value })}
+                            className="border-neutral-300 bg-white/90 backdrop-blur-sm"
+                        />
+                    </div>
+
+                    {/* CREATED BEFORE */}
+                    <div className="space-y-1">
+                        <Label>Created before</Label>
+                        <Input
+                            type="datetime-local"
+                            value={v.created_before || ""}
+                            onChange={(e) => update({ created_before: e.target.value })}
+                            className="border-neutral-300 bg-white/90 backdrop-blur-sm"
+                        />
+                    </div>
+
+                    {/* ORDERING */}
+                    <div className="space-y-1">
+                        <Label>Ordering</Label>
+                        <Select
+                            value={v.ordering}
+                            onValueChange={(val) => update({ ordering: val })}
+                        >
+                            <SelectTrigger className="border-neutral-300 bg-white/90 backdrop-blur-sm">
+                                <SelectValue placeholder="Sort by…" />
+                            </SelectTrigger>
+                            <SelectContent className="bg-white/95 backdrop-blur-md">
+                                {orders.map((o) => (
+                                    <SelectItem key={o.value} value={o.value}>
+                                        {o.label}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                </div>
+
+                {/* FOOTER FIXED AT BOTTOM */}
+                <SheetFooter className="border-t border-neutral-200 px-5 py-4 bg-white">
+                    <div className="flex w-full items-center justify-between gap-2">
+                        <Button
+                            variant="ghost"
+                            onClick={resetFilters}
+                            className="text-neutral-700 hover:bg-neutral-100"
+                        >
+                            <RotateCcw className="mr-2 h-4 w-4" />
+                            Reset
                         </Button>
-                    </SheetTrigger>
 
-                    {/* FILTER SIDEBAR */}
-                    <SheetContent
-                        side="left"
-                        className="
-                            w-full sm:w-[420px]
-                            overflow-y-auto p-6
-                            bg-white backdrop-blur-xl
-                        "
-                    >
-                        <SheetHeader>
-                            <SheetTitle className="text-left">Filter Admins</SheetTitle>
-                        </SheetHeader>
-
-                        {/* Filter fields */}
-                        <div className="mt-6 grid gap-5">
-
-                            {/* Search */}
-                            <div className="grid gap-1">
-                                <Label>Search</Label>
-                                <div className="relative">
-                                    <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
-                                    <Input
-                                        placeholder="Search by email, username, phone…"
-                                        value={v.search || ""}
-                                        onChange={(e) => update({ search: e.target.value })}
-                                        className="pl-9"
-                                    />
-                                </div>
-                            </div>
-
-                            {/* Status */}
-                            <div className="grid gap-1">
-                                <Label>Status</Label>
-                                <Select
-                                    value={v.status || "all"}
-                                    onValueChange={(val) => update({ status: val })}
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="All" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="all">All</SelectItem>
-                                        <SelectItem value="active">Active</SelectItem>
-                                        <SelectItem value="pending">Pending</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-
-                            {/* Created After */}
-                            <div className="grid gap-1">
-                                <Label>Created After</Label>
-                                <Input
-                                    type="datetime-local"
-                                    value={v.created_after || ""}
-                                    onChange={(e) => update({ created_after: e.target.value })}
-                                />
-                            </div>
-
-                            {/* Created Before */}
-                            <div className="grid gap-1">
-                                <Label>Created Before</Label>
-                                <Input
-                                    type="datetime-local"
-                                    value={v.created_before || ""}
-                                    onChange={(e) => update({ created_before: e.target.value })}
-                                />
-                            </div>
-
-                            {/* Ordering */}
-                            <div className="grid gap-1">
-                                <Label>Sort By</Label>
-                                <Select
-                                    value={v.ordering || "-created_at"}
-                                    onValueChange={(val) => update({ ordering: val })}
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Sort by…" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {orders.map((o) => (
-                                            <SelectItem key={o.value} value={o.value}>
-                                                {o.label}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
+                        <div className="flex items-center gap-2">
+                            <Button
+                                variant="secondary"
+                                onClick={() => onOpenChange(false)}
+                            >
+                                Close
+                            </Button>
+                            <Button onClick={() => onOpenChange(false)}>Apply</Button>
                         </div>
-
-                        {/* Footer buttons */}
-                        <SheetFooter className="mt-8">
-                            <div className="flex w-full items-center justify-between gap-2">
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    onClick={resetFilters}
-                                    className="text-neutral-700 hover:text-neutral-900 hover:bg-neutral-100"
-                                >
-                                    <RotateCcw className="mr-2 h-4 w-4" />
-                                    Reset
-                                </Button>
-
-                                <div className="flex items-center gap-2">
-                                    <Button
-                                        type="button"
-                                        variant="secondary"
-                                        onClick={() => setOpen(false)}
-                                    >
-                                        Close
-                                    </Button>
-                                    <Button
-                                        type="button"
-                                        onClick={() => setOpen(false)}
-                                        className="bg-[var(--primary-color)] hover:opacity-90"
-                                    >
-                                        Apply
-                                    </Button>
-                                </div>
-                            </div>
-                        </SheetFooter>
-                    </SheetContent>
-                </Sheet>
-            </div>
-        </>
+                    </div>
+                </SheetFooter>
+            </SheetContent>
+        </Sheet>
     );
 };
 
