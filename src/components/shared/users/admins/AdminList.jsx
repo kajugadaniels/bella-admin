@@ -15,7 +15,6 @@ import AdminTable from "./AdminTable";
 import AdminDetailSheet from "./AdminDetailSheet";
 import AdminDeleteDialog from "./AdminDeleteDialog";
 
-// Fallback debounce if "@/hooks/useDebounce" isn't present
 function useDebounceLocal(value, delay = 500) {
     const [v, setV] = useState(value);
     useEffect(() => {
@@ -43,6 +42,7 @@ const AdminList = () => {
     const [loading, setLoading] = useState(true);
     const [rows, setRows] = useState([]);
     const [count, setCount] = useState(0);
+
     const pageSize = 10;
     const totalPages = Math.max(1, Math.ceil(count / pageSize));
 
@@ -55,10 +55,13 @@ const AdminList = () => {
         setLoading(true);
         try {
             const params = {};
+
             if (debouncedQuery.trim()) params.search = debouncedQuery.trim();
 
             Object.entries(filters).forEach(([k, v]) => {
-                if (v !== "" && v !== null && v !== undefined) params[k] = v;
+                if (v !== "" && v !== null && v !== undefined) {
+                    params[k] = v;
+                }
             });
 
             params.ordering = ordering;
@@ -87,23 +90,6 @@ const AdminList = () => {
         fetchAdmins();
     }, [fetchAdmins]);
 
-    const headerRight = useMemo(
-        () => (
-            <div className="flex items-center gap-2">
-                <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={refresh}
-                    className="glass-button rounded-4xl px-4 py-5"
-                >
-                    <RefreshCw className="mr-2 h-4 w-4" />
-                    Refresh
-                </Button>
-            </div>
-        ),
-        [refresh]
-    );
-
     const MotionDiv = motion.div;
 
     return (
@@ -114,7 +100,7 @@ const AdminList = () => {
                 transition={{ duration: 0.28 }}
                 className="mx-auto px-4 sm:px-6"
             >
-                {/* Page header */}
+                {/* Header */}
                 <div className="mb-4 mt-4 flex flex-wrap items-center justify-between gap-3">
                     <div>
                         <h1 className="text-xl font-semibold tracking-tight">
@@ -126,18 +112,16 @@ const AdminList = () => {
                             Manage admin records and invitations.
                         </p>
                     </div>
-                    {headerRight}
                 </div>
 
-                {/* Card */}
+                {/* CARD */}
                 <div className="glass-card flex flex-col gap-4 p-4">
-                    {/* Top bar */}
+
+                    {/* TOP BAR */}
                     <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                         {/* Search */}
                         <div className="flex-1">
-                            <Label htmlFor="q" className="sr-only">
-                                Search
-                            </Label>
+                            <Label htmlFor="q" className="sr-only">Search</Label>
                             <Input
                                 id="q"
                                 placeholder="Search by email, username, or phone…"
@@ -147,12 +131,13 @@ const AdminList = () => {
                             />
                         </div>
 
+                        {/* Badge + Filters + Refresh */}
                         <div className="flex items-center gap-3">
                             <Badge variant="secondary" className="glass-badge">
                                 {count} total
                             </Badge>
 
-                            {/* Filters Button */}
+                            {/* Filter Button */}
                             <Button
                                 variant="outline"
                                 size="sm"
@@ -161,6 +146,17 @@ const AdminList = () => {
                             >
                                 <Filter className="mr-2 h-4 w-4" />
                                 Filters
+                            </Button>
+
+                            {/* Refresh Button (same design) */}
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={refresh}
+                                className="glass-button rounded-4xl px-4"
+                            >
+                                <RefreshCw className="mr-2 h-4 w-4" />
+                                Refresh
                             </Button>
                         </div>
                     </div>
@@ -181,6 +177,7 @@ const AdminList = () => {
                         <span className="text-xs text-neutral-500">
                             Page {page} of {totalPages}
                         </span>
+
                         <div className="flex items-center gap-2">
                             <Button
                                 variant="outline"
@@ -191,6 +188,7 @@ const AdminList = () => {
                             >
                                 Previous
                             </Button>
+
                             <Button
                                 variant="outline"
                                 size="sm"
@@ -205,7 +203,7 @@ const AdminList = () => {
                 </div>
             </MotionDiv>
 
-            {/* Filter Sheet */}
+            {/* FILTER SHEET */}
             <AdminFilters
                 open={filtersSheetOpen}
                 onOpenChange={setFiltersSheetOpen}
@@ -217,7 +215,7 @@ const AdminList = () => {
                 }}
             />
 
-            {/* Detail Sheet */}
+            {/* DETAIL SHEET */}
             {detailId && (
                 <AdminDetailSheet
                     adminId={detailId}
@@ -230,7 +228,7 @@ const AdminList = () => {
                 />
             )}
 
-            {/* Delete Dialog */}
+            {/* DELETE DIALOG */}
             {deleteTarget && (
                 <AdminDeleteDialog
                     admin={deleteTarget}
