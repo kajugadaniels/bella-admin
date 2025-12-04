@@ -1,24 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-    Boxes,
-    Building2,
-    ChevronLeft,
-    ChevronRight,
-    Home,
-    LogOut,
-    Package,
-    Settings,
-    Truck,
-    TruckIcon,
-    User2,
-    UserCheck,
-    UserCog,
-} from "lucide-react";
-
-import { auth } from "@/api";
-import { clearSession } from "@/session";
 
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -26,59 +8,23 @@ import { Separator } from "@/components/ui/separator";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 
-/* ------------------------------------------------------------------ */
-/* Utilities                                                          */
-/* ------------------------------------------------------------------ */
+import { ChevronLeft, ChevronRight } from "lucide-react";
+
+import { auth } from "@/api";
+import { clearSession } from "@/session";
+
+import NavItem from "./NavItem";
+import { navLinks, bottomLinks, logoutLink } from "@/lib/navLinks";
+
 function cn(...parts) {
     return parts.filter(Boolean).join(" ");
 }
 
 const LS_KEY = "bella_sidebar_collapsed";
 
-/** A tiny composable nav item */
-const NavItem = ({ to, icon, label, collapsed, end = false }) => {
-    const base =
-        "flex items-center gap-3 rounded-4xl px-3 py-3.5 text-sm transition-colors ring-0";
-    const activeGradient =
-        "bg-gradient-to-r from-[var(--primary-color)] to-emerald-600 text-white shadow-sm";
-    const idle =
-        "text-neutral-700 hover:bg-neutral-100 hover:text-neutral-900";
-
-    // Make ESLint see a concrete JS usage
-    const MotionDiv = motion.div;
-
-    return (
-        <NavLink
-            to={to}
-            end={end}
-            className={({ isActive }) => cn(base, isActive ? activeGradient : idle)}
-        >
-            {icon && <icon className="h-[14px] w-[14px] shrink-0" />}
-            <AnimatePresence initial={false}>
-                {!collapsed && (
-                    <MotionDiv
-                        initial={{ opacity: 0, x: -4 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: -6 }}
-                        transition={{ duration: 0.18 }}
-                        className="whitespace-nowrap"
-                    >
-                        {label}
-                    </MotionDiv>
-                )}
-            </AnimatePresence>
-        </NavLink>
-    );
-};
-
-/* ------------------------------------------------------------------ */
-/* Sidebar                                                            */
-/* ------------------------------------------------------------------ */
 const Sidebar = () => {
     const navigate = useNavigate();
-    // const location = useLocation();
-
-    const [open, setOpen] = useState(false); // mobile sheet
+    const [open, setOpen] = useState(false);
     const [collapsed, setCollapsed] = useState(() => {
         try {
             return localStorage.getItem(LS_KEY) === "1";
@@ -87,26 +33,26 @@ const Sidebar = () => {
         }
     });
 
+    /* Collapse toggle */
     const toggleCollapsed = useCallback(() => {
         setCollapsed((c) => {
             const n = !c;
             try {
                 localStorage.setItem(LS_KEY, n ? "1" : "0");
-            } catch (error) {
-                console.error("Failed to persist sidebar state:", error);
-            }
+            } catch {}
             return n;
         });
     }, []);
 
-    // Open from header (custom event)
+    /* Custom event: open mobile sidebar */
     useEffect(() => {
         const handler = () => setOpen(true);
         window.addEventListener("sidebar:open", handler);
+
         return () => window.removeEventListener("sidebar:open", handler);
     }, []);
 
-    // Keyboard: Ctrl/Cmd + B to toggle collapse (desktop)
+    /* Keyboard shortcut */
     useEffect(() => {
         const onKey = (e) => {
             if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "b") {
@@ -118,55 +64,34 @@ const Sidebar = () => {
         return () => window.removeEventListener("keydown", onKey);
     }, [toggleCollapsed]);
 
-    const nav = useMemo(
-		() => [
-			{ to: '/dashboard', icon: Home, label: 'Dashboard', end: true },
-			{ to: '/admins', icon: User2, label: 'Admins', end: true },
-			{ to: '/clients', icon: UserCheck, label: 'Clients', end: true },
-			{ to: '/store-members', icon: UserCog, label: 'Store Members', end: true },
-			{ to: '/stores', icon: Building2, label: 'Stores' },
-			{ to: '/products', icon: Package, label: 'Products' },
-			{ to: '/orders', icon: TruckIcon, label: 'Orders' },
-			{ to: "/stockin", icon: Boxes, label: "Stock In" },
-			{ to: "/stockout", icon: Truck, label: "Stock Out" },
-		],
-		[]
-	);
-
+    /* Logout */
     const logout = useCallback(async () => {
         try {
             await auth.logoutAll();
-        } catch {
-            // ignore
-        } finally {
+        } catch {}
+        finally {
             clearSession();
             navigate("/?error=logged_out", { replace: true });
         }
     }, [navigate]);
 
-    // Make ESLint see a concrete JS usage
     const MotionDiv = motion.div;
 
-    /* ------------------------------ Desktop ------------------------------ */
+    /* ─────────────────────────────────────────────────────────── Desktop Sidebar ─ */
     return (
         <>
-            {/* Desktop rail (sticky + collapsible). Uses float to avoid changing AppLayout. */}
             <aside
                 className={cn(
                     "hidden md:block",
                     "md:float-left md:sticky md:top-2",
                     "md:h-[calc(100vh-1rem)] md:py-2 md:pl-2"
                 )}
-                aria-label="Primary"
             >
                 <MotionDiv
                     initial={false}
                     animate={{ width: collapsed ? 76 : 264 }}
                     transition={{ type: "spring", damping: 24, stiffness: 260 }}
-                    className={cn(
-                        "relative h-full rounded-2xl border border-neutral-200 bg-white shadow-sm",
-                        "backdrop-blur supports-[backdrop-filter]:bg-white",
-                    )}
+                    className="relative h-full rounded-2xl border border-neutral-200 bg-white shadow-sm"
                     style={{ overflow: "hidden" }}
                 >
                     <div className="flex h-full flex-col">
@@ -179,7 +104,6 @@ const Sidebar = () => {
                                             variant="ghost"
                                             size="icon"
                                             className="ml-auto"
-                                            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
                                         >
                                             {collapsed ? (
                                                 <ChevronRight className="h-4 w-4" />
@@ -198,14 +122,12 @@ const Sidebar = () => {
                         <Separator className="my-2" />
 
                         <ScrollArea className="flex-1 px-2">
+                            {/* main links */}
                             <nav className="space-y-1 pb-4">
-                                {nav.map((n) => (
+                                {navLinks.map((n) => (
                                     <NavItem
                                         key={n.to}
-                                        to={n.to}
-                                        icon={n.icon}
-                                        label={n.label}
-                                        end={n.end}
+                                        {...n}
                                         collapsed={collapsed}
                                     />
                                 ))}
@@ -213,41 +135,26 @@ const Sidebar = () => {
 
                             <Separator className="my-2" />
 
+                            {/* bottom items */}
                             <div className="space-y-1">
-                                <NavLink
-                                    to="/settings"
-                                    className={({ isActive }) =>
-                                        cn(
-                                            "flex items-center gap-3 rounded-4xl px-3 py-3.5 text-sm transition-colors ring-0",
-                                            isActive
-                                                ? "bg-gradient-to-r from-[var(--primary-color)] to-emerald-600 text-white shadow-sm"
-                                                : "text-neutral-700 hover:bg-neutral-100 hover:text-neutral-900"
-                                        )
-                                    }
-                                >
-                                    <Settings className="h-[14px] w-[14px] shrink-0" />
-                                    <AnimatePresence initial={false}>
-                                        {!collapsed && (
-                                            <MotionDiv
-                                                initial={{ opacity: 0, x: -4 }}
-                                                animate={{ opacity: 1, x: 0 }}
-                                                exit={{ opacity: 0, x: -6 }}
-                                                transition={{ duration: 0.18 }}
-                                            >
-                                                Settings
-                                            </MotionDiv>
-                                        )}
-                                    </AnimatePresence>
-                                </NavLink>
+                                {bottomLinks.map((n) => (
+                                    <NavItem
+                                        key={n.to}
+                                        {...n}
+                                        collapsed={collapsed}
+                                    />
+                                ))}
 
+                                {/* Logout */}
                                 <button
                                     onClick={logout}
                                     className={cn(
-                                        "w-full text-left flex items-center gap-3 rounded-4xl px-3 py-3.5 text-sm cursor-pointer",
+                                        "w-full flex items-center gap-3 rounded-4xl px-3 py-3.5 text-sm",
                                         "text-red-600 hover:bg-red-50"
                                     )}
                                 >
-                                    <LogOut className="h-[14px] w-[14px] shrink-0" />
+                                    <logoutLink.icon className="h-[15px] w-[15px]" />
+
                                     <AnimatePresence initial={false}>
                                         {!collapsed && (
                                             <MotionDiv
@@ -256,7 +163,7 @@ const Sidebar = () => {
                                                 exit={{ opacity: 0, x: -6 }}
                                                 transition={{ duration: 0.18 }}
                                             >
-                                                Sign Out
+                                                {logoutLink.label}
                                             </MotionDiv>
                                         )}
                                     </AnimatePresence>
@@ -267,75 +174,63 @@ const Sidebar = () => {
                 </MotionDiv>
             </aside>
 
-            {/* ------------------------------ Mobile ------------------------------ */}
+            {/* ─────────────────────────────────────────────────────────── Mobile Sidebar ─ */}
             <Sheet open={open} onOpenChange={setOpen}>
-                <SheetContent
-                    side="left"
-                    className={cn(
-                        "w-[85%] p-0",
-                        "bg-white backdrop-blur supports-[backdrop-filter]:bg-white"
-                    )}
-                >
+                <SheetContent side="left" className="w-[85%] p-0 bg-white">
                     <SheetHeader className="px-4 py-3">
-                        <SheetTitle className="text-left">Navigation</SheetTitle>
+                        <SheetTitle>Navigation</SheetTitle>
                     </SheetHeader>
+
                     <Separator />
-                    <div className="h-[calc(100vh-3.25rem)]">
-                        <ScrollArea className="h-full px-2 py-3">
-                            <nav className="space-y-1">
-                                {nav.map((n) => (
-                                    <NavLink
-                                        key={n.to}
-                                        to={n.to}
-                                        end={n.end}
-                                        onClick={() => setOpen(false)}
-                                        className={({ isActive }) =>
-                                            cn(
-                                                "flex items-center gap-3 rounded-4xl px-4 py-3.5 text-sm transition-colors",
-                                                isActive
-                                                    ? "bg-gradient-to-r from-[var(--primary-color)] to-emerald-600 text-white shadow-sm"
-                                                    : "text-neutral-800 hover:bg-neutral-100"
-                                            )
-                                        }
-                                    >
-                                        <n.icon className="h-[14px] w-[14px]" />
-                                        <span>{n.label}</span>
-                                    </NavLink>
-                                ))}
-                            </nav>
 
-                            <Separator className="my-3" />
-
-                            <div className="grid grid-cols-2 gap-2 px-1">
+                    <ScrollArea className="h-[calc(100vh-3rem)] px-2 py-3">
+                        <nav className="space-y-1">
+                            {navLinks.map((n) => (
                                 <NavLink
-                                    to="/settings"
+                                    key={n.to}
+                                    to={n.to}
+                                    end={n.end}
                                     onClick={() => setOpen(false)}
                                     className={({ isActive }) =>
                                         cn(
-                                            "rounded-4xl  px-3 py-3.5 text-sm text-center transition-colors",
+                                            "flex items-center gap-3 rounded-4xl px-4 py-3.5 text-sm",
                                             isActive
                                                 ? "bg-gradient-to-r from-[var(--primary-color)] to-emerald-600 text-white shadow-sm"
-                                                : "bg-white/60 text-neutral-700 hover:bg-neutral-100 border border-neutral-200"
+                                                : "text-neutral-800 hover:bg-neutral-100"
                                         )
                                     }
                                 >
-                                    Settings
+                                    <n.icon className="h-[15px] w-[15px]" />
+                                    <span>{n.label}</span>
                                 </NavLink>
-                                <button
-                                    onClick={() => {
-                                        setOpen(false);
-                                        logout();
-                                    }}
-                                    className={cn(
-                                        "rounded-4xl  px-3 py-3.5 text-sm text-center cursor-pointer",
-                                        "bg-white/60 text-red-600 hover:bg-red-50 border border-red-200"
-                                    )}
+                            ))}
+                        </nav>
+
+                        <Separator className="my-3" />
+
+                        <div className="grid grid-cols-2 gap-2 px-1">
+                            {bottomLinks.map((n) => (
+                                <NavLink
+                                    key={n.to}
+                                    to={n.to}
+                                    onClick={() => setOpen(false)}
+                                    className="rounded-4xl px-3 py-3.5 text-sm text-center bg-white/60 border border-neutral-200 hover:bg-neutral-100"
                                 >
-                                    Sign out
-                                </button>
-                            </div>
-                        </ScrollArea>
-                    </div>
+                                    {n.label}
+                                </NavLink>
+                            ))}
+
+                            <button
+                                onClick={() => {
+                                    setOpen(false);
+                                    logout();
+                                }}
+                                className="rounded-4xl px-3 py-3.5 text-sm text-center bg-white/60 border border-red-200 text-red-600 hover:bg-red-50"
+                            >
+                                {logoutLink.label}
+                            </button>
+                        </div>
+                    </ScrollArea>
                 </SheetContent>
             </Sheet>
         </>
