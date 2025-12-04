@@ -48,7 +48,7 @@ const AdminFilters = ({ value, onChange, open, onOpenChange }) => {
         <Sheet open={open} onOpenChange={onOpenChange}>
             <SheetContent
                 side="right"
-                className="w-[90%] sm:w-[380px] p-0 flex flex-col"
+                className="w-[90%] sm:w-[380px] p-0 flex flex-col bg-white"
             >
                 <SheetHeader className="px-5 py-4 border-b border-neutral-200">
                     <SheetTitle className="text-left">Filters</SheetTitle>
@@ -123,7 +123,7 @@ const AdminFilters = ({ value, onChange, open, onOpenChange }) => {
                         <Button
                             variant="ghost"
                             onClick={resetFilters}
-                            className="text-neutral-700 hover:bg-neutral-100"
+                            className="text-neutral-700 hover:bg-neutral-100 rounded-4xl px-4 py-5 cursor-pointer"
                         >
                             <RotateCcw className="mr-2 h-4 w-4" />
                             Reset
@@ -133,10 +133,16 @@ const AdminFilters = ({ value, onChange, open, onOpenChange }) => {
                             <Button
                                 variant="secondary"
                                 onClick={() => onOpenChange(false)}
+                                className="rounded-4xl px-4 py-5 cursor-pointer"
                             >
                                 Close
                             </Button>
-                            <Button onClick={() => onOpenChange(false)}>Apply</Button>
+                            <Button
+                                onClick={() => onOpenChange(false)}
+                                className="glass-cta rounded-4xl px-4 py-5 cursor-pointer"
+                            >
+                                Apply
+                            </Button>
                         </div>
                     </div>
                 </SheetFooter>
