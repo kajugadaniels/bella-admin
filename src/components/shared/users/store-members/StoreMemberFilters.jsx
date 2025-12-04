@@ -1,15 +1,21 @@
 import React, { useEffect, useState } from "react";
 
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import {
+    Select,
+    SelectTrigger,
+    SelectValue,
+    SelectContent,
+    SelectItem,
+} from "@/components/ui/select";
 
 import {
     Sheet,
     SheetContent,
     SheetHeader,
-    SheetFooter,
     SheetTitle,
+    SheetFooter,
 } from "@/components/ui/sheet";
 
 import { RotateCcw } from "lucide-react";
@@ -46,15 +52,17 @@ const DEFAULTS = {
 const StoreMemberFilters = ({ value, onChange, open, onOpenChange }) => {
     const v = value || DEFAULTS;
 
+    // Local draft (apply-only)
     const [draft, setDraft] = useState(v);
 
     useEffect(() => {
         if (open) setDraft(v);
     }, [open]);
 
-    const update = (patch) => setDraft((prev) => ({ ...prev, ...patch }));
+    const update = (patch) =>
+        setDraft((prev) => ({ ...prev, ...patch }));
 
-    const resetFilters = () => setDraft(DEFAULTS);
+    const reset = () => setDraft(DEFAULTS);
 
     const applyFilters = () => {
         onChange?.(draft);
@@ -65,14 +73,14 @@ const StoreMemberFilters = ({ value, onChange, open, onOpenChange }) => {
         <Sheet open={open} onOpenChange={onOpenChange}>
             <SheetContent
                 side="right"
-                className="w-[90%] sm:w-[380px] p-0 bg-white flex flex-col"
+                className="w-[90%] sm:w-[380px] p-0 flex flex-col bg-white"
             >
                 <SheetHeader className="px-5 py-4 border-b border-neutral-200">
                     <SheetTitle className="text-left">Filters</SheetTitle>
                 </SheetHeader>
 
-                {/* content */}
                 <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5">
+
                     {/* STATUS */}
                     <div className="space-y-1">
                         <Label>Status</Label>
@@ -101,7 +109,7 @@ const StoreMemberFilters = ({ value, onChange, open, onOpenChange }) => {
                             onValueChange={(val) => update({ role: val })}
                         >
                             <SelectTrigger className="border-neutral-300 bg-white/90 backdrop-blur-sm">
-                                <SelectValue placeholder="All roles" />
+                                <SelectValue placeholder="Role" />
                             </SelectTrigger>
                             <SelectContent>
                                 {roles.map((r) => (
@@ -113,7 +121,7 @@ const StoreMemberFilters = ({ value, onChange, open, onOpenChange }) => {
                         </Select>
                     </div>
 
-                    {/* ORDER */}
+                    {/* ORDERING */}
                     <div className="space-y-1">
                         <Label>Ordering</Label>
                         <Select
@@ -134,15 +142,14 @@ const StoreMemberFilters = ({ value, onChange, open, onOpenChange }) => {
                     </div>
                 </div>
 
-                {/* footer */}
                 <SheetFooter className="border-t border-neutral-200 px-5 py-4 bg-white">
                     <div className="flex w-full items-center justify-between gap-2">
                         <Button
                             variant="ghost"
-                            onClick={resetFilters}
-                            className="rounded-4xl px-4 py-5 text-neutral-700 hover:bg-neutral-100"
+                            onClick={reset}
+                            className="rounded-4xl px-4 py-5 cursor-pointer text-neutral-700 hover:bg-neutral-100"
                         >
-                            <RotateCcw className="h-4 w-4 mr-2" />
+                            <RotateCcw className="mr-2 h-4 w-4" />
                             Reset
                         </Button>
 
@@ -150,13 +157,14 @@ const StoreMemberFilters = ({ value, onChange, open, onOpenChange }) => {
                             <Button
                                 variant="secondary"
                                 onClick={() => onOpenChange(false)}
-                                className="rounded-4xl px-4 py-5"
+                                className="rounded-4xl px-4 py-5 cursor-pointer"
                             >
                                 Close
                             </Button>
+
                             <Button
                                 onClick={applyFilters}
-                                className="glass-cta rounded-4xl px-4 py-5"
+                                className="glass-cta rounded-4xl px-4 py-5 cursor-pointer"
                             >
                                 Apply
                             </Button>
