@@ -9,6 +9,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
+
 import {
     Sheet,
     SheetContent,
@@ -17,10 +18,11 @@ import {
     SheetTrigger,
     SheetFooter,
 } from "@/components/ui/sheet";
+
 import {
     Filter as FilterIcon,
-    Search,
     RotateCcw,
+    Search,
 } from "lucide-react";
 
 const orders = [
@@ -45,155 +47,64 @@ const AdminFilters = ({ value, onChange }) => {
     const update = (patch) => onChange?.({ ...v, ...patch });
     const resetFilters = () => onChange?.({ ...DEFAULTS });
 
-    // mobile sheet
     const [open, setOpen] = useState(false);
 
     return (
         <>
-            {/* Desktop / Tablet: one-line toolbar */}
-            <div
-                className="
-          hidden md:flex items-end gap-3
-          rounded-2xl border border-neutral-200 bg-white/70 p-3 backdrop-blur-sm
-        "
-            >
-                {/* Search */}
-                <div className="flex basis-[40%] grow flex-col gap-1">
-                    <Label className="text-[12px]">Search</Label>
-                    <div className="relative">
-                        <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
-                        <Input
-                            placeholder="Search by email, username, phone…"
-                            value={v.search || ""}
-                            onChange={(e) => update({ search: e.target.value })}
-                            className="pl-9 border-neutral-300 bg-white/90 backdrop-blur-sm"
-                        />
-                    </div>
-                </div>
-
-                {/* Status */}
-                <div className="min-w-[180px]">
-                    <Label className="text-[12px]">Status</Label>
-                    <Select
-                        value={v.status || "all"}
-                        onValueChange={(val) => update({ status: val })}
-                    >
-                        <SelectTrigger className="bg-white/85 backdrop-blur-sm border-neutral-200">
-                            <SelectValue placeholder="All" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-white/95 backdrop-blur-md border border-neutral-200">
-                            <SelectItem value="all">All</SelectItem>
-                            <SelectItem value="active">Active</SelectItem>
-                            <SelectItem value="pending">Pending</SelectItem>
-                        </SelectContent>
-                    </Select>
-                </div>
-
-                {/* Created after (commented like StoreFilters desktop) */}
-                {/* <div className="min-w-[210px]">
-          <Label className="text-[12px]">Created after</Label>
-          <Input
-            type="datetime-local"
-            value={v.created_after || ""}
-            onChange={(e) => update({ created_after: e.target.value })}
-            className="bg-white/85 backdrop-blur-sm border-neutral-200"
-          />
-        </div> */}
-
-                {/* Created before (commented like StoreFilters desktop) */}
-                {/* <div className="min-w-[210px]">
-          <Label className="text-[12px]">Created before</Label>
-          <Input
-            type="datetime-local"
-            value={v.created_before || ""}
-            onChange={(e) => update({ created_before: e.target.value })}
-            className="bg-white/85 backdrop-blur-sm border-neutral-200"
-          />
-        </div> */}
-
-                {/* Ordering */}
-                <div className="min-w-[180px]">
-                    <Label className="text-[12px]">Ordering</Label>
-                    <Select
-                        value={v.ordering || "-created_at"}
-                        onValueChange={(val) => update({ ordering: val })}
-                    >
-                        <SelectTrigger className="bg-white/85 backdrop-blur-sm border-neutral-200">
-                            <SelectValue placeholder="Sort by…" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-white/95 backdrop-blur-md border border-neutral-200">
-                            {orders.map((o) => (
-                                <SelectItem key={o.value} value={o.value}>
-                                    {o.label}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                </div>
-
-                {/* Reset (desktop) */}
-                <div className="min-w-[120px] flex items-end">
-                    <Button
-                        type="button"
-                        variant="ghost"
-                        onClick={resetFilters}
-                        className="cursor-pointer text-neutral-700 hover:text-neutral-900 hover:bg-neutral-100"
-                    >
-                        <RotateCcw className="mr-2 h-4 w-4" />
-                        Reset
-                    </Button>
-                </div>
-            </div>
-
-            {/* Mobile: compact search + filters trigger */}
-            <div className="md:hidden space-y-2">
-                <div className="rounded-2xl border border-neutral-200 bg-white/70 p-3 backdrop-blur-sm">
-                    <Label className="text-[12px]">Search</Label>
-                    <div className="relative mt-1">
-                        <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
-                        <Input
-                            placeholder="Search by email, username, phone…"
-                            value={v.search || ""}
-                            onChange={(e) => update({ search: e.target.value })}
-                            className="pl-9 border-neutral-300 bg-white/90 backdrop-blur-sm"
-                        />
-                    </div>
-                </div>
-
+            {/* Trigger button visible on both desktop and mobile */}
+            <div className="flex justify-end w-full">
                 <Sheet open={open} onOpenChange={setOpen}>
                     <SheetTrigger asChild>
-                        <button
-                            className="
-                w-full rounded-xl border border-neutral-300 bg-white/90 px-3 py-2 text-left text-sm text-neutral-700 backdrop-blur-sm
-                flex items-center gap-2
-              "
+                        <Button
+                            variant="outline"
+                            className="rounded-xl flex items-center gap-2 px-4 py-2"
                         >
-                            <FilterIcon className="h-4 w-4 opacity-70" />
-                            Open filters
-                        </button>
+                            <FilterIcon className="h-4 w-4" />
+                            Filters
+                        </Button>
                     </SheetTrigger>
+
+                    {/* FILTER SIDEBAR */}
                     <SheetContent
-                        side="bottom"
+                        side="left"
                         className="
-              h-[85vh] overflow-y-auto
-              bg-white/90 backdrop-blur-xl border-t border-neutral-200
-            "
+                            w-full sm:w-[420px]
+                            overflow-y-auto p-6
+                            bg-white backdrop-blur-xl
+                        "
                     >
                         <SheetHeader>
-                            <SheetTitle>Filters</SheetTitle>
+                            <SheetTitle className="text-left">Filter Admins</SheetTitle>
                         </SheetHeader>
 
-                        <div className="mt-4 grid gap-4">
+                        {/* Filter fields */}
+                        <div className="mt-6 grid gap-5">
+
+                            {/* Search */}
+                            <div className="grid gap-1">
+                                <Label>Search</Label>
+                                <div className="relative">
+                                    <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
+                                    <Input
+                                        placeholder="Search by email, username, phone…"
+                                        value={v.search || ""}
+                                        onChange={(e) => update({ search: e.target.value })}
+                                        className="pl-9"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Status */}
                             <div className="grid gap-1">
                                 <Label>Status</Label>
                                 <Select
                                     value={v.status || "all"}
                                     onValueChange={(val) => update({ status: val })}
                                 >
-                                    <SelectTrigger className="bg-white/85 backdrop-blur-sm border-neutral-200">
+                                    <SelectTrigger>
                                         <SelectValue placeholder="All" />
                                     </SelectTrigger>
-                                    <SelectContent className="bg-white/95 backdrop-blur-md">
+                                    <SelectContent>
                                         <SelectItem value="all">All</SelectItem>
                                         <SelectItem value="active">Active</SelectItem>
                                         <SelectItem value="pending">Pending</SelectItem>
@@ -201,36 +112,37 @@ const AdminFilters = ({ value, onChange }) => {
                                 </Select>
                             </div>
 
+                            {/* Created After */}
                             <div className="grid gap-1">
-                                <Label>Created after</Label>
+                                <Label>Created After</Label>
                                 <Input
                                     type="datetime-local"
                                     value={v.created_after || ""}
                                     onChange={(e) => update({ created_after: e.target.value })}
-                                    className="bg-white/85 backdrop-blur-sm border-neutral-200"
                                 />
                             </div>
 
+                            {/* Created Before */}
                             <div className="grid gap-1">
-                                <Label>Created before</Label>
+                                <Label>Created Before</Label>
                                 <Input
                                     type="datetime-local"
                                     value={v.created_before || ""}
                                     onChange={(e) => update({ created_before: e.target.value })}
-                                    className="bg-white/85 backdrop-blur-sm border-neutral-200"
                                 />
                             </div>
 
+                            {/* Ordering */}
                             <div className="grid gap-1">
-                                <Label>Ordering</Label>
+                                <Label>Sort By</Label>
                                 <Select
                                     value={v.ordering || "-created_at"}
                                     onValueChange={(val) => update({ ordering: val })}
                                 >
-                                    <SelectTrigger className="bg-white/85 backdrop-blur-sm border-neutral-200">
+                                    <SelectTrigger>
                                         <SelectValue placeholder="Sort by…" />
                                     </SelectTrigger>
-                                    <SelectContent className="bg-white/95 backdrop-blur-md">
+                                    <SelectContent>
                                         {orders.map((o) => (
                                             <SelectItem key={o.value} value={o.value}>
                                                 {o.label}
@@ -241,27 +153,32 @@ const AdminFilters = ({ value, onChange }) => {
                             </div>
                         </div>
 
-                        <SheetFooter className="mt-6">
+                        {/* Footer buttons */}
+                        <SheetFooter className="mt-8">
                             <div className="flex w-full items-center justify-between gap-2">
                                 <Button
                                     type="button"
                                     variant="ghost"
                                     onClick={resetFilters}
-                                    className="cursor-pointer text-neutral-700 hover:text-neutral-900 hover:bg-neutral-100"
+                                    className="text-neutral-700 hover:text-neutral-900 hover:bg-neutral-100"
                                 >
                                     <RotateCcw className="mr-2 h-4 w-4" />
                                     Reset
                                 </Button>
+
                                 <div className="flex items-center gap-2">
                                     <Button
                                         type="button"
                                         variant="secondary"
                                         onClick={() => setOpen(false)}
-                                        className="cursor-pointer"
                                     >
                                         Close
                                     </Button>
-                                    <Button type="button" onClick={() => setOpen(false)} className="cursor-pointer">
+                                    <Button
+                                        type="button"
+                                        onClick={() => setOpen(false)}
+                                        className="bg-[var(--primary-color)] hover:opacity-90"
+                                    >
                                         Apply
                                     </Button>
                                 </div>
