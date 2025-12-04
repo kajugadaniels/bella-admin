@@ -1,8 +1,9 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+
 import {
     Select,
     SelectContent,
@@ -31,7 +32,6 @@ const orders = [
 ];
 
 const DEFAULTS = {
-    search: "",
     status: "all",
     created_after: "",
     created_before: "",
@@ -41,8 +41,21 @@ const DEFAULTS = {
 const AdminFilters = ({ value, onChange, open, onOpenChange }) => {
     const v = value || DEFAULTS;
 
-    const update = (patch) => onChange?.({ ...v, ...patch });
-    const resetFilters = () => onChange?.({ ...DEFAULTS });
+    // Local state that holds user input until Apply
+    const [draft, setDraft] = useState(v);
+
+    // Sync draft when parent opens sheet
+    useEffect(() => {
+        if (open) setDraft(v);
+    }, [open]);
+
+    const update = (patch) => setDraft((prev) => ({ ...prev, ...patch }));
+    const resetFilters = () => setDraft(DEFAULTS);
+
+    const applyFilters = () => {
+        onChange?.(draft);
+        onOpenChange(false);
+    };
 
     return (
         <Sheet open={open} onOpenChange={onOpenChange}>
@@ -54,13 +67,14 @@ const AdminFilters = ({ value, onChange, open, onOpenChange }) => {
                     <SheetTitle className="text-left">Filters</SheetTitle>
                 </SheetHeader>
 
-                {/* Scrollable filter fields */}
+                {/* Scrollable fields */}
                 <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5">
+
                     {/* STATUS */}
                     <div className="space-y-1">
                         <Label>Status</Label>
                         <Select
-                            value={v.status}
+                            value={draft.status}
                             onValueChange={(val) => update({ status: val })}
                         >
                             <SelectTrigger className="border-neutral-300 bg-white/90 backdrop-blur-sm">
@@ -79,7 +93,7 @@ const AdminFilters = ({ value, onChange, open, onOpenChange }) => {
                         <Label>Created after</Label>
                         <Input
                             type="datetime-local"
-                            value={v.created_after || ""}
+                            value={draft.created_after || ""}
                             onChange={(e) => update({ created_after: e.target.value })}
                             className="border-neutral-300 bg-white/90 backdrop-blur-sm"
                         />
@@ -90,7 +104,7 @@ const AdminFilters = ({ value, onChange, open, onOpenChange }) => {
                         <Label>Created before</Label>
                         <Input
                             type="datetime-local"
-                            value={v.created_before || ""}
+                            value={draft.created_before || ""}
                             onChange={(e) => update({ created_before: e.target.value })}
                             className="border-neutral-300 bg-white/90 backdrop-blur-sm"
                         />
@@ -100,7 +114,7 @@ const AdminFilters = ({ value, onChange, open, onOpenChange }) => {
                     <div className="space-y-1">
                         <Label>Ordering</Label>
                         <Select
-                            value={v.ordering}
+                            value={draft.ordering}
                             onValueChange={(val) => update({ ordering: val })}
                         >
                             <SelectTrigger className="border-neutral-300 bg-white/90 backdrop-blur-sm">
@@ -117,7 +131,7 @@ const AdminFilters = ({ value, onChange, open, onOpenChange }) => {
                     </div>
                 </div>
 
-                {/* FOOTER FIXED AT BOTTOM */}
+                {/* FOOTER */}
                 <SheetFooter className="border-t border-neutral-200 px-5 py-4 bg-white">
                     <div className="flex w-full items-center justify-between gap-2">
                         <Button
@@ -137,8 +151,9 @@ const AdminFilters = ({ value, onChange, open, onOpenChange }) => {
                             >
                                 Close
                             </Button>
+
                             <Button
-                                onClick={() => onOpenChange(false)}
+                                onClick={applyFilters}
                                 className="glass-cta rounded-4xl px-4 py-5 cursor-pointer"
                             >
                                 Apply
