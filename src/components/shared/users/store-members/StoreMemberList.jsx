@@ -1,9 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { RefreshCw, Search, Filter } from "lucide-react";
+import { RefreshCw, Filter, Search } from "lucide-react";
 import { toast } from "sonner";
 
 import { superadmin } from "@/api";
+
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
@@ -43,7 +44,6 @@ function useDebounceLocal(value, delay = 500) {
     return v;
 }
 
-// Normalize UI row shape
 function normalizeMember(r = {}) {
     const id = r.membership_id || r.id;
     return {
@@ -54,16 +54,16 @@ function normalizeMember(r = {}) {
         user: r.user || {},
         is_admin: !!r.is_admin,
         permissions: Array.isArray(r.permissions) ? r.permissions : [],
-        is_active: r.is_active,
+        is_active: typeof r.is_active === "boolean" ? r.is_active : undefined,
         role: r.role || r.user?.role,
         created_at: r.created_at,
     };
 }
 
-/* --------------------------- component --------------------------- */
 export default function StoreMemberList() {
     const [rows, setRows] = useState([]);
     const [count, setCount] = useState(0);
+
     const [loading, setLoading] = useState(false);
 
     const [q, setQ] = useState("");
@@ -76,7 +76,6 @@ export default function StoreMemberList() {
     });
 
     const [page, setPage] = useState(1);
-
     const totalPages = Math.max(1, Math.ceil((count || 0) / PAGE_SIZE));
 
     const [detailId, setDetailId] = useState(null);
@@ -85,14 +84,13 @@ export default function StoreMemberList() {
     const [filtersSheetOpen, setFiltersSheetOpen] = useState(false);
 
     const params = useMemo(() => {
-        const p = { ...filters, page };
+        const p = { page, ...filters };
 
         if (dq.trim()) {
             p.search = dq.trim();
             p.q = dq.trim();
         }
 
-        // For role selection
         if (filters.role !== "all") {
             p.is_admin = filters.role === "admin";
         }
@@ -104,19 +102,19 @@ export default function StoreMemberList() {
         setLoading(true);
         try {
             const res = await superadmin.listStoreMembers(params);
+
             const payload = res?.data || {};
+            let list = Array.isArray(payload?.results)
+                ? payload.results
+                : payload?.data?.results || [];
 
-            let list = Array.isArray(payload?.results) ? payload.results : [];
-            let total = Number(payload?.count || 0);
-
-            if (!list.length && payload?.data) {
-                const d = payload.data;
-                list = Array.isArray(d?.results) ? d.results : Array.isArray(d) ? d : [];
-                total = Number(payload?.count ?? d?.count ?? total);
-            }
+            let total =
+                typeof payload?.count === "number"
+                    ? payload.count
+                    : payload?.data?.count || 0;
 
             setRows(list.map(normalizeMember));
-            setCount(total);
+            setCount(Number(total || 0));
         } catch (err) {
             toast.error(extractToastError(err));
             setRows([]);
@@ -151,7 +149,7 @@ export default function StoreMemberList() {
                     <div>
                         <h1 className="text-xl font-semibold tracking-tight">
                             <span className="bg-gradient-to-r from-[var(--primary-color)] to-emerald-600 bg-clip-text text-transparent">
-                                Store Members
+                                Store members
                             </span>
                         </h1>
                         <p className="text-sm text-neutral-500">
@@ -163,14 +161,15 @@ export default function StoreMemberList() {
                 {/* CARD */}
                 <div className="glass-card flex flex-col gap-4 p-4">
 
-                    {/* TOP BAR — Search + Filters + Refresh */}
+                    {/* TOP BAR */}
                     <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-
-                        {/* SEARCH */}
+                        {/* Search */}
                         <div className="flex-1">
-                            <Label htmlFor="q" className="sr-only">Search</Label>
+                            <Label htmlFor="q" className="sr-only">
+                                Search
+                            </Label>
                             <div className="relative">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
+                                <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
                                 <Input
                                     id="q"
                                     placeholder="Search by email, username, phone, or store…"
@@ -181,14 +180,13 @@ export default function StoreMemberList() {
                             </div>
                         </div>
 
-                        {/* Buttons */}
+                        {/* Badge + Filters + Refresh */}
                         <div className="flex items-center gap-3">
-
                             <Badge variant="secondary" className="glass-badge">
                                 {count} total
                             </Badge>
 
-                            {/* FILTER BUTTON */}
+                            {/* Filters */}
                             <Button
                                 variant="outline"
                                 size="sm"
@@ -199,7 +197,7 @@ export default function StoreMemberList() {
                                 Filters
                             </Button>
 
-                            {/* REFRESH */}
+                            {/* Refresh */}
                             <Button
                                 variant="outline"
                                 size="sm"
@@ -244,7 +242,9 @@ export default function StoreMemberList() {
                                 variant="outline"
                                 size="sm"
                                 disabled={page >= totalPages || loading}
-                                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                                onClick={() =>
+                                    setPage((p) => Math.min(totalPages, p + 1))
+                                }
                                 className="glass-button"
                             >
                                 Next
@@ -262,7 +262,7 @@ export default function StoreMemberList() {
                 onChange={(next) => setFilters(next)}
             />
 
-            {/* DETAIL SHEET */}
+            {/* DETAIL */}
             <StoreMemberDetailSheet
                 membershipId={detailId}
                 open={!!detailId}
@@ -273,7 +273,7 @@ export default function StoreMemberList() {
                 }}
             />
 
-            {/* DELETE DIALOG */}
+            {/* DELETE */}
             <StoreMemberDeleteDialog
                 member={deleteRow}
                 open={!!deleteRow}
