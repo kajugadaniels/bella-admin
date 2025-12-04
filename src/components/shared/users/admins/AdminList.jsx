@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, Filter } from "lucide-react";
 import { toast } from "sonner";
 
 import { superadmin } from "@/api";
@@ -35,6 +35,7 @@ const AdminList = () => {
         status: "all",
         created_after: "",
         created_before: "",
+        ordering: DEFAULT_ORDERING,
     });
     const [ordering, setOrdering] = useState(DEFAULT_ORDERING);
     const [page, setPage] = useState(1);
@@ -45,28 +46,26 @@ const AdminList = () => {
     const pageSize = 10;
     const totalPages = Math.max(1, Math.ceil(count / pageSize));
 
-    // detail / delete
     const [detailId, setDetailId] = useState(null);
     const [deleteTarget, setDeleteTarget] = useState(null);
+
+    const [filtersSheetOpen, setFiltersSheetOpen] = useState(false);
 
     const fetchAdmins = useCallback(async () => {
         setLoading(true);
         try {
             const params = {};
-            // top search bar (like StoreList)
             if (debouncedQuery.trim()) params.search = debouncedQuery.trim();
 
-            // push filters
             Object.entries(filters).forEach(([k, v]) => {
                 if (v !== "" && v !== null && v !== undefined) params[k] = v;
             });
 
-            // ordering + page
-            if (ordering) params.ordering = ordering;
+            params.ordering = ordering;
             params.page = page;
 
             const { data } = await superadmin.listAdmins(params);
-            // Expecting DRF pagination shape (like stores)
+
             setRows(data?.results || []);
             setCount(Number(data?.count || 0));
         } catch (err) {
@@ -105,7 +104,6 @@ const AdminList = () => {
         [refresh]
     );
 
-    // Make ESLint see a concrete JS usage
     const MotionDiv = motion.div;
 
     return (
@@ -133,9 +131,10 @@ const AdminList = () => {
 
                 {/* Card */}
                 <div className="glass-card flex flex-col gap-4 p-4">
-                    {/* Top controls */}
-                    <div className="grid gap-3 md:grid-cols-3">
-                        <div className="col-span-2">
+                    {/* Top bar */}
+                    <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                        {/* Search */}
+                        <div className="flex-1">
                             <Label htmlFor="q" className="sr-only">
                                 Search
                             </Label>
@@ -147,24 +146,28 @@ const AdminList = () => {
                                 className="glass-input"
                             />
                         </div>
-                        <div className="flex items-center">
-                            <Badge variant="secondary" className="ml-auto glass-badge">
+
+                        <div className="flex items-center gap-3">
+                            <Badge variant="secondary" className="glass-badge">
                                 {count} total
                             </Badge>
+
+                            {/* Filters Button */}
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setFiltersSheetOpen(true)}
+                                className="glass-button rounded-4xl px-4"
+                            >
+                                <Filter className="mr-2 h-4 w-4" />
+                                Filters
+                            </Button>
                         </div>
                     </div>
 
-                    <AdminFilters
-                        value={{ ...filters, ordering }}
-                        onChange={(next) => {
-                            const { ordering: ord, ...rest } = next;
-                            setFilters(rest);
-                            setOrdering(ord || DEFAULT_ORDERING);
-                        }}
-                    />
-
                     <Separator className="soft-divider" />
 
+                    {/* TABLE */}
                     <AdminTable
                         rows={rows}
                         loading={loading}
@@ -174,10 +177,10 @@ const AdminList = () => {
                     />
 
                     {/* Pagination */}
-                    <div className="mt-1 flex items-center justify-between">
-                        <div className="text-xs text-neutral-500">
+                    <div className="mt-2 flex items-center justify-between">
+                        <span className="text-xs text-neutral-500">
                             Page {page} of {totalPages}
-                        </div>
+                        </span>
                         <div className="flex items-center gap-2">
                             <Button
                                 variant="outline"
@@ -202,14 +205,24 @@ const AdminList = () => {
                 </div>
             </MotionDiv>
 
-            {/* Detail */}
+            {/* Filter Sheet */}
+            <AdminFilters
+                open={filtersSheetOpen}
+                onOpenChange={setFiltersSheetOpen}
+                value={{ ...filters, ordering }}
+                onChange={(next) => {
+                    const { ordering: ord, ...rest } = next;
+                    setFilters(rest);
+                    setOrdering(ord || DEFAULT_ORDERING);
+                }}
+            />
+
+            {/* Detail Sheet */}
             {detailId && (
                 <AdminDetailSheet
                     adminId={detailId}
                     open={!!detailId}
-                    onOpenChange={(o) => {
-                        if (!o) setDetailId(null);
-                    }}
+                    onOpenChange={(o) => !o && setDetailId(null)}
                     onDeleted={() => {
                         setDetailId(null);
                         refresh();
@@ -217,14 +230,12 @@ const AdminList = () => {
                 />
             )}
 
-            {/* Delete */}
+            {/* Delete Dialog */}
             {deleteTarget && (
                 <AdminDeleteDialog
                     admin={deleteTarget}
                     open={!!deleteTarget}
-                    onOpenChange={(o) => {
-                        if (!o) setDeleteTarget(null);
-                    }}
+                    onOpenChange={(o) => !o && setDeleteTarget(null)}
                     onDone={() => {
                         setDeleteTarget(null);
                         refresh();
