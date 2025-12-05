@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { RefreshCw, Filter } from "lucide-react";
+import { RefreshCw, Filter, Search } from "lucide-react";
 import { toast } from "sonner";
 
 import { superadmin } from "@/api";
@@ -120,8 +120,8 @@ const AdminList = () => {
                     {/* TOP BAR */}
                     <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                         {/* Search */}
-                        <div className="flex-1">
-                            <Label htmlFor="q" className="sr-only">Search</Label>
+                        <div className="relative border border-neutral-400/20 focus-within:border-primary-500 rounded-lg">
+                            <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
                             <Input
                                 id="q"
                                 placeholder="Search by email, username, or phone…"

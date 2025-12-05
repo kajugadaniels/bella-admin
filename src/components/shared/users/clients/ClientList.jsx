@@ -141,7 +141,7 @@ const ClientList = () => {
                             <Label htmlFor="q" className="sr-only">
                                 Search
                             </Label>
-                            <div className="relative">
+                            <div className="relative border border-neutral-400/20 focus-within:border-primary-500 rounded-lg">
                                 <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
                                 <Input
                                     id="q"
