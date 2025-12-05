@@ -1,26 +1,21 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { RefreshCw, Search } from "lucide-react";
+import { RefreshCw, Search, Filter } from "lucide-react";
 import { toast } from "sonner";
 
 import { superadmin } from "@/api";
+
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
 
 import StockOutTable from "./StockOutTable";
 import StockOutDetailSheet from "./StockOutDetailSheet";
+import StockOutFilters from "./StockOutFilters";
 
-/* -------------------------- local debounce fallback -------------------------- */
+/* -------------------------- debounce -------------------------- */
 function useDebounceLocal(value, delay = 500) {
     const [v, setV] = useState(value);
     useEffect(() => {
@@ -30,31 +25,12 @@ function useDebounceLocal(value, delay = 500) {
     return v;
 }
 
-const DEFAULT_ORDERING = "-created_at";
-const DEFAULT_REASON = "ALL";
-const DEFAULT_VOID = "ALL";
+const DEFAULT_FILTERS = {
+    reason: "ALL",
+    isVoid: "ALL",
+    ordering: "-created_at",
+};
 const PAGE_SIZE = 10;
-
-const reasons = [
-    { value: "ALL", label: "All" },
-    { value: "SALE", label: "Sale" },
-    { value: "ADJUSTMENT", label: "Adjustment" },
-    { value: "DAMAGE", label: "Damage / Waste" },
-    { value: "TRANSFER_OUT", label: "Transfer out" },
-];
-
-const voidStates = [
-    { value: "ALL", label: "Any" },
-    { value: "false", label: "Active only" },
-    { value: "true", label: "Voided only" },
-];
-
-const orderings = [
-    { value: "-created_at", label: "Newest" },
-    { value: "created_at", label: "Oldest" },
-    { value: "-quantity", label: "Qty (high→low)" },
-    { value: "quantity", label: "Qty (low→high)" },
-];
 
 function extractToastError(err, fallback = "Failed to load stockouts.") {
     try {
@@ -73,28 +49,31 @@ export default function StockOutList() {
     const [query, setQuery] = useState("");
     const debouncedQuery = useDebounceLocal(query, 500);
 
-    const [reason, setReason] = useState(DEFAULT_REASON);
-    const [isVoid, setIsVoid] = useState(DEFAULT_VOID);
-    const [ordering, setOrdering] = useState(DEFAULT_ORDERING);
-    const [page, setPage] = useState(1);
+    const [filters, setFilters] = useState(DEFAULT_FILTERS);
 
+    const [page, setPage] = useState(1);
     const [loading, setLoading] = useState(true);
     const [rows, setRows] = useState([]);
     const [count, setCount] = useState(0);
-    const totalPages = Math.max(1, Math.ceil(count / PAGE_SIZE));
 
     const [detailId, setDetailId] = useState(null);
+    const [filtersSheetOpen, setFiltersSheetOpen] = useState(false);
+
+    const totalPages = Math.max(1, Math.ceil(count / PAGE_SIZE));
 
     const params = useMemo(() => {
-        const p = { ordering, page };
+        const p = { ordering: filters.ordering, page };
+
         if (debouncedQuery.trim()) {
-            p.q = debouncedQuery.trim(); // backend supports q/name/product/store/order etc.
+            p.q = debouncedQuery.trim();
             p.search = debouncedQuery.trim();
         }
-        if (reason !== "ALL") p.reason = reason;
-        if (isVoid !== "ALL") p.is_void = isVoid; // "true" or "false"
+
+        if (filters.reason !== "ALL") p.reason = filters.reason;
+        if (filters.isVoid !== "ALL") p.is_void = filters.isVoid;
+
         return p;
-    }, [debouncedQuery, ordering, page, reason, isVoid]);
+    }, [debouncedQuery, filters, page]);
 
     const fetchRows = useCallback(async () => {
         setLoading(true);
@@ -105,15 +84,14 @@ export default function StockOutList() {
             let list = Array.isArray(payload?.results) ? payload.results : [];
             let total = typeof payload?.count === "number" ? payload.count : 0;
 
-            // Fallback shape compatibility
             if (!list.length) {
-                const maybeWrapped = payload?.data;
-                if (Array.isArray(maybeWrapped?.results)) {
-                    list = maybeWrapped.results;
-                    total = Number(payload?.count ?? maybeWrapped?.count ?? total);
-                } else if (Array.isArray(maybeWrapped)) {
-                    list = maybeWrapped;
-                    total = maybeWrapped.length;
+                const alt = payload?.data;
+                if (Array.isArray(alt?.results)) {
+                    list = alt.results;
+                    total = Number(payload?.count ?? alt?.count ?? total);
+                } else if (Array.isArray(alt)) {
+                    list = alt;
+                    total = alt.length;
                 }
             }
 
@@ -126,20 +104,11 @@ export default function StockOutList() {
         }
     }, [params]);
 
-    // reset page when filters change
-    useEffect(() => {
-        setPage(1);
-    }, [debouncedQuery, reason, isVoid, ordering]);
+    useEffect(() => setPage(1), [debouncedQuery, filters]);
+    useEffect(() => fetchRows(), [fetchRows]);
 
-    useEffect(() => {
-        fetchRows();
-    }, [fetchRows]);
+    const refresh = () => fetchRows();
 
-    const refresh = useCallback(() => {
-        fetchRows();
-    }, [fetchRows]);
-
-    // Make ESLint see a concrete JS usage
     const MotionDiv = motion.div;
 
     return (
@@ -150,7 +119,7 @@ export default function StockOutList() {
                 transition={{ duration: 0.28 }}
                 className="mx-auto px-4 sm:px-6"
             >
-                {/* Page header */}
+                {/* HEADER */}
                 <div className="mb-4 mt-4 flex flex-wrap items-center justify-between gap-3">
                     <div>
                         <h1 className="text-xl font-semibold tracking-tight">
@@ -162,28 +131,16 @@ export default function StockOutList() {
                             Outgoing stock movements across products and stores.
                         </p>
                     </div>
-                    <div className="flex items-center gap-2">
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={refresh}
-                            className="glass-button rounded-4xl px-4 py-5"
-                            disabled={loading}
-                        >
-                            <RefreshCw className="mr-2 h-4 w-4" />
-                            Refresh
-                        </Button>
-                    </div>
                 </div>
 
-                {/* Card */}
+                {/* CARD */}
                 <div className="glass-card flex flex-col gap-4 p-4">
-                    {/* Top controls */}
-                    <div className="grid gap-3 md:grid-cols-3">
-                        <div className="col-span-2">
-                            <Label htmlFor="q" className="sr-only">
-                                Search
-                            </Label>
+
+                    {/* TOP BAR */}
+                    <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                        {/* Search */}
+                        <div className="flex-1">
+                            <Label htmlFor="q" className="sr-only">Search</Label>
                             <div className="relative">
                                 <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
                                 <Input
@@ -195,76 +152,34 @@ export default function StockOutList() {
                                 />
                             </div>
                         </div>
-                        <div className="flex items-center">
-                            <Badge variant="secondary" className="ml-auto glass-badge">
+
+                        {/* Badge + Filters + Refresh */}
+                        <div className="flex items-center gap-3">
+                            <Badge variant="secondary" className="glass-badge">
                                 {count} total
                             </Badge>
-                        </div>
-                    </div>
 
-                    {/* Filters row */}
-                    <div className="hidden md:flex items-end gap-3 rounded-2xl border border-neutral-200 bg-white/70 p-3 backdrop-blur-sm">
-                        <div className="min-w-[160px]">
-                            <Label className="text-[12px]">Reason</Label>
-                            <Select value={reason} onValueChange={(v) => setReason(v)}>
-                                <SelectTrigger className="bg-white/85 backdrop-blur-sm border-neutral-200">
-                                    <SelectValue placeholder="Reason" />
-                                </SelectTrigger>
-                                <SelectContent className="bg-white/95 backdrop-blur-md">
-                                    {reasons.map((r) => (
-                                        <SelectItem key={r.value} value={r.value}>
-                                            {r.label}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-
-                        <div className="min-w-[160px]">
-                            <Label className="text-[12px]">Voided</Label>
-                            <Select value={isVoid} onValueChange={(v) => setIsVoid(v)}>
-                                <SelectTrigger className="bg-white/85 backdrop-blur-sm border-neutral-200">
-                                    <SelectValue placeholder="Voided" />
-                                </SelectTrigger>
-                                <SelectContent className="bg-white/95 backdrop-blur-md">
-                                    {voidStates.map((o) => (
-                                        <SelectItem key={o.value} value={o.value}>
-                                            {o.label}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-
-                        <div className="min-w-[180px]">
-                            <Label className="text-[12px]">Ordering</Label>
-                            <Select value={ordering} onValueChange={(v) => setOrdering(v)}>
-                                <SelectTrigger className="bg-white/85 backdrop-blur-sm border-neutral-200">
-                                    <SelectValue placeholder="Sort by…" />
-                                </SelectTrigger>
-                                <SelectContent className="bg-white/95 backdrop-blur-md">
-                                    {orderings.map((o) => (
-                                        <SelectItem key={o.value} value={o.value}>
-                                            {o.label}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-
-                        <div className="min-w-[120px] flex items-end">
+                            {/* Filters */}
                             <Button
-                                type="button"
-                                variant="ghost"
-                                onClick={() => {
-                                    setQuery("");
-                                    setReason(DEFAULT_REASON);
-                                    setIsVoid(DEFAULT_VOID);
-                                    setOrdering(DEFAULT_ORDERING);
-                                }}
-                                className="cursor-pointer text-neutral-700 hover:text-neutral-900 hover:bg-neutral-100"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setFiltersSheetOpen(true)}
+                                className="glass-button rounded-4xl px-4"
                             >
-                                Reset
+                                <Filter className="mr-2 h-4 w-4" />
+                                Filters
+                            </Button>
+
+                            {/* Refresh */}
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                disabled={loading}
+                                onClick={refresh}
+                                className="glass-button rounded-4xl px-4"
+                            >
+                                <RefreshCw className="mr-2 h-4 w-4" />
+                                Refresh
                             </Button>
                         </div>
                     </div>
@@ -283,6 +198,7 @@ export default function StockOutList() {
                         <div className="text-xs text-neutral-500">
                             Page {page} of {totalPages}
                         </div>
+
                         <div className="flex items-center gap-2">
                             <Button
                                 variant="outline"
@@ -293,6 +209,7 @@ export default function StockOutList() {
                             >
                                 Previous
                             </Button>
+
                             <Button
                                 variant="outline"
                                 size="sm"
@@ -307,13 +224,19 @@ export default function StockOutList() {
                 </div>
             </MotionDiv>
 
-            {/* Detail sheet */}
+            {/* FILTER SHEET */}
+            <StockOutFilters
+                open={filtersSheetOpen}
+                onOpenChange={setFiltersSheetOpen}
+                value={filters}
+                onChange={setFilters}
+            />
+
+            {/* DETAIL SHEET */}
             <StockOutDetailSheet
                 stockoutId={detailId}
                 open={!!detailId}
-                onOpenChange={(o) => {
-                    if (!o) setDetailId(null);
-                }}
+                onOpenChange={(o) => !o && setDetailId(null)}
             />
         </>
     );
