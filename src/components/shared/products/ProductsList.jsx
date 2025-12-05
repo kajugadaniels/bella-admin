@@ -29,9 +29,9 @@ import ProductCreateSheet from "./ProductCreateSheet";
 import ProductUpdateSheet from "./ProductUpdateSheet";
 import StockInDetailSheet from "./StockInDetailSheet";
 
-import ProductCard from "./ProductThumb";    // extracted small card component (mobile)
-import ProductThumb from "./ProductThumb";  // extracted thumbnail component
-import ExpiryBadge from "./ExpiryBadge";    // extracted component
+import ProductCard from "./ProductCard";
+import ProductThumb from "./ProductThumb";
+import ExpiryBadge from "./ExpiryBadge";
 
 /* -------------------------------- Utils -------------------------------- */
 function useDebounceLocal(v, d = 500) {
@@ -114,9 +114,7 @@ const ProductsList = () => {
     const refresh = useCallback(() => fetchProducts(), [fetchProducts]);
 
     const toggleOrdering = () => {
-        setOrdering((prev) =>
-            prev.startsWith("-") ? prev.slice(1) : `-${prev}`
-        );
+        setOrdering((prev) => prev.startsWith("-") ? prev.slice(1) : `-${prev}`);
     };
 
     const togglePublish = async (id, next) => {
@@ -134,7 +132,6 @@ const ProductsList = () => {
             await superadmin.publishProduct(id);
             toast.success(next ? "Product published." : "Product unpublished.");
         } catch {
-            // rollback
             setRows((prev) =>
                 prev.map((r) =>
                     r.product?.id === id
@@ -176,7 +173,6 @@ const ProductsList = () => {
                     </div>
 
                     <div className="flex items-center gap-2">
-                        {/* FILTERS */}
                         <Button
                             variant="outline"
                             size="sm"
@@ -187,7 +183,6 @@ const ProductsList = () => {
                             Filters
                         </Button>
 
-                        {/* REFRESH */}
                         <Button
                             variant="outline"
                             size="sm"
@@ -199,7 +194,6 @@ const ProductsList = () => {
                             Refresh
                         </Button>
 
-                        {/* CREATE */}
                         <Button
                             size="sm"
                             onClick={() => setCreateOpen(true)}
@@ -214,15 +208,10 @@ const ProductsList = () => {
                 {/* Card */}
                 <div className="glass-card flex flex-col gap-4 p-4">
 
-                    {/* SEARCH */}
                     <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                         <div className="flex-1 relative">
-                            <Label htmlFor="product-search" className="sr-only">
-                                Search
-                            </Label>
-
+                            <Label htmlFor="product-search" className="sr-only">Search</Label>
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
-
                             <Input
                                 id="product-search"
                                 placeholder="Search by product or store name…"
@@ -233,22 +222,15 @@ const ProductsList = () => {
                         </div>
 
                         <div className="flex items-center gap-3">
-                            <Badge variant="secondary" className="glass-badge">
-                                {count} total
-                            </Badge>
+                            <Badge variant="secondary" className="glass-badge">{count} total</Badge>
 
-                            {/* Sort */}
                             <Button
                                 variant="outline"
                                 size="sm"
                                 onClick={toggleOrdering}
                                 className="glass-button rounded-4xl px-4"
                             >
-                                {ordering.startsWith("-") ? (
-                                    <SortDesc className="mr-2 h-4 w-4" />
-                                ) : (
-                                    <SortAsc className="mr-2 h-4 w-4" />
-                                )}
+                                {ordering.startsWith("-") ? <SortDesc className="mr-2 h-4 w-4" /> : <SortAsc className="mr-2 h-4 w-4" />}
                                 Sort
                             </Button>
                         </div>
@@ -256,7 +238,7 @@ const ProductsList = () => {
 
                     <Separator className="soft-divider" />
 
-                    {/* TABLE (desktop) */}
+                    {/* Desktop table */}
                     <div className="hidden lg:block overflow-x-auto rounded-xl ring-1 ring-black/5">
                         <Table>
                             <TableHeader className="sticky top-0 bg-white/70 backdrop-blur">
@@ -291,170 +273,102 @@ const ProductsList = () => {
                                     </TableRow>
                                 )}
 
-                                {!loading &&
-                                    rows.map((row) => {
-                                        const p = row.product || {};
-                                        const store = row.store;
-                                        const q = row.quantities || {};
-                                        const val = row.pricing || {};
-                                        const d = row.dates || {};
+                                {!loading && rows.map((row) => {
+                                    const p = row.product || {};
+                                    const store = row.store;
+                                    const q = row.quantities || {};
+                                    const val = row.pricing || {};
+                                    const d = row.dates || {};
 
-                                        const isPublished = !!p.published;
-                                        const busy = !!publishBusy[p.id];
+                                    const isPublished = !!p.published;
+                                    const busy = !!publishBusy[p.id];
 
-                                        return (
-                                            <TableRow key={row.id}>
-                                                <TableCell>
-                                                    <div className="flex min-w-0 items-center gap-3">
-                                                        <ProductThumb src={p.image} alt={p.name} size={40} />
-                                                        <div className="min-w-0">
-                                                            <div className="truncate font-medium">{p.name}</div>
-                                                            <div className="truncate text-xs text-neutral-500">{p.id}</div>
-                                                        </div>
+                                    return (
+                                        <TableRow key={row.id}>
+                                            <TableCell>
+                                                <div className="flex min-w-0 items-center gap-3">
+                                                    <ProductThumb src={p.image} alt={p.name} size={40} />
+                                                    <div className="min-w-0">
+                                                        <div className="truncate font-medium">{p.name}</div>
+                                                        <div className="truncate text-xs text-neutral-500">{p.id}</div>
                                                     </div>
-                                                </TableCell>
+                                                </div>
+                                            </TableCell>
 
-                                                <TableCell>{store?.name || "Global"}</TableCell>
+                                            <TableCell>{store?.name || "Global"}</TableCell>
 
-                                                <TableCell className="text-right">{fmtNum(q.remaining)}</TableCell>
-                                                <TableCell className="text-right text-emerald-700 font-medium">
-                                                    {fmtNum(val.unit_price)}
-                                                </TableCell>
-                                                <TableCell className="text-right line-through text-neutral-500">
-                                                    {fmtNum(p.discount_price)}
-                                                </TableCell>
-                                                <TableCell className="text-right">{fmtNum(val.value_gross)}</TableCell>
-                                                <TableCell className="text-right">{dateOnly(d.received_at)}</TableCell>
-                                                <TableCell className="text-right">
-                                                    {dateOnly(d.expiry_date)}
-                                                    <ExpiryBadge expiryDate={d.expiry_date} />
-                                                </TableCell>
+                                            <TableCell className="text-right">{fmtNum(q.remaining)}</TableCell>
+                                            <TableCell className="text-right text-emerald-700 font-medium">{fmtNum(val.unit_price)}</TableCell>
+                                            <TableCell className="text-right line-through text-neutral-500">{fmtNum(p.discount_price)}</TableCell>
+                                            <TableCell className="text-right">{fmtNum(val.value_gross)}</TableCell>
+                                            <TableCell className="text-right">{dateOnly(d.received_at)}</TableCell>
 
-                                                <TableCell className="text-center">
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={isPublished}
-                                                        disabled={busy}
-                                                        onChange={(e) => togglePublish(p.id, e.target.checked)}
-                                                    />
-                                                </TableCell>
+                                            <TableCell className="text-right">
+                                                {dateOnly(d.expiry_date)}
+                                                <div className="mt-1"><ExpiryBadge expiryDate={d.expiry_date} /></div>
+                                            </TableCell>
 
-                                                <TableCell className="text-right">
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        onClick={() => setDetailProductId(p.id)}
-                                                    >
-                                                        <Search className="h-4 w-4" />
-                                                    </Button>
-                                                </TableCell>
-                                            </TableRow>
-                                        );
-                                    })}
+                                            <TableCell className="text-center">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={isPublished}
+                                                    disabled={busy}
+                                                    onChange={(e) => togglePublish(p.id, e.target.checked)}
+                                                />
+                                            </TableCell>
+
+                                            <TableCell className="text-right">
+                                                <Button variant="ghost" size="icon" onClick={() => setDetailProductId(p.id)}>
+                                                    <Search className="h-4 w-4" />
+                                                </Button>
+                                            </TableCell>
+                                        </TableRow>
+                                    );
+                                })}
                             </TableBody>
                         </Table>
                     </div>
 
-                    {/* Cards (mobile) */}
+                    {/* Mobile cards */}
                     <div className="grid gap-3 lg:hidden">
-                        {loading &&
-                            [...Array(5)].map((_, i) => (
-                                <Skeleton key={i} className="h-28 w-full rounded-2xl" />
-                            ))}
+                        {loading && [...Array(5)].map((_, i) => <Skeleton key={i} className="h-28 w-full rounded-2xl" />)}
 
                         {!loading && rows.length === 0 && (
-                            <div className="p-6 text-center text-sm text-neutral-500">
-                                No products found.
-                            </div>
+                            <div className="p-6 text-center text-sm text-neutral-500">No products found.</div>
                         )}
 
-                        {!loading &&
-                            rows.map((row) => (
-                                <ProductCard
-                                    key={row.id}
-                                    row={row}
-                                    publishBusy={publishBusy}
-                                    onTogglePublish={togglePublish}
-                                    onView={(pid) => setDetailProductId(pid)}
-                                    onEdit={(pid) => setUpdateProductId(pid)}
-                                    onBatch={(sid) => setStockInDetailId(sid)}
-                                />
-                            ))}
+                        {!loading && rows.map((row) => (
+                            <ProductCard
+                                key={row.id}
+                                row={row}
+                                publishBusy={publishBusy}
+                                onTogglePublish={togglePublish}
+                                onView={(pid) => setDetailProductId(pid)}
+                                onEdit={(pid) => setUpdateProductId(pid)}
+                                onBatch={(sid) => setStockInDetailId(sid)}
+                            />
+                        ))}
                     </div>
 
-                    {/* Pagination */}
                     <div className="mt-2 flex items-center justify-between">
-                        <span className="text-xs text-neutral-500">
-                            Page {page} of {totalPages}
-                        </span>
+                        <span className="text-xs text-neutral-500">Page {page} of {totalPages}</span>
 
                         <div className="flex items-center gap-2">
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                disabled={page <= 1 || loading}
-                                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                                className="glass-button"
-                            >
-                                Previous
-                            </Button>
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                disabled={page >= totalPages || loading}
-                                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                                className="glass-button"
-                            >
-                                Next
-                            </Button>
+                            <Button variant="outline" size="sm" disabled={page <= 1 || loading} onClick={() => setPage((p) => Math.max(1, p - 1))} className="glass-button">Previous</Button>
+                            <Button variant="outline" size="sm" disabled={page >= totalPages || loading} onClick={() => setPage((p) => Math.min(totalPages, p + 1))} className="glass-button">Next</Button>
                         </div>
                     </div>
                 </div>
             </MotionDiv>
 
-            {/* FILTER SHEET */}
-            <ProductFiltersSheet
-                open={filtersOpen}
-                onOpenChange={setFiltersOpen}
-                value={filters}
-                onChange={setFilters}
-            />
+            {/* Filters sheet */}
+            <ProductFiltersSheet open={filtersOpen} onOpenChange={setFiltersOpen} value={filters} onChange={setFilters} />
 
-            {/* DETAIL SHEET */}
-            {detailProductId && (
-                <ProductDetailSheet
-                    id={detailProductId}
-                    open={!!detailProductId}
-                    onOpenChange={(o) => !o && setDetailProductId(null)}
-                />
-            )}
-
-            {/* UPDATE SHEET */}
-            {updateProductId && (
-                <ProductUpdateSheet
-                    id={updateProductId}
-                    open={!!updateProductId}
-                    onOpenChange={(o) => !o && setUpdateProductId(null)}
-                    onDone={refresh}
-                />
-            )}
-
-            {/* STOCK-IN DETAIL SHEET */}
-            {stockInDetailId && (
-                <StockInDetailSheet
-                    id={stockInDetailId}
-                    open={!!stockInDetailId}
-                    onOpenChange={(o) => !o && setStockInDetailId(null)}
-                    onDone={refresh}
-                />
-            )}
-
-            {/* CREATE SHEET */}
-            <ProductCreateSheet
-                open={createOpen}
-                onOpenChange={setCreateOpen}
-                onDone={refresh}
-            />
+            {/* Detail / Create / Update / StockIn sheets */}
+            {detailProductId && <ProductDetailSheet id={detailProductId} open={!!detailProductId} onOpenChange={(o) => !o && setDetailProductId(null)} />}
+            {updateProductId && <ProductUpdateSheet id={updateProductId} open={!!updateProductId} onOpenChange={(o) => !o && setUpdateProductId(null)} onDone={refresh} />}
+            {stockInDetailId && <StockInDetailSheet id={stockInDetailId} open={!!stockInDetailId} onOpenChange={(o) => !o && setStockInDetailId(null)} onDone={refresh} />}
+            <ProductCreateSheet open={createOpen} onOpenChange={setCreateOpen} onDone={refresh} />
         </>
     );
 };
