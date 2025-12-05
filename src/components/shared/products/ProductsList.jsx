@@ -29,7 +29,7 @@ import ProductCreateSheet from "./ProductCreateSheet";
 import ProductUpdateSheet from "./ProductUpdateSheet";
 import StockInDetailSheet from "./StockInDetailSheet";
 
-import ProductCard from "./ProductCard";    // extracted small card component (mobile)
+import ProductCard from "./ProductThumb";    // extracted small card component (mobile)
 import ProductThumb from "./ProductThumb";  // extracted thumbnail component
 import ExpiryBadge from "./ExpiryBadge";    // extracted component
 
