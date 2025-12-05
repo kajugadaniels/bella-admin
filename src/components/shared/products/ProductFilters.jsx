@@ -1,52 +1,110 @@
-import React, { useEffect, useMemo, useState, memo } from "react";
-import { SlidersHorizontal, Search as SearchIcon } from "lucide-react";
+import React, { useEffect, useMemo, useState } from "react";
 
 import { superadmin } from "@/api";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+
 import {
     Select,
     SelectTrigger,
+    SelectValue,
     SelectContent,
     SelectItem,
-    SelectValue,
 } from "@/components/ui/select";
+
+import {
+    Sheet,
+    SheetContent,
+    SheetHeader,
+    SheetTitle,
+    SheetFooter,
+} from "@/components/ui/sheet";
+
+import { RotateCcw, Search } from "lucide-react";
 import { DEFAULT_PRODUCT_FILTERS } from "./productFiltersConstants";
 
-// Non-empty sentinels for Radix Select
 const ALL_CATEGORIES_VALUE = "__ALL__";
 const ALL_STORES_VALUE = "__ALL_STORES__";
 const GLOBAL_STORE_VALUE = "__GLOBAL__";
 
-function ProductFiltersBase({ value, onChange, className }) {
-    const [moreOpen, setMoreOpen] = useState(false);
+const ProductFiltersSheet = ({ value, onChange, open, onOpenChange }) => {
     const v = value || DEFAULT_PRODUCT_FILTERS;
 
-    const set = (patch) => onChange?.({ ...v, ...patch });
-    const reset = () => onChange?.({ ...DEFAULT_PRODUCT_FILTERS });
+    /** Local draft state — applied only on Apply */
+    const [draft, setDraft] = useState(v);
 
-    /* ------------------------------ Stores (async) ------------------------------ */
-    const [storeOpen, setStoreOpen] = useState(false);
-    const [storeLoading, setStoreLoading] = useState(false);
+    useEffect(() => {
+        if (open) setDraft(v);
+    }, [open]);
+
+    const update = (patch) => {
+        setDraft((prev) => ({ ...prev, ...patch }));
+    };
+
+    const resetFilters = () => {
+        setDraft(DEFAULT_PRODUCT_FILTERS);
+    };
+
+    const applyFilters = () => {
+        onChange?.(draft);
+        onOpenChange(false);
+    };
+
+    /* ----------------------- CATEGORY SELECT ----------------------- */
+    const [catLoading, setCatLoading] = useState(false);
+    const [categories, setCategories] = useState([]);
+
+    useEffect(() => {
+        let ignore = false;
+        async function run() {
+            setCatLoading(true);
+            try {
+                const { data } = await superadmin.getProductCategories();
+                const raw = Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : [];
+                const map = raw
+                    .map((item) => {
+                        if (typeof item === "string")
+                            return { value: item, label: item };
+
+                        const value =
+                            String(item?.code ?? item?.value ?? item?.id ?? item?.name ?? "").trim();
+                        const label =
+                            String(item?.label ?? item?.name ?? item?.title ?? item?.code ?? "").trim();
+                        return value ? { value, label } : null;
+                    })
+                    .filter(Boolean);
+
+                const unique = Array.from(new Map(map.map((o) => [o.value, o])).values());
+                if (!ignore) setCategories(unique);
+            } catch {
+                if (!ignore) setCategories([]);
+            } finally {
+                if (!ignore) setCatLoading(false);
+            }
+        }
+        run();
+        return () => {
+            ignore = true;
+        };
+    }, []);
+
+    /* ----------------------- STORES SELECT ----------------------- */
     const [stores, setStores] = useState([]);
     const [storeQ, setStoreQ] = useState("");
+    const [storeOpen, setStoreOpen] = useState(false);
+    const [storeLoading, setStoreLoading] = useState(false);
 
-    // Initial list on mount
+    // Initial store fetch
     useEffect(() => {
         let ignore = false;
         async function run() {
             setStoreLoading(true);
             try {
-                const params = { ordering: "name" };
-                const { data } = await superadmin.listStores(params);
+                const { data } = await superadmin.listStores({ ordering: "name" });
                 if (!ignore) setStores(data?.results || []);
             } catch {
                 if (!ignore) setStores([]);
@@ -55,18 +113,20 @@ function ProductFiltersBase({ value, onChange, className }) {
             }
         }
         run();
-        return () => { ignore = true; };
+        return () => (ignore = true);
     }, []);
 
-    // Live search when Select is open
+    // Live search when open
     useEffect(() => {
         if (!storeOpen) return;
         let ignore = false;
+
         const id = setTimeout(async () => {
             setStoreLoading(true);
             try {
                 const params = { ordering: "name" };
                 if (storeQ.trim()) params.search = storeQ.trim();
+
                 const { data } = await superadmin.listStores(params);
                 if (!ignore) setStores(data?.results || []);
             } catch {
@@ -75,62 +135,27 @@ function ProductFiltersBase({ value, onChange, className }) {
                 if (!ignore) setStoreLoading(false);
             }
         }, 350);
-        return () => { clearTimeout(id); ignore = true; };
+
+        return () => {
+            clearTimeout(id);
+            ignore = true;
+        };
     }, [storeQ, storeOpen]);
 
-    // Derive Select value for store using sentinels
     const storeSelectValue = (() => {
-        if (v.store_id) return String(v.store_id);
-        if (v.has_store === false) return GLOBAL_STORE_VALUE;      // "Global (no store)"
-        return ALL_STORES_VALUE;                                   // "All stores"
+        if (draft.store_id) return String(draft.store_id);
+        if (draft.has_store === false) return GLOBAL_STORE_VALUE;
+        return ALL_STORES_VALUE;
     })();
 
     const onStoreValueChange = (val) => {
-        if (val === ALL_STORES_VALUE) {
-            set({ store_id: "", has_store: "" });
-            return;
-        }
-        if (val === GLOBAL_STORE_VALUE) {
-            set({ store_id: "", has_store: false });
-            return;
-        }
-        set({ store_id: val, has_store: "" });
+        if (val === ALL_STORES_VALUE) return update({ store_id: "", has_store: "" });
+        if (val === GLOBAL_STORE_VALUE) return update({ store_id: "", has_store: false });
+
+        return update({ store_id: val, has_store: "" });
     };
 
-    /* ------------------------------ Categories (async) ------------------------------ */
-    const [catLoading, setCatLoading] = useState(false);
-    const [categories, setCategories] = useState(
-    /** @type {Array<{value:string; label:string}>} */([])
-    );
-
-    useEffect(() => {
-        let ignore = false;
-        async function load() {
-            setCatLoading(true);
-            try {
-                const { data } = await superadmin.getProductCategories();
-                const raw = Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : [];
-                const norm = raw
-                    .map((item) => {
-                        if (typeof item === "string") return { value: item, label: item };
-                        const value = String(item?.code ?? item?.value ?? item?.id ?? item?.name ?? "").trim();
-                        const label = String(item?.label ?? item?.name ?? item?.title ?? item?.code ?? item?.value ?? value).trim();
-                        return value ? { value, label } : null;
-                    })
-                    .filter(Boolean);
-                const unique = Array.from(new Map(norm.map((o) => [o.value, o])).values());
-                if (!ignore) setCategories(unique);
-            } catch {
-                if (!ignore) setCategories([]);
-            } finally {
-                if (!ignore) setCatLoading(false);
-            }
-        }
-        load();
-        return () => { ignore = true; };
-    }, []);
-
-    /* ------------------------------ Active chips ------------------------------ */
+    /* ------------------ ACTIVE CHIPS LABELS ------------------ */
     const activeChips = useMemo(() => {
         const labels = {
             category: "category",
@@ -145,250 +170,244 @@ function ProductFiltersBase({ value, onChange, className }) {
             created_after: "created ≥",
             created_before: "created ≤",
         };
-        return Object.entries(v)
-            .filter(([, val]) => val !== "" && val !== null && val !== undefined)
-            .map(([k]) => labels[k] || k.replaceAll("_", " "));
-    }, [v]);
+        return Object.entries(draft)
+            .filter(([k, val]) => val !== "" && val !== null && val !== undefined)
+            .map(([k]) => labels[k] || k.replace("_", " "));
+    }, [draft]);
 
     return (
-        <div
-            className={[
-                "rounded-2xl border border-neutral-200 bg-white/70 p-3 backdrop-blur-md",
-                className || "",
-            ].join(" ")}
-        >
-            <div className="flex flex-wrap items-center gap-3">
-                {/* Category (shadcn Select) */}
-                <div className="grid min-w-[220px] flex-1 gap-1.5">
-                    <Label htmlFor="pf-category" className="text-xs text-neutral-500">
-                        Category
-                    </Label>
-                    <Select
-                        value={(v.category && String(v.category)) || ALL_CATEGORIES_VALUE}
-                        onValueChange={(val) => set({ category: val === ALL_CATEGORIES_VALUE ? "" : val })}
-                        disabled={catLoading}
-                    >
-                        <SelectTrigger
-                            id="pf-category"
-                            className="h-9 w-full rounded-xl border border-neutral-200 bg-white/90 px-3 text-sm outline-none transition-[box-shadow] focus:ring-2 focus:ring-emerald-500/30"
-                        >
-                            <SelectValue placeholder={catLoading ? "Loading…" : "All categories"} />
-                        </SelectTrigger>
-                        <SelectContent
-                            position="popper"
-                            sideOffset={6}
-                            className="max-h-64 overflow-y-auto rounded-xl border border-neutral-200 bg-white/95 backdrop-blur scrollbar-thin scrollbar-thumb-neutral-300 scrollbar-track-transparent data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0 data-[side=bottom]:slide-in-from-top-1 data-[side=top]:slide-in-from-bottom-1"
-                        >
-                            <SelectItem value={ALL_CATEGORIES_VALUE}>All categories</SelectItem>
-                            {catLoading ? (
-                                <div className="p-2 text-sm text-neutral-500">Loading…</div>
-                            ) : categories.length ? (
-                                categories.map((opt) => (
-                                    <SelectItem key={opt.value} value={opt.value}>
-                                        {opt.label}
-                                    </SelectItem>
-                                ))
-                            ) : (
-                                <div className="p-2 text-sm text-neutral-500">No categories.</div>
-                            )}
-                        </SelectContent>
-                    </Select>
-                </div>
+        <Sheet open={open} onOpenChange={onOpenChange}>
+            <SheetContent
+                side="right"
+                className="w-[90%] sm:w-[420px] p-0 flex flex-col bg-white"
+            >
+                <SheetHeader className="px-5 py-4 border-b border-neutral-200">
+                    <SheetTitle className="text-left">Filters</SheetTitle>
+                </SheetHeader>
 
-                {/* Store (shadcn Select with live search) */}
-                <div className="grid min-w-[240px] flex-1 gap-1.5">
-                    <Label htmlFor="pf-store" className="text-xs text-neutral-500">
-                        Store
-                    </Label>
-                    <Select
-                        value={storeSelectValue}
-                        onValueChange={onStoreValueChange}
-                        onOpenChange={(o) => {
-                            setStoreOpen(o);
-                            if (!o) setStoreQ("");
-                        }}
-                        disabled={storeLoading && !storeOpen}
-                    >
-                        <SelectTrigger
-                            id="pf-store"
-                            className="h-9 w-full rounded-xl border border-neutral-200 bg-white/90 px-3 text-sm outline-none transition-[box-shadow] focus:ring-2 focus:ring-emerald-500/30"
+                {/* Body scrollable */}
+                <div className="flex-1 overflow-y-auto px-5 py-5 space-y-6">
+
+                    {/* CATEGORY */}
+                    <div className="space-y-1">
+                        <Label>Category</Label>
+                        <Select
+                            value={(draft.category && String(draft.category)) || ALL_CATEGORIES_VALUE}
+                            onValueChange={(val) =>
+                                update({ category: val === ALL_CATEGORIES_VALUE ? "" : val })
+                            }
+                            disabled={catLoading}
                         >
-                            <SelectValue placeholder={storeLoading ? "Loading…" : "All stores"} />
-                        </SelectTrigger>
-                        <SelectContent
-                            position="popper"
-                            sideOffset={6}
-                            className="w-[var(--radix-select-trigger-width)] max-h-72 overflow-y-auto rounded-xl border border-neutral-200 bg-white/95 p-0 backdrop-blur"
+                            <SelectTrigger className="border-neutral-300 bg-white/90">
+                                <SelectValue placeholder="All categories" />
+                            </SelectTrigger>
+                            <SelectContent className="bg-white/95 backdrop-blur-md">
+                                <SelectItem value={ALL_CATEGORIES_VALUE}>
+                                    All categories
+                                </SelectItem>
+
+                                {categories.length > 0 ? (
+                                    categories.map((c) => (
+                                        <SelectItem key={c.value} value={c.value}>
+                                            {c.label}
+                                        </SelectItem>
+                                    ))
+                                ) : (
+                                    <div className="p-2 text-neutral-500 text-sm">
+                                        {catLoading ? "Loading…" : "No categories."}
+                                    </div>
+                                )}
+                            </SelectContent>
+                        </Select>
+                    </div>
+
+                    {/* STORE */}
+                    <div className="space-y-1">
+                        <Label>Store</Label>
+                        <Select
+                            value={storeSelectValue}
+                            onValueChange={onStoreValueChange}
+                            onOpenChange={(o) => {
+                                setStoreOpen(o);
+                                if (!o) setStoreQ("");
+                            }}
                         >
-                            {/* Inline search input inside the Select popover */}
-                            <div className="sticky top-0 z-10 border-b border-neutral-200 bg-white/95 p-2 backdrop-blur">
-                                <div className="relative">
-                                    <SearchIcon className="pointer-events-none absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
-                                    <Input
-                                        placeholder="Search store…"
-                                        value={storeQ}
-                                        onChange={(e) => setStoreQ(e.target.value)}
-                                        className="h-8 w-full rounded-lg pl-8"
-                                    />
+                            <SelectTrigger className="border-neutral-300 bg-white/90">
+                                <SelectValue placeholder="All stores" />
+                            </SelectTrigger>
+                            <SelectContent className="bg-white/95 backdrop-blur-md p-0">
+                                {/* Search bar */}
+                                <div className="sticky top-0 z-10 border-b border-neutral-200 bg-white p-2">
+                                    <div className="relative">
+                                        <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
+                                        <Input
+                                            placeholder="Search store…"
+                                            value={storeQ}
+                                            onChange={(e) => setStoreQ(e.target.value)}
+                                            className="h-8 pl-8"
+                                        />
+                                    </div>
                                 </div>
-                            </div>
 
-                            {/* Static options */}
-                            <SelectItem value={ALL_STORES_VALUE}>All stores</SelectItem>
-                            <SelectItem value={GLOBAL_STORE_VALUE}>Global (no store)</SelectItem>
+                                <SelectItem value={ALL_STORES_VALUE}>All stores</SelectItem>
+                                <SelectItem value={GLOBAL_STORE_VALUE}>Global</SelectItem>
 
-                            {/* Dynamic options */}
-                            <div className="px-1 py-1">
-                                {storeLoading && (
-                                    <div className="px-2 py-1 text-xs text-neutral-500">Loading…</div>
-                                )}
-                                {!storeLoading && (!stores || stores.length === 0) && (
-                                    <div className="px-2 py-1 text-xs text-neutral-500">No stores found.</div>
-                                )}
                                 {!storeLoading &&
-                                    (stores || []).map((s) => (
+                                    stores.map((s) => (
                                         <SelectItem key={s.id} value={s.id}>
                                             {s.name}
                                         </SelectItem>
                                     ))}
-                            </div>
-                        </SelectContent>
-                    </Select>
-                </div>
 
-                {/* Toggles */}
-                <div className="grid gap-1.5">
-                    <Label className="text-xs text-neutral-500">Has store</Label>
-                    <div className="flex items-center gap-2">
-                        <Switch
-                            checked={!!v.has_store}
-                            onCheckedChange={(c) => set({ has_store: c ? true : "" })}
-                        />
-                        <span className="text-sm">Only with store</span>
+                                {storeLoading && (
+                                    <div className="p-2 text-neutral-500 text-sm">Loading…</div>
+                                )}
+                            </SelectContent>
+                        </Select>
                     </div>
-                </div>
 
-                <div className="grid gap-1.5">
-                    <Label className="text-xs text-neutral-500">Has remaining</Label>
-                    <div className="flex items-center gap-2">
-                        <Switch
-                            checked={!!v.has_remaining}
-                            onCheckedChange={(c) => set({ has_remaining: c ? true : "" })}
-                        />
-                        <span className="text-sm">Remaining &gt; 0</span>
+                    {/* SWITCHES */}
+                    <div className="grid gap-4">
+                        <div className="flex items-center justify-between">
+                            <Label>Only with store</Label>
+                            <Switch
+                                checked={!!draft.has_store}
+                                onCheckedChange={(c) =>
+                                    update({ has_store: c ? true : "" })
+                                }
+                            />
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                            <Label>Remaining &gt; 0</Label>
+                            <Switch
+                                checked={!!draft.has_remaining}
+                                onCheckedChange={(c) =>
+                                    update({ has_remaining: c ? true : "" })
+                                }
+                            />
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                            <Label>Include voided</Label>
+                            <Switch
+                                checked={!!draft.is_void}
+                                onCheckedChange={(c) =>
+                                    update({ is_void: c ? true : "" })
+                                }
+                            />
+                        </div>
                     </div>
-                </div>
 
-                <div className="grid gap-1.5">
-                    <Label className="text-xs text-neutral-500">Voided</Label>
-                    <div className="flex items-center gap-2">
-                        <Switch
-                            checked={!!v.is_void}
-                            onCheckedChange={(c) => set({ is_void: c ? true : "" })}
-                        />
-                        <span className="text-sm">Include voided</span>
+                    {/* PRICE RANGE */}
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-1">
+                            <Label>Min unit price</Label>
+                            <Input
+                                type="number"
+                                step="0.01"
+                                value={draft.min_unit_price ?? ""}
+                                onChange={(e) => update({ min_unit_price: e.target.value })}
+                            />
+                        </div>
+
+                        <div className="space-y-1">
+                            <Label>Max unit price</Label>
+                            <Input
+                                type="number"
+                                step="0.01"
+                                value={draft.max_unit_price ?? ""}
+                                onChange={(e) => update({ max_unit_price: e.target.value })}
+                            />
+                        </div>
                     </div>
+
+                    {/* EXPIRY */}
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-1">
+                            <Label>Expiring after</Label>
+                            <Input
+                                type="date"
+                                value={draft.expiring_after || ""}
+                                onChange={(e) => update({ expiring_after: e.target.value })}
+                            />
+                        </div>
+
+                        <div className="space-y-1">
+                            <Label>Expiring before</Label>
+                            <Input
+                                type="date"
+                                value={draft.expiring_before || ""}
+                                onChange={(e) => update({ expiring_before: e.target.value })}
+                            />
+                        </div>
+                    </div>
+
+                    {/* CREATED RANGE */}
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-1">
+                            <Label>Created after</Label>
+                            <Input
+                                type="datetime-local"
+                                value={draft.created_after || ""}
+                                onChange={(e) => update({ created_after: e.target.value })}
+                            />
+                        </div>
+
+                        <div className="space-y-1">
+                            <Label>Created before</Label>
+                            <Input
+                                type="datetime-local"
+                                value={draft.created_before || ""}
+                                onChange={(e) => update({ created_before: e.target.value })}
+                            />
+                        </div>
+                    </div>
+
+                    {/* ACTIVE FILTERS */}
+                    {activeChips.length > 0 && (
+                        <div className="flex flex-wrap gap-2 pt-2">
+                            {activeChips.map((label) => (
+                                <Badge key={label} variant="secondary" className="glass-badge">
+                                    {label}
+                                </Badge>
+                            ))}
+                        </div>
+                    )}
                 </div>
 
-                {/* More filters + Reset */}
-                <div className="ml-auto flex items-center gap-2">
-                    <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={reset}
-                        className="glass-button cursor-pointer"
-                    >
-                        Reset
-                    </Button>
+                {/* FOOTER */}
+                <SheetFooter className="border-t border-neutral-200 px-5 py-4 bg-white">
+                    <div className="flex w-full items-center justify-between gap-2">
+                        <Button
+                            variant="ghost"
+                            onClick={resetFilters}
+                            className="rounded-4xl px-4 py-5 text-neutral-700 hover:bg-neutral-100"
+                        >
+                            <RotateCcw className="mr-2 h-4 w-4" />
+                            Reset
+                        </Button>
 
-                    <DropdownMenu open={moreOpen} onOpenChange={setMoreOpen}>
-                        <DropdownMenuTrigger asChild>
+                        <div className="flex items-center gap-2">
                             <Button
-                                variant="outline"
-                                size="sm"
-                                className="glass-button cursor-pointer"
+                                variant="secondary"
+                                onClick={() => onOpenChange(false)}
+                                className="rounded-4xl px-4 py-5"
                             >
-                                <SlidersHorizontal className="mr-2 h-4 w-4" />
-                                More filters
+                                Close
                             </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="glass-menu w-80 p-3">
-                            <div className="grid gap-3">
-                                <div className="grid gap-1.5">
-                                    <Label className="text-xs">Min unit price</Label>
-                                    <Input
-                                        type="number"
-                                        step="0.01"
-                                        value={v.min_unit_price ?? ""}
-                                        onChange={(e) => set({ min_unit_price: e.target.value })}
-                                    />
-                                </div>
-                                <div className="grid gap-1.5">
-                                    <Label className="text-xs">Max unit price</Label>
-                                    <Input
-                                        type="number"
-                                        step="0.01"
-                                        value={v.max_unit_price ?? ""}
-                                        onChange={(e) => set({ max_unit_price: e.target.value })}
-                                    />
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-3">
-                                    <div className="grid gap-1.5">
-                                        <Label className="text-xs">Expiring after</Label>
-                                        <Input
-                                            type="date"
-                                            value={v.expiring_after || ""}
-                                            onChange={(e) => set({ expiring_after: e.target.value })}
-                                        />
-                                    </div>
-                                    <div className="grid gap-1.5">
-                                        <Label className="text-xs">Expiring before</Label>
-                                        <Input
-                                            type="date"
-                                            value={v.expiring_before || ""}
-                                            onChange={(e) => set({ expiring_before: e.target.value })}
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-3">
-                                    <div className="grid gap-1.5">
-                                        <Label className="text-xs">Created after</Label>
-                                        <Input
-                                            type="datetime-local"
-                                            value={v.created_after || ""}
-                                            onChange={(e) => set({ created_after: e.target.value })}
-                                        />
-                                    </div>
-                                    <div className="grid gap-1.5">
-                                        <Label className="text-xs">Created before</Label>
-                                        <Input
-                                            type="datetime-local"
-                                            value={v.created_before || ""}
-                                            onChange={(e) => set({ created_before: e.target.value })}
-                                        />
-                                    </div>
-                                </div>
-
-                                {/* Active filters summary */}
-                                <div className="mt-1 flex flex-wrap gap-1.5">
-                                    {activeChips.map((label) => (
-                                        <Badge key={label} variant="secondary" className="glass-badge">
-                                            {label}
-                                        </Badge>
-                                    ))}
-                                </div>
-                            </div>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-                </div>
-            </div>
-        </div>
+                            <Button
+                                onClick={applyFilters}
+                                className="glass-cta rounded-4xl px-4 py-5"
+                            >
+                                Apply
+                            </Button>
+                        </div>
+                    </div>
+                </SheetFooter>
+            </SheetContent>
+        </Sheet>
     );
-}
+};
 
-const ProductFilters = memo(ProductFiltersBase);
-
-export default ProductFilters;
+export default ProductFiltersSheet;
