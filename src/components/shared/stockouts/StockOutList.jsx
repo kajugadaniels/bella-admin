@@ -75,37 +75,65 @@ export default function StockOutList() {
         return p;
     }, [debouncedQuery, filters, page]);
 
-    const fetchRows = useCallback(async () => {
-        setLoading(true);
-        try {
-            const res = await superadmin.listStockOuts(params);
-            const payload = res?.data;
+    // fetchRows defined with useCallback — it is async but we will call it inside effects safely
+    const fetchRows = useCallback(
+        async (signal) => {
+            setLoading(true);
+            try {
+                // If your API client supports AbortController signal, you could pass it in.
+                const res = await superadmin.listStockOuts(params);
+                const payload = res?.data;
 
-            let list = Array.isArray(payload?.results) ? payload.results : [];
-            let total = typeof payload?.count === "number" ? payload.count : 0;
+                let list = Array.isArray(payload?.results) ? payload.results : [];
+                let total = typeof payload?.count === "number" ? payload.count : 0;
 
-            if (!list.length) {
-                const alt = payload?.data;
-                if (Array.isArray(alt?.results)) {
-                    list = alt.results;
-                    total = Number(payload?.count ?? alt?.count ?? total);
-                } else if (Array.isArray(alt)) {
-                    list = alt;
-                    total = alt.length;
+                if (!list.length) {
+                    const alt = payload?.data;
+                    if (Array.isArray(alt?.results)) {
+                        list = alt.results;
+                        total = Number(payload?.count ?? alt?.count ?? total);
+                    } else if (Array.isArray(alt)) {
+                        list = alt;
+                        total = alt.length;
+                    }
                 }
+
+                if (!signal || !signal.aborted) {
+                    setRows(list);
+                    setCount(Number(total || 0));
+                }
+            } catch (err) {
+                if (err?.name === "CanceledError" || err?.name === "AbortError") {
+                    // fetch was aborted — ignore
+                } else {
+                    toast.error(extractToastError(err));
+                }
+            } finally {
+                if (!signal || !signal.aborted) setLoading(false);
             }
+        },
+        [params]
+    );
 
-            setRows(list);
-            setCount(Number(total || 0));
-        } catch (err) {
-            toast.error(extractToastError(err));
-        } finally {
-            setLoading(false);
-        }
-    }, [params]);
+    // Reset page when filters/search change
+    useEffect(() => {
+        setPage(1);
+    }, [debouncedQuery, filters]);
 
-    useEffect(() => setPage(1), [debouncedQuery, filters]);
-    useEffect(() => fetchRows(), [fetchRows]);
+    // Correct usage: call async function inside effect, do not return the Promise
+    useEffect(() => {
+        // Optional: support cancellation using AbortController
+        const controller = new AbortController();
+        const signal = controller.signal;
+
+        // Call fetchRows and pass signal (fetchRows ignores if not using it)
+        fetchRows(signal);
+
+        // cleanup: abort in-flight request on unmount or on deps change
+        return () => {
+            controller.abort();
+        };
+    }, [fetchRows]);
 
     const refresh = () => fetchRows();
 
@@ -135,12 +163,13 @@ export default function StockOutList() {
 
                 {/* CARD */}
                 <div className="glass-card flex flex-col gap-4 p-4">
-
                     {/* TOP BAR */}
                     <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                         {/* Search */}
                         <div className="flex-1">
-                            <Label htmlFor="q" className="sr-only">Search</Label>
+                            <Label htmlFor="q" className="sr-only">
+                                Search
+                            </Label>
                             <div className="relative">
                                 <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
                                 <Input
@@ -187,17 +216,11 @@ export default function StockOutList() {
                     <Separator className="soft-divider" />
 
                     {/* Table */}
-                    <StockOutTable
-                        rows={rows}
-                        loading={loading}
-                        onView={(row) => setDetailId(row?.id)}
-                    />
+                    <StockOutTable rows={rows} loading={loading} onView={(row) => setDetailId(row?.id)} />
 
                     {/* Pagination */}
                     <div className="mt-1 flex items-center justify-between">
-                        <div className="text-xs text-neutral-500">
-                            Page {page} of {totalPages}
-                        </div>
+                        <div className="text-xs text-neutral-500">Page {page} of {totalPages}</div>
 
                         <div className="flex items-center gap-2">
                             <Button
@@ -225,19 +248,10 @@ export default function StockOutList() {
             </MotionDiv>
 
             {/* FILTER SHEET */}
-            <StockOutFilters
-                open={filtersSheetOpen}
-                onOpenChange={setFiltersSheetOpen}
-                value={filters}
-                onChange={setFilters}
-            />
+            <StockOutFilters open={filtersSheetOpen} onOpenChange={setFiltersSheetOpen} value={filters} onChange={setFilters} />
 
             {/* DETAIL SHEET */}
-            <StockOutDetailSheet
-                stockoutId={detailId}
-                open={!!detailId}
-                onOpenChange={(o) => !o && setDetailId(null)}
-            />
+            <StockOutDetailSheet stockoutId={detailId} open={!!detailId} onOpenChange={(o) => !o && setDetailId(null)} />
         </>
     );
 }
