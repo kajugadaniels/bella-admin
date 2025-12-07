@@ -21,7 +21,10 @@ export default function NavItem({ to, icon: Icon, label, collapsed, end }) {
                 )
             }
         >
-            <Icon className="h-[15px] w-[15px] shrink-0" />
+            {/* Render icon ONLY if it exists */}
+            {Icon && (
+                <Icon className="h-[15px] w-[15px] shrink-0" />
+            )}
 
             <AnimatePresence initial={false}>
                 {!collapsed && (
