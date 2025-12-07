@@ -127,7 +127,7 @@ const ProductFiltersSheet = ({ value, onChange, open, onOpenChange }) => {
 
     /* -------------------------- Active chips -------------------------- */
     const activeChips = Object.entries(draft)
-        .filter(([__ , val]) => val !== "" && val !== null && val !== undefined)
+        .filter(([, val]) => val !== "" && val !== null && val !== undefined)
         .map(([key]) => key.replace(/_/g, " "));
 
     return (
