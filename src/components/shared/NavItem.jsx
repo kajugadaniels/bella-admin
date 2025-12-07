@@ -5,7 +5,7 @@ function cn(...parts) {
     return parts.filter(Boolean).join(" ");
 }
 
-export default function NavItem({ to, icon: IconComponent, label, collapsed, end }) {
+export default function NavItem({ to, icon: Icon, label, collapsed, end }) {
     const MotionDiv = motion.div;
 
     return (
@@ -21,7 +21,7 @@ export default function NavItem({ to, icon: IconComponent, label, collapsed, end
                 )
             }
         >
-            <IconComponent className="h-[15px] w-[15px] shrink-0" />
+            <Icon className="h-[15px] w-[15px] shrink-0" />
 
             <AnimatePresence initial={false}>
                 {!collapsed && (
