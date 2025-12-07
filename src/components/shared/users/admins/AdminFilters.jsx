@@ -47,7 +47,7 @@ const AdminFilters = ({ value, onChange, open, onOpenChange }) => {
     // Sync draft when parent opens sheet
     useEffect(() => {
         if (open) setDraft(v);
-    }, [open]);
+    }, [open, v]);
 
     const update = (patch) => setDraft((prev) => ({ ...prev, ...patch }));
     const resetFilters = () => setDraft(DEFAULTS);
