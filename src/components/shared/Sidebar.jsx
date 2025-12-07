@@ -40,7 +40,7 @@ const Sidebar = () => {
             try {
                 localStorage.setItem(LS_KEY, n ? "1" : "0");
             } catch {
-                // ignore API logout errors
+                // ignore errors
             }
             finally {
                 clearSession();
@@ -48,7 +48,7 @@ const Sidebar = () => {
             }
             return n;
         });
-    }, []);
+    }, [navigate]);
 
     /* Custom event: open mobile sidebar */
     useEffect(() => {
