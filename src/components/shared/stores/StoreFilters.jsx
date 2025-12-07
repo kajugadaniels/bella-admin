@@ -155,8 +155,8 @@ const StoreFilters = ({ value, onChange, open, onOpenChange }) => {
     const [draft, setDraft] = useState(v);
 
     useEffect(() => {
-        if (open) setDraft(v); // sync when opening
-    }, [open]);
+        if (open) setDraft(v);
+    }, [open, v]);
 
     const update = (patch) =>
         setDraft((p) => ({
