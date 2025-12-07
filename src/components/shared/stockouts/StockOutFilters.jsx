@@ -53,7 +53,7 @@ const StockOutFilters = ({ value, onChange, open, onOpenChange }) => {
 
     useEffect(() => {
         if (open) setDraft(v);
-    }, [open]);
+    }, [open, v]);
 
     const update = (patch) => setDraft((prev) => ({ ...prev, ...patch }));
 
