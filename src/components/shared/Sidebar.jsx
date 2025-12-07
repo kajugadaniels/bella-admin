@@ -74,7 +74,9 @@ const Sidebar = () => {
     const logout = useCallback(async () => {
         try {
             await auth.logoutAll();
-        } catch {}
+        } catch {
+            // ignore API logout errors
+        }
         finally {
             clearSession();
             navigate("/?error=logged_out", { replace: true });
