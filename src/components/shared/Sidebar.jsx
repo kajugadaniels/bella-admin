@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -39,7 +39,13 @@ const Sidebar = () => {
             const n = !c;
             try {
                 localStorage.setItem(LS_KEY, n ? "1" : "0");
-            } catch {}
+            } catch {
+                // ignore API logout errors
+            }
+            finally {
+                clearSession();
+                navigate("/?error=logged_out", { replace: true });
+            }
             return n;
         });
     }, []);
