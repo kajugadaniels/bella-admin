@@ -150,17 +150,24 @@ const ProductFiltersSheet = ({ value, onChange, open, onOpenChange }) => {
                                 update({ category: v === ALL_CATEGORIES ? "" : v })
                             }
                         >
-                            <SelectTrigger className="border-neutral-300 bg-white/90">
+                            <SelectTrigger className="border-neutral-300 bg-white">
                                 <SelectValue placeholder="All categories" />
                             </SelectTrigger>
-                            <SelectContent>
+
+                            <SelectContent className="max-h-[260px] overflow-y-auto bg-white shadow-lg border border-neutral-200 rounded-md">
                                 <SelectItem value={ALL_CATEGORIES}>All categories</SelectItem>
+
                                 {!catLoading &&
                                     categories.map((c) => (
-                                        <SelectItem key={c.value} value={c.value}>
+                                        <SelectItem
+                                            key={c.value}
+                                            value={c.value}
+                                            className="cursor-pointer hover:bg-neutral-100"
+                                        >
                                             {c.label}
                                         </SelectItem>
                                     ))}
+
                                 {catLoading && (
                                     <div className="p-2 text-sm text-neutral-500">Loading…</div>
                                 )}
