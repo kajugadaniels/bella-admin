@@ -56,7 +56,19 @@ const UpdateSchema = z.object({
     name: z.string().min(1, "Name is required"),
     category: z.string().min(1, "Category is required"),
     unit_price: z.string().optional().or(z.literal("")),
-    tax_rate: z.string().optional().or(z.literal("")), // percent, e.g., 18.00
+    discount_rate: z
+        .string()
+        .optional()
+        .or(z.literal(""))
+        .refine(
+            (v) => {
+                if (!v) return true;
+                const n = Number(v);
+                return !isNaN(n) && n >= 0 && n <= 100;
+            },
+            { message: "Discount must be between 0–100%" }
+        ),
+    tax_rate: z.string().optional().or(z.literal("")),
     sku: z.string().optional().or(z.literal("")),
     barcode: z.string().optional().or(z.literal("")),
     brand: z.string().optional().or(z.literal("")),
@@ -65,7 +77,6 @@ const UpdateSchema = z.object({
     is_active: z.boolean().default(true),
     remove_image: z.boolean().default(false),
 
-    // StockIn updates (existing + new)
     batches: z.array(BatchSchema).default([]),
 });
 
@@ -281,6 +292,7 @@ export default function ProductUpdateSheet({ id, open, onOpenChange, onDone }) {
             name: "",
             category: "",
             unit_price: "",
+            discount_rate: "",
             tax_rate: "",
             sku: "",
             barcode: "",
@@ -304,6 +316,20 @@ export default function ProductUpdateSheet({ id, open, onOpenChange, onDone }) {
     // Derived price preview
     const unitPrice = toNum(form.watch("unit_price"));
     const taxPercent = toNum(form.watch("tax_rate") || 18);
+    const discountRate = toNum(form.watch("discount_rate") || 0);
+
+    const originalPrice = useMemo(() => {
+        if (!unitPrice) return 0;
+        const rate = discountRate / 100;
+        if (rate >= 1) return unitPrice; // avoid division by zero
+        return unitPrice / (1 - rate);
+    }, [unitPrice, discountRate]);
+
+    const originalPriceWithTax = useMemo(
+        () => originalPrice * (1 + taxPercent / 100),
+        [originalPrice, taxPercent]
+    );
+
     const priceWithTax = useMemo(
         () => unitPrice * (1 + taxPercent / 100),
         [unitPrice, taxPercent]
@@ -360,6 +386,7 @@ export default function ProductUpdateSheet({ id, open, onOpenChange, onDone }) {
                     name: p.name || "",
                     category: p.category || "",
                     unit_price: p.unit_price != null ? String(p.unit_price) : "",
+                    discount_rate: p.discount_rate != null ? String(p.discount_rate) : "",
                     tax_rate: p.tax_rate != null ? String(p.tax_rate) : "",
                     sku: p.sku || "",
                     barcode: p.barcode || "",
@@ -432,6 +459,7 @@ export default function ProductUpdateSheet({ id, open, onOpenChange, onDone }) {
             fd.append("name", values.name);
             fd.append("category", values.category);
             if (values.unit_price !== "") fd.append("unit_price", values.unit_price);
+            if (values.discount_rate !== "") fd.append("discount_rate", values.discount_rate);
             if (values.tax_rate !== "") fd.append("tax_rate", values.tax_rate);
             if (values.sku) fd.append("sku", values.sku);
             if (values.barcode) fd.append("barcode", values.barcode);
@@ -448,6 +476,7 @@ export default function ProductUpdateSheet({ id, open, onOpenChange, onDone }) {
             name: values.name,
             category: values.category,
             ...(values.unit_price !== "" ? { unit_price: values.unit_price } : {}),
+            ...(values.discount_rate !== "" ? { discount_rate: values.discount_rate } : {}),
             ...(values.tax_rate !== "" ? { tax_rate: values.tax_rate } : {}),
             ...(values.sku ? { sku: values.sku } : {}),
             ...(values.barcode ? { barcode: values.barcode } : {}),
@@ -568,18 +597,63 @@ export default function ProductUpdateSheet({ id, open, onOpenChange, onDone }) {
                                             />
                                         </div>
 
+                                        {/* Discounted price (unit_price) */}
                                         <div className="grid gap-1.5">
-                                            <Label>Unit price</Label>
-                                            <Input type="number" step="0.01" placeholder="0.00" {...form.register("unit_price")} />
+                                            <Label>Discounted price</Label>
+                                            <Input
+                                                type="number"
+                                                step="0.01"
+                                                placeholder="0.00"
+                                                {...form.register("unit_price")}
+                                            />
+                                            <p className="text-xs text-neutral-500">This is the price after discount.</p>
                                         </div>
+
+                                        {/* Discount rate */}
+                                        <div className="grid gap-1.5">
+                                            <Label>Discount rate (%)</Label>
+                                            <Input
+                                                type="number"
+                                                min="0"
+                                                max="100"
+                                                step="0.01"
+                                                placeholder="0"
+                                                {...form.register("discount_rate")}
+                                            />
+                                        </div>
+
+                                        {/* Original Price (auto) */}
+                                        <div className="grid gap-1.5">
+                                            <Label>Original price</Label>
+                                            <div className="rounded-xl border border-black/5 bg-white/70 px-3 py-2 text-sm">
+                                                {Number.isFinite(originalPrice) ? originalPrice.toFixed(2) : "—"}
+                                            </div>
+                                        </div>
+
+                                        {/* Tax rate */}
                                         <div className="grid gap-1.5">
                                             <Label>Tax rate (%)</Label>
-                                            <Input type="number" step="0.01" placeholder="18.00" {...form.register("tax_rate")} />
+                                            <Input
+                                                type="number"
+                                                step="0.01"
+                                                placeholder="18.00"
+                                                {...form.register("tax_rate")}
+                                            />
                                         </div>
+
+                                        {/* Discounted price with tax */}
                                         <div className="grid gap-1.5">
-                                            <Label>Price w/ tax (preview)</Label>
+                                            <Label>Discounted price w/ tax</Label>
                                             <div className="rounded-xl border border-black/5 bg-white/70 px-3 py-2 text-sm">
                                                 {Number.isFinite(priceWithTax) ? priceWithTax.toFixed(2) : "—"}
+                                            </div>
+                                        </div>
+
+                                        {/* Original price with tax */}
+                                        <div className="grid gap-1.5">
+                                            <Label>Original price w/ tax</Label>
+                                            <div className="rounded-xl border border-black/5 bg-white/70 px-3 py-2 text-sm">
+                                                {Number.isFinite(originalPriceWithTax) ? originalPriceWithTax.toFixed(2) : "—"}
                                             </div>
                                         </div>
 

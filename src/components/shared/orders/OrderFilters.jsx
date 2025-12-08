@@ -1,16 +1,8 @@
 import React, { useEffect, useState } from "react";
 
 import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
+import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
 
 import {
     Sheet,
@@ -22,29 +14,56 @@ import {
 
 import { RotateCcw } from "lucide-react";
 
-const orders = [
+const ANY = "__any__";
+
+const statusOptions = [
+    { value: ANY, label: "Any status" },
+    { value: "DRAFT", label: "Draft" },
+    { value: "PENDING", label: "Pending" },
+    { value: "CONFIRMED", label: "Confirmed" },
+    { value: "PAID", label: "Paid" },
+    { value: "FULFILLED", label: "Fulfilled" },
+    { value: "CANCELLED", label: "Cancelled" },
+    { value: "REFUNDED", label: "Refunded" },
+];
+
+const pStatusOptions = [
+    { value: ANY, label: "Any payment" },
+    { value: "PENDING", label: "Payment Pending" },
+    { value: "PAID", label: "Payment Paid" },
+    { value: "FAILED", label: "Payment Failed" },
+    { value: "REFUNDED", label: "Payment Refunded" },
+];
+
+const pMethodOptions = [
+    { value: ANY, label: "Any method" },
+    { value: "CASH", label: "Cash" },
+    { value: "MOMO", label: "Mobile Money" },
+    { value: "CARD", label: "Card" },
+    { value: "OTHER", label: "Other" },
+];
+
+const orderingOptions = [
     { value: "-created_at", label: "Newest" },
     { value: "created_at", label: "Oldest" },
-    { value: "email", label: "Email A→Z" },
-    { value: "-email", label: "Email Z→A" },
-    { value: "username", label: "Username A→Z" },
-    { value: "-username", label: "Username Z→A" },
+    { value: "grand_total", label: "Total (low→high)" },
+    { value: "-grand_total", label: "Total (high→low)" },
+    { value: "status", label: "Status (A–Z)" },
+    { value: "-status", label: "Status (Z–A)" },
 ];
 
 const DEFAULTS = {
-    status: "all",
-    created_after: "",
-    created_before: "",
+    status: ANY,
+    paymentStatus: ANY,
+    paymentMethod: ANY,
     ordering: "-created_at",
 };
 
-const AdminFilters = ({ value, onChange, open, onOpenChange }) => {
+const OrderFilters = ({ value, onChange, open, onOpenChange }) => {
     const v = value || DEFAULTS;
 
-    // Local state that holds user input until Apply
     const [draft, setDraft] = useState(v);
 
-    // Sync draft when parent opens sheet
     useEffect(() => {
         if (open) setDraft(v);
     }, [open, v]);
@@ -67,50 +86,70 @@ const AdminFilters = ({ value, onChange, open, onOpenChange }) => {
                     <SheetTitle className="text-left">Filters</SheetTitle>
                 </SheetHeader>
 
-                {/* Scrollable fields */}
+                {/* scrollable content */}
                 <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5">
 
-                    {/* STATUS */}
+                    {/* Order Status */}
                     <div className="space-y-1">
-                        <Label>Status</Label>
+                        <Label>Order status</Label>
                         <Select
                             value={draft.status}
                             onValueChange={(val) => update({ status: val })}
                         >
                             <SelectTrigger className="border-neutral-300 bg-white/90 backdrop-blur-sm">
-                                <SelectValue placeholder="All" />
+                                <SelectValue />
                             </SelectTrigger>
                             <SelectContent className="bg-white/95 backdrop-blur-md">
-                                <SelectItem value="all">All</SelectItem>
-                                <SelectItem value="active">Active</SelectItem>
-                                <SelectItem value="pending">Pending</SelectItem>
+                                {statusOptions.map((o) => (
+                                    <SelectItem key={o.value} value={o.value}>
+                                        {o.label}
+                                    </SelectItem>
+                                ))}
                             </SelectContent>
                         </Select>
                     </div>
 
-                    {/* CREATED AFTER */}
+                    {/* Payment Status */}
                     <div className="space-y-1">
-                        <Label>Created after</Label>
-                        <Input
-                            type="datetime-local"
-                            value={draft.created_after || ""}
-                            onChange={(e) => update({ created_after: e.target.value })}
-                            className="border-neutral-300 bg-white/90 backdrop-blur-sm"
-                        />
+                        <Label>Payment status</Label>
+                        <Select
+                            value={draft.paymentStatus}
+                            onValueChange={(val) => update({ paymentStatus: val })}
+                        >
+                            <SelectTrigger className="border-neutral-300 bg-white/90 backdrop-blur-sm">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent className="bg-white/95 backdrop-blur-md">
+                                {pStatusOptions.map((o) => (
+                                    <SelectItem key={o.value} value={o.value}>
+                                        {o.label}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
                     </div>
 
-                    {/* CREATED BEFORE */}
+                    {/* Payment Method */}
                     <div className="space-y-1">
-                        <Label>Created before</Label>
-                        <Input
-                            type="datetime-local"
-                            value={draft.created_before || ""}
-                            onChange={(e) => update({ created_before: e.target.value })}
-                            className="border-neutral-300 bg-white/90 backdrop-blur-sm"
-                        />
+                        <Label>Payment method</Label>
+                        <Select
+                            value={draft.paymentMethod}
+                            onValueChange={(val) => update({ paymentMethod: val })}
+                        >
+                            <SelectTrigger className="border-neutral-300 bg-white/90 backdrop-blur-sm">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent className="bg-white/95 backdrop-blur-md">
+                                {pMethodOptions.map((o) => (
+                                    <SelectItem key={o.value} value={o.value}>
+                                        {o.label}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
                     </div>
 
-                    {/* ORDERING */}
+                    {/* Ordering */}
                     <div className="space-y-1">
                         <Label>Ordering</Label>
                         <Select
@@ -121,7 +160,7 @@ const AdminFilters = ({ value, onChange, open, onOpenChange }) => {
                                 <SelectValue placeholder="Sort by…" />
                             </SelectTrigger>
                             <SelectContent className="bg-white/95 backdrop-blur-md">
-                                {orders.map((o) => (
+                                {orderingOptions.map((o) => (
                                     <SelectItem key={o.value} value={o.value}>
                                         {o.label}
                                     </SelectItem>
@@ -131,7 +170,7 @@ const AdminFilters = ({ value, onChange, open, onOpenChange }) => {
                     </div>
                 </div>
 
-                {/* FOOTER */}
+                {/* Footer */}
                 <SheetFooter className="border-t border-neutral-200 px-5 py-4 bg-white">
                     <div className="flex w-full items-center justify-between gap-2">
                         <Button
@@ -166,4 +205,4 @@ const AdminFilters = ({ value, onChange, open, onOpenChange }) => {
     );
 };
 
-export default AdminFilters;
+export default OrderFilters;

@@ -1,16 +1,8 @@
 import React, { useEffect, useState } from "react";
 
 import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
 
 import {
     Sheet,
@@ -22,34 +14,49 @@ import {
 
 import { RotateCcw } from "lucide-react";
 
-const orders = [
+const DEFAULT_ORDERING = "-created_at";
+const DEFAULT_REASON = "ALL";
+const DEFAULT_VOID = "ALL";
+
+const reasons = [
+    { value: "ALL", label: "All" },
+    { value: "SALE", label: "Sale" },
+    { value: "ADJUSTMENT", label: "Adjustment" },
+    { value: "DAMAGE", label: "Damage / Waste" },
+    { value: "TRANSFER_OUT", label: "Transfer out" },
+];
+
+const voidStates = [
+    { value: "ALL", label: "Any" },
+    { value: "false", label: "Active only" },
+    { value: "true", label: "Voided only" },
+];
+
+const orderings = [
     { value: "-created_at", label: "Newest" },
     { value: "created_at", label: "Oldest" },
-    { value: "email", label: "Email A→Z" },
-    { value: "-email", label: "Email Z→A" },
-    { value: "username", label: "Username A→Z" },
-    { value: "-username", label: "Username Z→A" },
+    { value: "-quantity", label: "Qty (high→low)" },
+    { value: "quantity", label: "Qty (low→high)" },
 ];
 
 const DEFAULTS = {
-    status: "all",
-    created_after: "",
-    created_before: "",
-    ordering: "-created_at",
+    reason: DEFAULT_REASON,
+    isVoid: DEFAULT_VOID,
+    ordering: DEFAULT_ORDERING,
 };
 
-const AdminFilters = ({ value, onChange, open, onOpenChange }) => {
+const StockOutFilters = ({ value, onChange, open, onOpenChange }) => {
     const v = value || DEFAULTS;
 
-    // Local state that holds user input until Apply
+    // Local draft state (only applied on Apply)
     const [draft, setDraft] = useState(v);
 
-    // Sync draft when parent opens sheet
     useEffect(() => {
         if (open) setDraft(v);
     }, [open, v]);
 
     const update = (patch) => setDraft((prev) => ({ ...prev, ...patch }));
+
     const resetFilters = () => setDraft(DEFAULTS);
 
     const applyFilters = () => {
@@ -63,54 +70,55 @@ const AdminFilters = ({ value, onChange, open, onOpenChange }) => {
                 side="right"
                 className="w-[90%] sm:w-[380px] p-0 flex flex-col bg-white"
             >
+                {/* Header */}
                 <SheetHeader className="px-5 py-4 border-b border-neutral-200">
                     <SheetTitle className="text-left">Filters</SheetTitle>
                 </SheetHeader>
 
-                {/* Scrollable fields */}
+                {/* Scrollable content */}
                 <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5">
 
-                    {/* STATUS */}
+                    {/* Reason */}
                     <div className="space-y-1">
-                        <Label>Status</Label>
+                        <Label>Reason</Label>
                         <Select
-                            value={draft.status}
-                            onValueChange={(val) => update({ status: val })}
+                            value={draft.reason}
+                            onValueChange={(val) => update({ reason: val })}
                         >
                             <SelectTrigger className="border-neutral-300 bg-white/90 backdrop-blur-sm">
-                                <SelectValue placeholder="All" />
+                                <SelectValue placeholder="Reason" />
                             </SelectTrigger>
                             <SelectContent className="bg-white/95 backdrop-blur-md">
-                                <SelectItem value="all">All</SelectItem>
-                                <SelectItem value="active">Active</SelectItem>
-                                <SelectItem value="pending">Pending</SelectItem>
+                                {reasons.map((r) => (
+                                    <SelectItem key={r.value} value={r.value}>
+                                        {r.label}
+                                    </SelectItem>
+                                ))}
                             </SelectContent>
                         </Select>
                     </div>
 
-                    {/* CREATED AFTER */}
+                    {/* Voided */}
                     <div className="space-y-1">
-                        <Label>Created after</Label>
-                        <Input
-                            type="datetime-local"
-                            value={draft.created_after || ""}
-                            onChange={(e) => update({ created_after: e.target.value })}
-                            className="border-neutral-300 bg-white/90 backdrop-blur-sm"
-                        />
+                        <Label>Voided</Label>
+                        <Select
+                            value={draft.isVoid}
+                            onValueChange={(val) => update({ isVoid: val })}
+                        >
+                            <SelectTrigger className="border-neutral-300 bg-white/90 backdrop-blur-sm">
+                                <SelectValue placeholder="Voided" />
+                            </SelectTrigger>
+                            <SelectContent className="bg-white/95 backdrop-blur-md">
+                                {voidStates.map((r) => (
+                                    <SelectItem key={r.value} value={r.value}>
+                                        {r.label}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
                     </div>
 
-                    {/* CREATED BEFORE */}
-                    <div className="space-y-1">
-                        <Label>Created before</Label>
-                        <Input
-                            type="datetime-local"
-                            value={draft.created_before || ""}
-                            onChange={(e) => update({ created_before: e.target.value })}
-                            className="border-neutral-300 bg-white/90 backdrop-blur-sm"
-                        />
-                    </div>
-
-                    {/* ORDERING */}
+                    {/* Ordering */}
                     <div className="space-y-1">
                         <Label>Ordering</Label>
                         <Select
@@ -118,10 +126,10 @@ const AdminFilters = ({ value, onChange, open, onOpenChange }) => {
                             onValueChange={(val) => update({ ordering: val })}
                         >
                             <SelectTrigger className="border-neutral-300 bg-white/90 backdrop-blur-sm">
-                                <SelectValue placeholder="Sort by…" />
+                                <SelectValue placeholder="Sort by" />
                             </SelectTrigger>
                             <SelectContent className="bg-white/95 backdrop-blur-md">
-                                {orders.map((o) => (
+                                {orderings.map((o) => (
                                     <SelectItem key={o.value} value={o.value}>
                                         {o.label}
                                     </SelectItem>
@@ -131,13 +139,13 @@ const AdminFilters = ({ value, onChange, open, onOpenChange }) => {
                     </div>
                 </div>
 
-                {/* FOOTER */}
+                {/* Footer */}
                 <SheetFooter className="border-t border-neutral-200 px-5 py-4 bg-white">
                     <div className="flex w-full items-center justify-between gap-2">
                         <Button
                             variant="ghost"
                             onClick={resetFilters}
-                            className="text-neutral-700 hover:bg-neutral-100 rounded-4xl px-4 py-5 cursor-pointer"
+                            className="text-neutral-700 hover:bg-neutral-100 rounded-4xl px-4 py-5"
                         >
                             <RotateCcw className="mr-2 h-4 w-4" />
                             Reset
@@ -147,14 +155,14 @@ const AdminFilters = ({ value, onChange, open, onOpenChange }) => {
                             <Button
                                 variant="secondary"
                                 onClick={() => onOpenChange(false)}
-                                className="rounded-4xl px-4 py-5 cursor-pointer"
+                                className="rounded-4xl px-4 py-5"
                             >
                                 Close
                             </Button>
 
                             <Button
                                 onClick={applyFilters}
-                                className="glass-cta rounded-4xl px-4 py-5 cursor-pointer"
+                                className="glass-cta rounded-4xl px-4 py-5"
                             >
                                 Apply
                             </Button>
@@ -166,4 +174,4 @@ const AdminFilters = ({ value, onChange, open, onOpenChange }) => {
     );
 };
 
-export default AdminFilters;
+export default StockOutFilters;

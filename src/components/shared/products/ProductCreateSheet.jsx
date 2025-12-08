@@ -34,8 +34,21 @@ const ProductSchema = z.object({
     name: z.string().min(2, "Name is required"),
     category: z.string().min(2, "Category is required"),
     unit_price: z.string().min(1, "Unit price is required"),
+
+    discount_rate: z
+        .string()
+        .optional()
+        .default("0")
+        .refine(
+            (v) => {
+                const n = Number(v);
+                return !isNaN(n) && n >= 0 && n <= 100;
+            },
+            { message: "Discount must be between 0–100%" }
+        ),
+
     stockins: z.array(BatchSchema).min(1, "Add at least one batch"),
-    image: z.any().optional().nullable(), // File from dropzone
+    image: z.any().optional().nullable(),
 });
 
 /* ------------------------------- helpers ---------------------------------- */
@@ -294,6 +307,7 @@ export default function ProductCreateSheet({ open, onOpenChange, onDone }) {
             name: "",
             category: "",
             unit_price: "",
+            discount_rate: "0",
             stockins: [{ store_id: "", quantity: "", expiry_date: "" }],
             image: null,
         },
@@ -313,6 +327,20 @@ export default function ProductCreateSheet({ open, onOpenChange, onDone }) {
     }, [catLoading, categories, form, setValue]);
 
     const unitPrice = toNum(watch("unit_price"));
+    const discountRate = toNum(watch("discount_rate"));
+
+    const originalPrice = useMemo(() => {
+        if (!unitPrice) return 0;
+        const rate = discountRate / 100;
+        if (rate >= 1) return unitPrice; // prevent divide by zero
+        return unitPrice / (1 - rate);
+    }, [unitPrice, discountRate]);
+
+    const originalPriceWithTax = useMemo(
+        () => originalPrice * 1.18,
+        [originalPrice]
+    );
+
     const priceWithTax = useMemo(() => unitPrice * 1.18, [unitPrice]);
 
     const totals = useMemo(() => {
@@ -338,12 +366,13 @@ export default function ProductCreateSheet({ open, onOpenChange, onDone }) {
                 name: values.name,
                 category: values.category,
                 unit_price: String(values.unit_price),
+                discount_rate: String(values.discount_rate || "0"),
                 stockins: values.stockins.map((b) => ({
                     ...(b.store_id ? { store_id: b.store_id } : {}),
                     quantity: String(b.quantity),
                     ...(b.expiry_date ? { expiry_date: b.expiry_date } : {}),
                 })),
-                ...(values.image instanceof File ? { image: values.image } : {}), // triggers multipart in api helper
+                ...(values.image instanceof File ? { image: values.image } : {}),
             };
             const { message } = await superadmin.createProductWithStockIn(payload);
             toast.success(message || "Product created with initial stock.");
@@ -438,16 +467,52 @@ export default function ProductCreateSheet({ open, onOpenChange, onDone }) {
                                     />
                                 </div>
 
-                                {/* Unit price */}
+                                {/* Unit price (discounted) */}
                                 <div className="grid gap-1.5">
-                                    <Label>Unit price</Label>
-                                    <Input type="number" step="0.01" placeholder="0.00" {...register("unit_price")} />
+                                    <Label>Discounted price</Label>
+                                    <Input
+                                        type="number"
+                                        step="0.01"
+                                        placeholder="0.00"
+                                        {...register("unit_price")}
+                                    />
+                                    <p className="text-xs text-neutral-500">Price AFTER discount</p>
                                 </div>
 
+                                {/* Discount rate */}
                                 <div className="grid gap-1.5">
-                                    <Label>Price w/ tax (preview)</Label>
-                                    <div className="rounded-md border border-neutral-200 bg-white/70 px-4 py-2 text-sm cursor-pointer">
+                                    <Label>Discount rate (%)</Label>
+                                    <Input
+                                        type="number"
+                                        min="0"
+                                        max="100"
+                                        step="0.01"
+                                        placeholder="0"
+                                        {...register("discount_rate")}
+                                    />
+                                </div>
+
+                                {/* Original price (readonly) */}
+                                <div className="grid gap-1.5">
+                                    <Label>Original price</Label>
+                                    <div className="rounded-md border border-neutral-200 bg-white/70 px-4 py-2 text-sm">
+                                        {originalPrice ? originalPrice.toFixed(2) : "—"}
+                                    </div>
+                                </div>
+
+                                {/* Price with tax (discounted) */}
+                                <div className="grid gap-1.5">
+                                    <Label>Discounted price w/ tax</Label>
+                                    <div className="rounded-md border border-neutral-200 bg-white/70 px-4 py-2 text-sm">
                                         {priceWithTax ? priceWithTax.toFixed(2) : "—"}
+                                    </div>
+                                </div>
+
+                                {/* Original price with tax */}
+                                <div className="grid gap-1.5">
+                                    <Label>Original price w/ tax</Label>
+                                    <div className="rounded-md border border-neutral-200 bg-white/70 px-4 py-2 text-sm">
+                                        {originalPriceWithTax ? originalPriceWithTax.toFixed(2) : "—"}
                                     </div>
                                 </div>
 

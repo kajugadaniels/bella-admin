@@ -1,16 +1,18 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { motion } from 'framer-motion';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { toast } from 'sonner';
-import { RefreshCw, Search } from 'lucide-react';
-import { superadmin } from '@/api';
-import OrderTable from './OrderTable';
-import OrderDetailSheet from './OrderDetailSheet';
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { motion } from "framer-motion";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
+import { RefreshCw, Search, Filter } from "lucide-react";
+
+import { superadmin } from "@/api";
+
+import OrderTable from "./OrderTable";
+import OrderDetailSheet from "./OrderDetailSheet";
+import OrderFilters from "./OrderFilters";
 
 function useDebounceLocal(value, delay = 500) {
 	const [v, setV] = useState(value);
@@ -22,86 +24,52 @@ function useDebounceLocal(value, delay = 500) {
 }
 
 const PAGE_SIZE = 10;
-const DEFAULT_ORDERING = '-created_at';
-const ANY = '__any__'; // sentinel to represent "no filter"
+const ANY = "__any__";
 
-// Use sentinel values instead of empty string
-const statusOptions = [
-	{ value: ANY, label: 'Any status' },
-	{ value: 'DRAFT', label: 'Draft' },
-	{ value: 'PENDING', label: 'Pending' },
-	{ value: 'CONFIRMED', label: 'Confirmed' },
-	{ value: 'PAID', label: 'Paid' },
-	{ value: 'FULFILLED', label: 'Fulfilled' },
-	{ value: 'CANCELLED', label: 'Cancelled' },
-	{ value: 'REFUNDED', label: 'Refunded' },
-];
+const DEFAULT_FILTERS = {
+	status: ANY,
+	paymentStatus: ANY,
+	paymentMethod: ANY,
+	ordering: "-created_at",
+};
 
-const pStatusOptions = [
-	{ value: ANY, label: 'Any payment' },
-	{ value: 'PENDING', label: 'Payment Pending' },
-	{ value: 'PAID', label: 'Payment Paid' },
-	{ value: 'FAILED', label: 'Payment Failed' },
-	{ value: 'REFUNDED', label: 'Payment Refunded' },
-];
-
-const pMethodOptions = [
-	{ value: ANY, label: 'Any method' },
-	{ value: 'CASH', label: 'Cash' },
-	{ value: 'MOMO', label: 'Mobile Money' },
-	{ value: 'CARD', label: 'Card' },
-	{ value: 'OTHER', label: 'Other' },
-];
-
-const orderingOptions = [
-	{ value: '-created_at', label: 'Newest' },
-	{ value: 'created_at', label: 'Oldest' },
-	{ value: 'grand_total', label: 'Total (low→high)' },
-	{ value: '-grand_total', label: 'Total (high→low)' },
-	{ value: 'status', label: 'Status (A–Z)' },
-	{ value: '-status', label: 'Status (Z–A)' },
-];
-
-function parseError(err, fallback = 'Failed to load orders.') {
+function parseError(err, fallback = "Failed to load orders.") {
 	return err?.response?.data?.message || err?.response?.data?.detail || err?.message || fallback;
 }
 
 const OrderList = () => {
-	const [q, setQ] = useState('');
+	const [q, setQ] = useState("");
 	const dq = useDebounceLocal(q, 500);
 
-	// FIX: initialize with sentinel
-	const [status, setStatus] = useState(ANY);
-	const [paymentStatus, setPaymentStatus] = useState(ANY);
-	const [paymentMethod, setPaymentMethod] = useState(ANY);
-	const [ordering, setOrdering] = useState(DEFAULT_ORDERING);
+	const [filters, setFilters] = useState(DEFAULT_FILTERS);
 
 	const [page, setPage] = useState(1);
 	const [loading, setLoading] = useState(true);
 	const [rows, setRows] = useState([]);
 	const [count, setCount] = useState(0);
-	const totalPages = Math.max(1, Math.ceil((count || 0) / PAGE_SIZE));
+
 	const [detailId, setDetailId] = useState(null);
 
-	const params = useMemo(() => {
-		const par = { page, ordering };
+	const [filtersSheetOpen, setFiltersSheetOpen] = useState(false);
 
-		// Only include filter params if not the ANY sentinel
-		if (status !== ANY) par.status = status;
-		if (paymentStatus !== ANY) par.payment_status = paymentStatus;
-		if (paymentMethod !== ANY) par.payment_method = paymentMethod;
+	const params = useMemo(() => {
+		const par = { page, ordering: filters.ordering };
+
+		if (filters.status !== ANY) par.status = filters.status;
+		if (filters.paymentStatus !== ANY) par.payment_status = filters.paymentStatus;
+		if (filters.paymentMethod !== ANY) par.payment_method = filters.paymentMethod;
 
 		const s = dq.trim();
 		if (s) {
 			if (/^PO-\d{8}-[A-F0-9]{6}$/i.test(s)) par.code = s;
-			else if (s.includes('@')) par.client_email = s;
+			else if (s.includes("@")) par.client_email = s;
 			else {
 				par.client_name = s;
 				if (s.length >= 4) par.code = s;
 			}
 		}
 		return par;
-	}, [page, ordering, status, paymentStatus, paymentMethod, dq]);
+	}, [page, filters, dq]);
 
 	const fetchOrders = useCallback(async () => {
 		setLoading(true);
@@ -109,15 +77,15 @@ const OrderList = () => {
 			const res = await superadmin.listOrders(params);
 			const payload = res?.data;
 			const list = Array.isArray(payload?.results) ? payload.results : [];
-			const total = typeof payload?.count === 'number' ? payload.count : list.length;
+			const total = typeof payload?.count === "number" ? payload.count : list.length;
 
 			const normalized = list.map((o) => {
 				const client = o?.client || {};
 				return {
 					...o,
 					__display: {
-						clientName: client?.name || client?.email || 'Client',
-						clientEmail: client?.email || null,
+						clientName: client?.name || client?.email || "Client",
+						clientEmail: client?.email,
 						total: o?.order_grand_total ?? null,
 						code: o?.order_code,
 					},
@@ -135,15 +103,16 @@ const OrderList = () => {
 
 	useEffect(() => {
 		setPage(1);
-	}, [dq, status, paymentStatus, paymentMethod, ordering]);
+	}, [dq, filters]);
+
 	useEffect(() => {
 		fetchOrders();
 	}, [fetchOrders]);
 
 	const refresh = () => fetchOrders();
 
-    // Make ESLint see a concrete JS usage
-    const MotionDiv = motion.div;
+	const MotionDiv = motion.div;
+	const totalPages = Math.max(1, Math.ceil(count / PAGE_SIZE));
 
 	return (
 		<>
@@ -153,7 +122,7 @@ const OrderList = () => {
 				transition={{ duration: 0.28 }}
 				className="mx-auto px-4 sm:px-6"
 			>
-				{/* Header */}
+				{/* Page Header */}
 				<div className="mb-4 mt-4 flex flex-wrap items-center justify-between gap-3">
 					<div>
 						<h1 className="text-xl font-semibold tracking-tight">
@@ -161,125 +130,78 @@ const OrderList = () => {
 								Orders
 							</span>
 						</h1>
-						<p className="text-sm text-neutral-500">Track customer orders, payments, and fulfillment.</p>
-					</div>
-					<div className="flex items-center gap-2">
-						<Button
-							variant="outline"
-							size="sm"
-							onClick={refresh}
-							className="glass-button rounded-4xl px-4 py-5"
-							disabled={loading}
-						>
-							<RefreshCw className="mr-2 h-4 w-4" />
-							Refresh
-						</Button>
+						<p className="text-sm text-neutral-500">
+							Track customer orders, payments, and fulfillment.
+						</p>
 					</div>
 				</div>
 
 				{/* Card */}
 				<div className="glass-card flex flex-col gap-4 p-4">
-					{/* Top row: Search + count */}
-					<div className="grid gap-3 md:grid-cols-3">
-						<div className="col-span-2">
-							<Label htmlFor="q" className="sr-only">
-								Search
-							</Label>
+
+					{/* Top bar: Search + Buttons */}
+					<div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+						{/* Search */}
+						<div className="flex-1">
+							<Label htmlFor="q" className="sr-only">Search</Label>
 							<div className="relative">
 								<Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
 								<Input
 									id="q"
-									placeholder="Search by code (PO-YYYYMMDD-XXXXXX), client name, or email…"
+									placeholder="Search by code, client name, or email…"
 									value={q}
 									onChange={(e) => setQ(e.target.value)}
 									className="glass-input pl-9"
 								/>
 							</div>
 						</div>
-						<div className="flex items-center">
-							<Badge variant="secondary" className="ml-auto glass-badge">
+
+						{/* Badge + Filters + Refresh */}
+						<div className="flex items-center gap-3">
+							<Badge variant="secondary" className="glass-badge">
 								{count} total
 							</Badge>
-						</div>
-					</div>
 
-					{/* Filters */}
-					<div className="hidden md:grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 rounded-2xl border border-neutral-200 bg-white/70 p-3 backdrop-blur-sm">
-						<div>
-							<Label className="text-[12px]">Order status</Label>
-							<Select value={status} onValueChange={setStatus}>
-								<SelectTrigger className="bg-white/85 backdrop-blur-sm border-neutral-200">
-									<SelectValue />
-								</SelectTrigger>
-								<SelectContent className="bg-white/95 backdrop-blur-md border-neutral-200">
-									{statusOptions.map((o) => (
-										<SelectItem key={o.value} value={o.value}>
-											{o.label}
-										</SelectItem>
-									))}
-								</SelectContent>
-							</Select>
-						</div>
+							{/* Filters Button */}
+							<Button
+								variant="outline"
+								size="sm"
+								onClick={() => setFiltersSheetOpen(true)}
+								className="glass-button rounded-4xl px-4"
+							>
+								<Filter className="mr-2 h-4 w-4" />
+								Filters
+							</Button>
 
-						<div>
-							<Label className="text-[12px]">Payment status</Label>
-							<Select value={paymentStatus} onValueChange={setPaymentStatus}>
-								<SelectTrigger className="bg-white/85 backdrop-blur-sm border-neutral-200">
-									<SelectValue />
-								</SelectTrigger>
-								<SelectContent className="bg-white/95 backdrop-blur-md border-neutral-200">
-									{pStatusOptions.map((o) => (
-										<SelectItem key={o.value} value={o.value}>
-											{o.label}
-										</SelectItem>
-									))}
-								</SelectContent>
-							</Select>
-						</div>
-
-						<div>
-							<Label className="text-[12px]">Payment method</Label>
-							<Select value={paymentMethod} onValueChange={setPaymentMethod}>
-								<SelectTrigger className="bg-white/85 backdrop-blur-sm border-neutral-200">
-									<SelectValue />
-								</SelectTrigger>
-								<SelectContent className="bg-white/95 backdrop-blur-md border-neutral-200">
-									{pMethodOptions.map((o) => (
-										<SelectItem key={o.value} value={o.value}>
-											{o.label}
-										</SelectItem>
-									))}
-								</SelectContent>
-							</Select>
-						</div>
-
-						<div>
-							<Label className="text-[12px]">Ordering</Label>
-							<Select value={ordering} onValueChange={setOrdering}>
-								<SelectTrigger className="bg-white/85 backdrop-blur-sm border-neutral-200">
-									<SelectValue placeholder="Sort by…" />
-								</SelectTrigger>
-								<SelectContent className="bg-white/95 backdrop-blur-md border-neutral-200">
-									{orderingOptions.map((o) => (
-										<SelectItem key={o.value} value={o.value}>
-											{o.label}
-										</SelectItem>
-									))}
-								</SelectContent>
-							</Select>
+							{/* Refresh Button */}
+							<Button
+								variant="outline"
+								size="sm"
+								onClick={refresh}
+								disabled={loading}
+								className="glass-button rounded-4xl px-4"
+							>
+								<RefreshCw className="mr-2 h-4 w-4" />
+								Refresh
+							</Button>
 						</div>
 					</div>
 
 					<Separator className="soft-divider" />
 
 					{/* Table */}
-					<OrderTable rows={rows} loading={loading} onView={(row) => setDetailId(row?.order_id || row?.id)} />
+					<OrderTable
+						rows={rows}
+						loading={loading}
+						onView={(row) => setDetailId(row?.order_id || row?.id)}
+					/>
 
 					{/* Pagination */}
 					<div className="mt-1 flex items-center justify-between">
 						<div className="text-xs text-neutral-500">
 							Page {page} of {totalPages}
 						</div>
+
 						<div className="flex items-center gap-2">
 							<Button
 								variant="outline"
@@ -290,6 +212,7 @@ const OrderList = () => {
 							>
 								Previous
 							</Button>
+
 							<Button
 								variant="outline"
 								size="sm"
@@ -304,13 +227,19 @@ const OrderList = () => {
 				</div>
 			</MotionDiv>
 
-			{/* Detail drawer */}
+			{/* Filter sheet */}
+			<OrderFilters
+				open={filtersSheetOpen}
+				onOpenChange={setFiltersSheetOpen}
+				value={filters}
+				onChange={setFilters}
+			/>
+
+			{/* Order Details */}
 			<OrderDetailSheet
 				orderId={detailId}
 				open={!!detailId}
-				onOpenChange={(o) => {
-					if (!o) setDetailId(null);
-				}}
+				onOpenChange={(o) => !o && setDetailId(null)}
 			/>
 		</>
 	);

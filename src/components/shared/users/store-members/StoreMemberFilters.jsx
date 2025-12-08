@@ -1,15 +1,13 @@
 import React, { useEffect, useState } from "react";
 
 import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-
 import {
     Select,
-    SelectContent,
-    SelectItem,
     SelectTrigger,
     SelectValue,
+    SelectContent,
+    SelectItem,
 } from "@/components/ui/select";
 
 import {
@@ -22,35 +20,49 @@ import {
 
 import { RotateCcw } from "lucide-react";
 
-const orders = [
+const statuses = [
+    { value: "all", label: "All" },
+    { value: "active", label: "Active" },
+    { value: "pending", label: "Pending" },
+];
+
+const roles = [
+    { value: "all", label: "All roles" },
+    { value: "admin", label: "Admins only" },
+    { value: "staff", label: "Staff only" },
+];
+
+const orderings = [
     { value: "-created_at", label: "Newest" },
     { value: "created_at", label: "Oldest" },
-    { value: "email", label: "Email A→Z" },
-    { value: "-email", label: "Email Z→A" },
-    { value: "username", label: "Username A→Z" },
-    { value: "-username", label: "Username Z→A" },
+    { value: "store__name", label: "Store name (A–Z)" },
+    { value: "-store__name", label: "Store name (Z–A)" },
+    { value: "user__email", label: "Email (A–Z)" },
+    { value: "-user__email", label: "Email (Z–A)" },
+    { value: "user__username", label: "Username (A–Z)" },
+    { value: "-user__username", label: "Username (Z–A)" },
 ];
 
 const DEFAULTS = {
     status: "all",
-    created_after: "",
-    created_before: "",
+    role: "all",
     ordering: "-created_at",
 };
 
-const AdminFilters = ({ value, onChange, open, onOpenChange }) => {
+const StoreMemberFilters = ({ value, onChange, open, onOpenChange }) => {
     const v = value || DEFAULTS;
 
-    // Local state that holds user input until Apply
+    // Local draft (apply-only)
     const [draft, setDraft] = useState(v);
 
-    // Sync draft when parent opens sheet
     useEffect(() => {
         if (open) setDraft(v);
     }, [open, v]);
 
-    const update = (patch) => setDraft((prev) => ({ ...prev, ...patch }));
-    const resetFilters = () => setDraft(DEFAULTS);
+    const update = (patch) =>
+        setDraft((prev) => ({ ...prev, ...patch }));
+
+    const reset = () => setDraft(DEFAULTS);
 
     const applyFilters = () => {
         onChange?.(draft);
@@ -67,7 +79,6 @@ const AdminFilters = ({ value, onChange, open, onOpenChange }) => {
                     <SheetTitle className="text-left">Filters</SheetTitle>
                 </SheetHeader>
 
-                {/* Scrollable fields */}
                 <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5">
 
                     {/* STATUS */}
@@ -78,36 +89,36 @@ const AdminFilters = ({ value, onChange, open, onOpenChange }) => {
                             onValueChange={(val) => update({ status: val })}
                         >
                             <SelectTrigger className="border-neutral-300 bg-white/90 backdrop-blur-sm">
-                                <SelectValue placeholder="All" />
+                                <SelectValue placeholder="Status" />
                             </SelectTrigger>
-                            <SelectContent className="bg-white/95 backdrop-blur-md">
-                                <SelectItem value="all">All</SelectItem>
-                                <SelectItem value="active">Active</SelectItem>
-                                <SelectItem value="pending">Pending</SelectItem>
+                            <SelectContent>
+                                {statuses.map((s) => (
+                                    <SelectItem key={s.value} value={s.value}>
+                                        {s.label}
+                                    </SelectItem>
+                                ))}
                             </SelectContent>
                         </Select>
                     </div>
 
-                    {/* CREATED AFTER */}
+                    {/* ROLE */}
                     <div className="space-y-1">
-                        <Label>Created after</Label>
-                        <Input
-                            type="datetime-local"
-                            value={draft.created_after || ""}
-                            onChange={(e) => update({ created_after: e.target.value })}
-                            className="border-neutral-300 bg-white/90 backdrop-blur-sm"
-                        />
-                    </div>
-
-                    {/* CREATED BEFORE */}
-                    <div className="space-y-1">
-                        <Label>Created before</Label>
-                        <Input
-                            type="datetime-local"
-                            value={draft.created_before || ""}
-                            onChange={(e) => update({ created_before: e.target.value })}
-                            className="border-neutral-300 bg-white/90 backdrop-blur-sm"
-                        />
+                        <Label>Role</Label>
+                        <Select
+                            value={draft.role}
+                            onValueChange={(val) => update({ role: val })}
+                        >
+                            <SelectTrigger className="border-neutral-300 bg-white/90 backdrop-blur-sm">
+                                <SelectValue placeholder="Role" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {roles.map((r) => (
+                                    <SelectItem key={r.value} value={r.value}>
+                                        {r.label}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
                     </div>
 
                     {/* ORDERING */}
@@ -120,8 +131,8 @@ const AdminFilters = ({ value, onChange, open, onOpenChange }) => {
                             <SelectTrigger className="border-neutral-300 bg-white/90 backdrop-blur-sm">
                                 <SelectValue placeholder="Sort by…" />
                             </SelectTrigger>
-                            <SelectContent className="bg-white/95 backdrop-blur-md">
-                                {orders.map((o) => (
+                            <SelectContent>
+                                {orderings.map((o) => (
                                     <SelectItem key={o.value} value={o.value}>
                                         {o.label}
                                     </SelectItem>
@@ -131,13 +142,12 @@ const AdminFilters = ({ value, onChange, open, onOpenChange }) => {
                     </div>
                 </div>
 
-                {/* FOOTER */}
                 <SheetFooter className="border-t border-neutral-200 px-5 py-4 bg-white">
                     <div className="flex w-full items-center justify-between gap-2">
                         <Button
                             variant="ghost"
-                            onClick={resetFilters}
-                            className="text-neutral-700 hover:bg-neutral-100 rounded-4xl px-4 py-5 cursor-pointer"
+                            onClick={reset}
+                            className="rounded-4xl px-4 py-5 cursor-pointer text-neutral-700 hover:bg-neutral-100"
                         >
                             <RotateCcw className="mr-2 h-4 w-4" />
                             Reset
@@ -166,4 +176,4 @@ const AdminFilters = ({ value, onChange, open, onOpenChange }) => {
     );
 };
 
-export default AdminFilters;
+export default StoreMemberFilters;

@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 
 import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
 import {
@@ -22,34 +21,39 @@ import {
 
 import { RotateCcw } from "lucide-react";
 
-const orders = [
+const statuses = [
+    { value: "all", label: "All" },
+    { value: "active", label: "Active" },
+    { value: "pending", label: "Pending" },
+];
+
+const orderings = [
     { value: "-created_at", label: "Newest" },
     { value: "created_at", label: "Oldest" },
-    { value: "email", label: "Email A→Z" },
-    { value: "-email", label: "Email Z→A" },
-    { value: "username", label: "Username A→Z" },
-    { value: "-username", label: "Username Z→A" },
+    { value: "email", label: "Email (A–Z)" },
+    { value: "-email", label: "Email (Z–A)" },
+    { value: "username", label: "Username (A–Z)" },
+    { value: "-username", label: "Username (Z–A)" },
 ];
 
 const DEFAULTS = {
     status: "all",
-    created_after: "",
-    created_before: "",
     ordering: "-created_at",
 };
 
-const AdminFilters = ({ value, onChange, open, onOpenChange }) => {
+const ClientFilters = ({ value, onChange, open, onOpenChange }) => {
     const v = value || DEFAULTS;
 
-    // Local state that holds user input until Apply
+    // Local — only applied when clicking Apply
     const [draft, setDraft] = useState(v);
 
-    // Sync draft when parent opens sheet
     useEffect(() => {
         if (open) setDraft(v);
     }, [open, v]);
 
-    const update = (patch) => setDraft((prev) => ({ ...prev, ...patch }));
+    const update = (patch) =>
+        setDraft((prev) => ({ ...prev, ...patch }));
+
     const resetFilters = () => setDraft(DEFAULTS);
 
     const applyFilters = () => {
@@ -67,9 +71,8 @@ const AdminFilters = ({ value, onChange, open, onOpenChange }) => {
                     <SheetTitle className="text-left">Filters</SheetTitle>
                 </SheetHeader>
 
-                {/* Scrollable fields */}
+                {/* Scrollable content */}
                 <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5">
-
                     {/* STATUS */}
                     <div className="space-y-1">
                         <Label>Status</Label>
@@ -81,33 +84,13 @@ const AdminFilters = ({ value, onChange, open, onOpenChange }) => {
                                 <SelectValue placeholder="All" />
                             </SelectTrigger>
                             <SelectContent className="bg-white/95 backdrop-blur-md">
-                                <SelectItem value="all">All</SelectItem>
-                                <SelectItem value="active">Active</SelectItem>
-                                <SelectItem value="pending">Pending</SelectItem>
+                                {statuses.map((s) => (
+                                    <SelectItem key={s.value} value={s.value}>
+                                        {s.label}
+                                    </SelectItem>
+                                ))}
                             </SelectContent>
                         </Select>
-                    </div>
-
-                    {/* CREATED AFTER */}
-                    <div className="space-y-1">
-                        <Label>Created after</Label>
-                        <Input
-                            type="datetime-local"
-                            value={draft.created_after || ""}
-                            onChange={(e) => update({ created_after: e.target.value })}
-                            className="border-neutral-300 bg-white/90 backdrop-blur-sm"
-                        />
-                    </div>
-
-                    {/* CREATED BEFORE */}
-                    <div className="space-y-1">
-                        <Label>Created before</Label>
-                        <Input
-                            type="datetime-local"
-                            value={draft.created_before || ""}
-                            onChange={(e) => update({ created_before: e.target.value })}
-                            className="border-neutral-300 bg-white/90 backdrop-blur-sm"
-                        />
                     </div>
 
                     {/* ORDERING */}
@@ -121,7 +104,7 @@ const AdminFilters = ({ value, onChange, open, onOpenChange }) => {
                                 <SelectValue placeholder="Sort by…" />
                             </SelectTrigger>
                             <SelectContent className="bg-white/95 backdrop-blur-md">
-                                {orders.map((o) => (
+                                {orderings.map((o) => (
                                     <SelectItem key={o.value} value={o.value}>
                                         {o.label}
                                     </SelectItem>
@@ -131,7 +114,7 @@ const AdminFilters = ({ value, onChange, open, onOpenChange }) => {
                     </div>
                 </div>
 
-                {/* FOOTER */}
+                {/* Fixed footer */}
                 <SheetFooter className="border-t border-neutral-200 px-5 py-4 bg-white">
                     <div className="flex w-full items-center justify-between gap-2">
                         <Button
@@ -166,4 +149,4 @@ const AdminFilters = ({ value, onChange, open, onOpenChange }) => {
     );
 };
 
-export default AdminFilters;
+export default ClientFilters;
