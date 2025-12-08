@@ -162,7 +162,6 @@ const ProductFiltersSheet = ({ value, onChange, open, onOpenChange }) => {
                     <div className="space-y-1">
                         <Label>Category</Label>
 
-                        {/* Premium glass dropdown with scrollable content and search */}
                         <Select
                             value={draft.category || ALL_CATEGORIES}
                             onValueChange={(v) =>
@@ -170,42 +169,42 @@ const ProductFiltersSheet = ({ value, onChange, open, onOpenChange }) => {
                             }
                             onOpenChange={(o) => setCatOpen(o)}
                         >
-                            <SelectTrigger className="border-neutral-300 bg-white/90">
+                            <SelectTrigger className="border-neutral-300 bg-white">
                                 <SelectValue placeholder="All categories" />
                             </SelectTrigger>
 
-                            {/* Make the select content look premium: glass, blurred, max height with scroll */}
-                            <SelectContent className="p-0">
-                                {/* Search box inside the dropdown */}
-                                <div className="p-3 border-b border-white/20 bg-white/10 backdrop-blur-md">
+                            <SelectContent className="p-0 bg-white">
+                                {/* Search box */}
+                                <div className="p-3 border-b border-neutral-200 bg-white">
                                     <div className="relative">
                                         <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
                                         <Input
                                             value={catQ}
                                             onChange={(e) => setCatQ(e.target.value)}
                                             placeholder="Search categories…"
-                                            className="pl-9 h-9 bg-white/5"
+                                            className="pl-9 h-9 bg-white border border-neutral-300"
                                         />
                                     </div>
                                 </div>
 
-                                {/* Scrollable list: fixed max height, nice padding, glass look */}
+                                {/* Scrollable list */}
                                 <div
-                                    className="max-h-60 overflow-y-auto p-2 space-y-1"
-                                    style={{
-                                        // fallback in case Tailwind classes aren't present
-                                        maxHeight: "15rem",
-                                    }}
+                                    className="max-h-60 overflow-y-auto p-2 space-y-1 bg-white"
+                                    style={{ maxHeight: "15rem" }}
                                 >
                                     <SelectItem value={ALL_CATEGORIES}>
                                         <div className="flex items-center justify-between w-full">
                                             <span>All categories</span>
-                                            <span className="text-xs opacity-70">({categories.length})</span>
+                                            <span className="text-xs opacity-70">
+                                                ({categories.length})
+                                            </span>
                                         </div>
                                     </SelectItem>
 
                                     {!catLoading && filteredCategories.length === 0 && (
-                                        <div className="px-3 py-2 text-sm text-neutral-500">No categories found</div>
+                                        <div className="px-3 py-2 text-sm text-neutral-500">
+                                            No categories found
+                                        </div>
                                     )}
 
                                     {!catLoading &&
@@ -213,19 +212,20 @@ const ProductFiltersSheet = ({ value, onChange, open, onOpenChange }) => {
                                             <SelectItem
                                                 key={c.value}
                                                 value={c.value}
-                                                className="rounded-md hover:bg-white/10 p-2"
+                                                className="rounded-md hover:bg-neutral-100 p-2"
                                             >
                                                 <div className="flex flex-col">
-                                                    <span className="font-medium text-sm">{c.label}</span>
-                                                    <span className="text-xs opacity-60 truncate">
-                                                        {c.value}
+                                                    <span className="font-medium text-sm">
+                                                        {c.label}
                                                     </span>
                                                 </div>
                                             </SelectItem>
                                         ))}
 
                                     {catLoading && (
-                                        <div className="px-3 py-2 text-sm text-neutral-500">Loading…</div>
+                                        <div className="px-3 py-2 text-sm text-neutral-500">
+                                            Loading…
+                                        </div>
                                     )}
                                 </div>
                             </SelectContent>
