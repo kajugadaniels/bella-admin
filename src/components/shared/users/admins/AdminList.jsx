@@ -112,6 +112,35 @@ const AdminList = () => {
                             Manage admin records and invitations.
                         </p>
                     </div>
+
+                    {/* Badge + Filters + Refresh */}
+                    <div className="flex items-center gap-2">
+                        <Badge variant="secondary" className="glass-badge">
+                            {count} total
+                        </Badge>
+
+                        {/* Filter Button */}
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setFiltersSheetOpen(true)}
+                            className="glass-button rounded-4xl px-4"
+                        >
+                            <Filter className="mr-2 h-4 w-4" />
+                            Filters
+                        </Button>
+
+                        {/* Refresh Button (same design) */}
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={refresh}
+                            className="glass-button rounded-4xl px-4"
+                        >
+                            <RefreshCw className="mr-2 h-4 w-4" />
+                            Refresh
+                        </Button>
+                    </div>
                 </div>
 
                 {/* CARD */}
@@ -137,32 +166,10 @@ const AdminList = () => {
                         </div>
 
                         {/* Badge + Filters + Refresh */}
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2">
                             <Badge variant="secondary" className="glass-badge">
                                 {count} total
                             </Badge>
-
-                            {/* Filter Button */}
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setFiltersSheetOpen(true)}
-                                className="glass-button rounded-4xl px-4"
-                            >
-                                <Filter className="mr-2 h-4 w-4" />
-                                Filters
-                            </Button>
-
-                            {/* Refresh Button (same design) */}
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={refresh}
-                                className="glass-button rounded-4xl px-4"
-                            >
-                                <RefreshCw className="mr-2 h-4 w-4" />
-                                Refresh
-                            </Button>
                         </div>
                     </div>
 
