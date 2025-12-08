@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -53,6 +53,10 @@ const ProductFiltersSheet = ({ value, onChange, open, onOpenChange }) => {
     const [categories, setCategories] = useState([]);
     const [catLoading, setCatLoading] = useState(false);
 
+    // New: local search and open state for category dropdown
+    const [catQ, setCatQ] = useState("");
+    const [catOpen, setCatOpen] = useState(false);
+
     useEffect(() => {
         async function load() {
             setCatLoading(true);
@@ -73,6 +77,19 @@ const ProductFiltersSheet = ({ value, onChange, open, onOpenChange }) => {
         }
         load();
     }, []);
+
+    // Reset search when dropdown closes/open changes
+    useEffect(() => {
+        if (!catOpen) setCatQ("");
+    }, [catOpen]);
+
+    const filteredCategories = useMemo(() => {
+        const q = catQ?.trim().toLowerCase();
+        if (!q) return categories;
+        return categories.filter(
+            (c) => c.label.toLowerCase().includes(q) || c.value.toLowerCase().includes(q)
+        );
+    }, [categories, catQ]);
 
     /* ------------------------------ Stores ------------------------------ */
     const [stores, setStores] = useState([]);
@@ -144,33 +161,73 @@ const ProductFiltersSheet = ({ value, onChange, open, onOpenChange }) => {
                     {/* CATEGORY */}
                     <div className="space-y-1">
                         <Label>Category</Label>
+
+                        {/* Premium glass dropdown with scrollable content and search */}
                         <Select
                             value={draft.category || ALL_CATEGORIES}
                             onValueChange={(v) =>
                                 update({ category: v === ALL_CATEGORIES ? "" : v })
                             }
+                            onOpenChange={(o) => setCatOpen(o)}
                         >
-                            <SelectTrigger className="border-neutral-300 bg-white">
+                            <SelectTrigger className="border-neutral-300 bg-white/90">
                                 <SelectValue placeholder="All categories" />
                             </SelectTrigger>
 
-                            <SelectContent className="max-h-[260px] overflow-y-auto bg-white shadow-lg border border-neutral-200 rounded-md">
-                                <SelectItem value={ALL_CATEGORIES}>All categories</SelectItem>
+                            {/* Make the select content look premium: glass, blurred, max height with scroll */}
+                            <SelectContent className="p-0">
+                                {/* Search box inside the dropdown */}
+                                <div className="p-3 border-b border-white/20 bg-white/10 backdrop-blur-md">
+                                    <div className="relative">
+                                        <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
+                                        <Input
+                                            value={catQ}
+                                            onChange={(e) => setCatQ(e.target.value)}
+                                            placeholder="Search categories…"
+                                            className="pl-9 h-9 bg-white/5"
+                                        />
+                                    </div>
+                                </div>
 
-                                {!catLoading &&
-                                    categories.map((c) => (
-                                        <SelectItem
-                                            key={c.value}
-                                            value={c.value}
-                                            className="cursor-pointer hover:bg-neutral-100"
-                                        >
-                                            {c.label}
-                                        </SelectItem>
-                                    ))}
+                                {/* Scrollable list: fixed max height, nice padding, glass look */}
+                                <div
+                                    className="max-h-60 overflow-y-auto p-2 space-y-1"
+                                    style={{
+                                        // fallback in case Tailwind classes aren't present
+                                        maxHeight: "15rem",
+                                    }}
+                                >
+                                    <SelectItem value={ALL_CATEGORIES}>
+                                        <div className="flex items-center justify-between w-full">
+                                            <span>All categories</span>
+                                            <span className="text-xs opacity-70">({categories.length})</span>
+                                        </div>
+                                    </SelectItem>
 
-                                {catLoading && (
-                                    <div className="p-2 text-sm text-neutral-500">Loading…</div>
-                                )}
+                                    {!catLoading && filteredCategories.length === 0 && (
+                                        <div className="px-3 py-2 text-sm text-neutral-500">No categories found</div>
+                                    )}
+
+                                    {!catLoading &&
+                                        filteredCategories.map((c) => (
+                                            <SelectItem
+                                                key={c.value}
+                                                value={c.value}
+                                                className="rounded-md hover:bg-white/10 p-2"
+                                            >
+                                                <div className="flex flex-col">
+                                                    <span className="font-medium text-sm">{c.label}</span>
+                                                    <span className="text-xs opacity-60 truncate">
+                                                        {c.value}
+                                                    </span>
+                                                </div>
+                                            </SelectItem>
+                                        ))}
+
+                                    {catLoading && (
+                                        <div className="px-3 py-2 text-sm text-neutral-500">Loading…</div>
+                                    )}
+                                </div>
                             </SelectContent>
                         </Select>
                     </div>
