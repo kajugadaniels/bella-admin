@@ -302,29 +302,52 @@ const ProductFiltersSheet = ({ value, onChange, open, onOpenChange }) => {
 
                     {/* SWITCHES */}
                     <div className="grid gap-4">
-                        <div className="flex items-center justify-between">
-                            <Label>Has store</Label>
-                            <Switch
-                                checked={!!draft.has_store}
-                                onCheckedChange={(v) => update({ has_store: v ? true : "" })}
-                            />
-                        </div>
 
-                        <div className="flex items-center justify-between">
-                            <Label>Has remaining</Label>
-                            <Switch
-                                checked={!!draft.has_remaining}
-                                onCheckedChange={(v) => update({ has_remaining: v ? true : "" })}
-                            />
-                        </div>
+                        {/* Reusable premium switch row */}
+                        {[
+                            {
+                                label: "Has store",
+                                value: !!draft.has_store,
+                                onChange: (v) => update({ has_store: v ? true : "" }),
+                            },
+                            {
+                                label: "Has remaining",
+                                value: !!draft.has_remaining,
+                                onChange: (v) => update({ has_remaining: v ? true : "" }),
+                            },
+                            {
+                                label: "Include voided",
+                                value: !!draft.is_void,
+                                onChange: (v) => update({ is_void: v ? true : "" }),
+                            },
+                        ].map((item, i) => (
+                            <div
+                                key={i}
+                                className="flex items-center justify-between py-2 px-2 rounded-xl border border-neutral-200 bg-white"
+                            >
+                                <Label className="text-[12px] font-medium">{item.label}</Label>
 
-                        <div className="flex items-center justify-between">
-                            <Label>Include voided</Label>
-                            <Switch
-                                checked={!!draft.is_void}
-                                onCheckedChange={(v) => update({ is_void: v ? true : "" })}
-                            />
-                        </div>
+                                {/* Custom premium switch */}
+                                <button
+                                    onClick={() => item.onChange(!item.value)}
+                                    className={`
+                                        relative w-10 h-6 rounded-full transition-all duration-300
+                                        ${item.value 
+                                            ? "glass-cta shadow-md" 
+                                            : "bg-neutral-200"} 
+                                    `}
+                                >
+                                    <span
+                                        className={`
+                                            absolute top-1/2 -translate-y-1/2 h-5 w-5 rounded-full 
+                                            bg-white transition-all duration-300 shadow
+                                            ${item.value ? "right-1" : "left-1"}
+                                        `}
+                                    ></span>
+                                </button>
+                            </div>
+                        ))}
+
                     </div>
 
                     {/* MORE FILTERS */}
