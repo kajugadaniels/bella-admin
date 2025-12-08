@@ -129,6 +129,32 @@ const ClientList = () => {
                         </h1>
                         <p className="text-sm text-neutral-500">Manage client records and invitations.</p>
                     </div>
+
+                    {/* Badge + Filters + Refresh */}
+                    <div className="flex items-center gap-3">
+                        {/* Filters */}
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setFiltersSheetOpen(true)}
+                            className="glass-button rounded-4xl px-4"
+                        >
+                            <Filter className="mr-2 h-4 w-4" />
+                            Filters
+                        </Button>
+
+                        {/* Refresh */}
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={refresh}
+                            disabled={loading}
+                            className="glass-button rounded-4xl px-4"
+                        >
+                            <RefreshCw className="mr-2 h-4 w-4" />
+                            Refresh
+                        </Button>
+                    </div>
                 </div>
 
                 {/* CARD */}
@@ -158,29 +184,6 @@ const ClientList = () => {
                             <Badge variant="secondary" className="glass-badge">
                                 {count} total
                             </Badge>
-
-                            {/* Filters */}
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setFiltersSheetOpen(true)}
-                                className="glass-button rounded-4xl px-4"
-                            >
-                                <Filter className="mr-2 h-4 w-4" />
-                                Filters
-                            </Button>
-
-                            {/* Refresh */}
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={refresh}
-                                disabled={loading}
-                                className="glass-button rounded-4xl px-4"
-                            >
-                                <RefreshCw className="mr-2 h-4 w-4" />
-                                Refresh
-                            </Button>
                         </div>
                     </div>
 
