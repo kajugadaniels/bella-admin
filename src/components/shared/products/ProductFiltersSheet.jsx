@@ -235,6 +235,7 @@ const ProductFiltersSheet = ({ value, onChange, open, onOpenChange }) => {
                     {/* STORE */}
                     <div className="space-y-1">
                         <Label>Store</Label>
+
                         <Select
                             value={storeSelectValue}
                             onValueChange={onStoreChange}
@@ -243,37 +244,58 @@ const ProductFiltersSheet = ({ value, onChange, open, onOpenChange }) => {
                                 if (!o) setStoreQ("");
                             }}
                         >
-                            <SelectTrigger className="border-neutral-300 bg-white/90">
+                            <SelectTrigger className="border-neutral-300 bg-white">
                                 <SelectValue placeholder="All stores" />
                             </SelectTrigger>
 
-                            <SelectContent className="p-0">
+                            <SelectContent className="p-0 bg-white">
                                 {/* Search box */}
-                                <div className="p-2 border-b border-neutral-200 bg-white">
+                                <div className="p-3 border-b border-neutral-200 bg-white">
                                     <div className="relative">
-                                        <SearchIcon className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
+                                        <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
                                         <Input
                                             value={storeQ}
                                             onChange={(e) => setStoreQ(e.target.value)}
-                                            placeholder="Search store…"
-                                            className="pl-8 h-8"
+                                            placeholder="Search stores…"
+                                            className="pl-9 h-9 bg-white border border-neutral-300"
                                         />
                                     </div>
                                 </div>
 
-                                <SelectItem value={ALL_STORES}>All stores</SelectItem>
-                                <SelectItem value={GLOBAL_STORE}>Global (no store)</SelectItem>
+                                {/* Scrollable list */}
+                                <div
+                                    className="max-h-60 overflow-y-auto p-2 space-y-1 bg-white"
+                                    style={{ maxHeight: "15rem" }}
+                                >
+                                    <SelectItem value={ALL_STORES}>
+                                        <span>All stores</span>
+                                    </SelectItem>
 
-                                {!storeLoading &&
-                                    stores.map((s) => (
-                                        <SelectItem key={s.id} value={String(s.id)}>
-                                            {s.name}
-                                        </SelectItem>
-                                    ))}
+                                    <SelectItem value={GLOBAL_STORE}>
+                                        <span>Global (no store)</span>
+                                    </SelectItem>
 
-                                {storeLoading && (
-                                    <div className="px-3 py-2 text-sm text-neutral-500">Loading…</div>
-                                )}
+                                    {!storeLoading &&
+                                        stores.map((s) => (
+                                            <SelectItem
+                                                key={s.id}
+                                                value={String(s.id)}
+                                                className="rounded-md hover:bg-neutral-100 p-2"
+                                            >
+                                                <div className="flex flex-col">
+                                                    <span className="font-medium text-sm">
+                                                        {s.name}
+                                                    </span>
+                                                </div>
+                                            </SelectItem>
+                                        ))}
+
+                                    {storeLoading && (
+                                        <div className="px-3 py-2 text-sm text-neutral-500">
+                                            Loading…
+                                        </div>
+                                    )}
+                                </div>
                             </SelectContent>
                         </Select>
                     </div>
