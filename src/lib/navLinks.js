@@ -20,12 +20,12 @@ export const navLinks = [
     { to: "/stores", icon: Building2, label: "Stores" },
     { to: "/products", icon: Package, label: "Products" },
     { to: "/orders", icon: TruckIcon, label: "Orders" },
-    { to: "/stockin", icon: Boxes, label: "Stock In" },
+    // { to: "/stockin", icon: Boxes, label: "Stock In" },
     { to: "/stockout", icon: Truck, label: "Stock Out" },
 ];
 
 export const bottomLinks = [
-    { to: "/settings", icon: Settings, label: "Settings" },
+    // { to: "/settings", icon: Settings, label: "Settings" },
 ];
 
 export const logoutLink = {
